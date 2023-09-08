@@ -1,0 +1,84 @@
+//
+// kernel_server.proto
+// Copyright (C) 2023 db3.network Author imotai <codego.me@gmail.com>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+syntax = "proto3";
+package octopus_kernel_proto;
+
+import "common.proto";
+
+// Start the kernel request
+message StartKernelRequest {
+  string kernel_name = 1;
+}
+
+// Start the kernel response
+message StartKernelResponse {
+  // the kernel key
+  int32 code = 2;
+  string msg = 3;
+}
+
+message StopKernelRequest {
+  string kernel_name = 1;
+}
+
+message StopKernelResponse {
+  int32 code = 1;
+  string msg = 2;
+}
+
+message RestartKernelRequest {
+  string kernel_name = 1;
+}
+message RestartKernelResponse {
+  int32 code = 2;
+  string msg = 3;
+}
+
+message ExecuteRequest {
+  string code = 1;
+  string kernel_name = 2;
+}
+
+message ExecuteResponse {
+  // the result of code execution
+  string result = 1;
+  // the stdout of code execution
+  string stdout = 2;
+  // the stderr of code execution
+  string stderr = 3;
+  // the exception of code execution
+  string traceback = 4;
+}
+
+message GetStatusRequest {
+  string kernel_name = 1;
+}
+
+message GetStatusResponse {
+  bool is_alive = 1;
+  int32 code = 2;
+  string msg = 3;
+}
+
+service KernelServerNode {
+  rpc start(StartKernelRequest) returns (StartKernelResponse) {}
+  rpc stop(StopKernelRequest) returns (StopKernelResponse) {}
+  rpc execute(ExecuteRequest) returns (ExecuteResponse) {}
+  rpc get_status(GetStatusRequest) returns (GetStatusResponse) {}
+  rpc upload(stream octopus_common_proto.FileChunk) returns (octopus_common_proto.FileUploaded) {}
+  rpc download(octopus_common_proto.DownloadRequest) returns (stream octopus_common_proto.FileChunk) {}
+}

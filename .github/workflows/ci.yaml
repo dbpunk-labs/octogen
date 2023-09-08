@@ -1,0 +1,46 @@
+name: Python Project
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run tests
+        run: |
+          WS_DIR=`pwd`
+          cd ${WS_DIR}/proto && make && pip install .
+          cd ${WS_DIR}/kernel
+          echo "config_root_path=/tmp/" >.env
+          echo "workspace=/tmp/ws1" >> .env
+          echo "rpc_host=127.0.0.1">> .env
+          echo "rpc_port=9527" >> .env
+          echo "rpc_key=ZCeI9cYtOCyLISoi488BgZHeBkHWuFUH" >> .env
+          pip install .
+          octopus_kernel_rpc_server > rpc.log 2>&1 &
+          sleep 1
+          pytest tests/*
+          cd ${WS_DIR}/agent
+          pip install .
+          pytest tests/*
+      - uses: actions/upload-artifact@v3
+        if: failure()
+        with:
+          name: log-artifact
+          path: |
+            kernel/*.log
