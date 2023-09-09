@@ -1,11 +1,28 @@
-# octopus
+[logo]()
 
-Open source code interpreter agent for LLM
+Your Personalized Open-Source Code Interpretation Agent
 
-<img width="800" src="./images/code_interpreter.png" align="center">
+three core featues
+1. a lot of LLM supported based on langchain
+2. a lof of data service based on llamaindex
+3. security runtime based on docker
 
+## Getting Started
 
-## 
+## Supported Externel Service
 
+### LLM
+
+|name|type|supported status|
+|----|----|----------------|
+|openai | LLM | ✅ fully supported|
+
+### DATA
+
+### Deployment
+
+## Home Labs Solutions
+
+## Medias
 python & bash: requirements.txt
 typescripts: tslab , tslab install

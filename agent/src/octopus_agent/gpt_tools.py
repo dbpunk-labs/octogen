@@ -25,36 +25,6 @@ from langchain.callbacks.manager import (
 )
 
 
-def clean_python_code(code: str):
-    start_tag = "```python"
-    end_tag = "```"
-    index = code.find(start_tag)
-    if index >= 0:
-        last = code.rfind(end_tag)
-        return code[index + len(start_tag) : last]
-    elif code.find(end_tag) >= 0:
-        return code.replace("```", "")
-    elif code.find("`") == 0:
-        return code.replace("`", "")
-    else:
-        return code
-
-
-def clean_ts_code(code: str):
-    start_tag = "```typescript"
-    end_tag = "```"
-    index = code.find(start_tag)
-    if index >= 0:
-        last = code.rfind(end_tag)
-        return code[index + len(start_tag) : last]
-    elif code.find(end_tag) >= 0:
-        return code.replace("```", "")
-    elif code.find("`") == 0:
-        return code.replace("`", "")
-    else:
-        return code
-
-
 class PrintFinalAnswerInput(BaseModel):
     answer: str = Field(description="the final answer")
 
@@ -128,7 +98,7 @@ class ExecutePythonCodeTool(StructuredTool):
     ) -> str:
         if not self.octopus_api:
             self.octopus_api = OctopusAPIMarkdownOutput()
-        code = clean_python_code(code)
+        code = code
         result = self.octopus_api.run(code)
         return result
 
@@ -140,7 +110,6 @@ class ExecutePythonCodeTool(StructuredTool):
     ) -> str:
         if not self.octopus_api:
             self.octopus_api = OctopusAPIMarkdownOutput()
-        code = clean_python_code(code)
         return await self.octopus_api.arun(code)
 
 
@@ -161,7 +130,6 @@ class ExecuteShellCodeTool(StructuredTool):
         explanation: str,
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> str:
-        code = clean_python_code(code)
         based_code = "%%bash" + "\n" + code
         result = self.octopus_api.run(based_code)
         return result
@@ -172,9 +140,8 @@ class ExecuteShellCodeTool(StructuredTool):
         explanation: str,
         run_manager: Optional[AsyncCallbackManagerForToolRun] = None,
     ) -> str:
-        code = clean_python_code(code)
         based_code = "%%bash" + "\n" + code
-        return await self.octopus_api.arun(code)
+        return await self.octopus_api.arun(based_code)
 
 
 class ExecuteTypescriptCodeInput(BaseModel):
@@ -194,7 +161,6 @@ class ExecuteTypescriptCodeTool(StructuredTool):
         explanation: str,
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> str:
-        code = clean_ts_code(code)
         result = self.octopus_api.run(code, **{"kernel_name": "tslab"})
         return result
 
@@ -204,5 +170,4 @@ class ExecuteTypescriptCodeTool(StructuredTool):
         explanation: str,
         run_manager: Optional[AsyncCallbackManagerForToolRun] = None,
     ) -> str:
-        code = clean_ts_code(code)
         return await self.octopus_api.arun(code, **{"kernel_name": "tslab"})
