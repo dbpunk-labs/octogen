@@ -45,9 +45,9 @@ async def test_upload_smoke_test(agent_sdk):
     path = os.path.abspath(__file__)
     await sdk.upload_file(path, "agent_sdk_tests.py")
     try:
-       responds = []
-       async for respond in sdk.prompt("write a hello world in python"):
-           responds.append(respond)
-       assert len(responds) > 0, "no responds for the prompt"
+        responds = []
+        async for respond in sdk.prompt("write a hello world in python"):
+            responds.append(respond)
+        assert len(responds) > 0, "no responds for the prompt"
     except Exception as ex:
-       assert 0, str(ex)
+        assert 0, str(ex)

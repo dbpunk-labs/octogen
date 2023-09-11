@@ -32,8 +32,6 @@ def build_openai_agent(llm, sdk, workspace, max_iterations, verbose):
     # init the agent
     tools = [
         ExecutePythonCodeTool(octopus_api=api),
-        ExecuteShellCodeTool(octopus_api=api),
-        ExecuteTypescriptCodeTool(octopus_api=api),
         PrintCodeTool(),
         PrintFinalAnswerTool(),
     ]

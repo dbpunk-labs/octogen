@@ -114,28 +114,6 @@ print('Hello world', file=sys.stderr)
 
 
 @pytest.mark.asyncio
-async def test_ts_stdout_occurs(ts_kernel_manager):
-    """Test stdout occurs"""
-    kernel_client = KernelClient(ts_kernel_manager.config_path)
-    await kernel_client.start_client()
-    logger.info("is alive %s", await kernel_client.is_alive())
-    code = """console.log("hello world!")"""
-    kernel_client.execute(code)
-    messages = []
-    async for msg in kernel_client.read_response():
-        if not msg:
-            break
-        logger.info(msg)
-        messages.append(msg)
-    filtered = list(filter(lambda x: x["msg_type"] == "stream", messages))
-    assert len(filtered) > 0, messages
-    assert filtered[0]["content"]["name"] == "stdout"
-    await asyncio.sleep(2)
-    await kernel_client.stop_watch()
-    kernel_client.stop_client()
-
-
-@pytest.mark.asyncio
 async def test_stdout_occurs(kernel_manager):
     """Test stdout occurs"""
     kernel_client = KernelClient(kernel_manager.config_path)
