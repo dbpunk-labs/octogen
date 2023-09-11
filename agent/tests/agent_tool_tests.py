@@ -30,7 +30,7 @@ api_data_dir = "/tmp/ws1"
 
 
 @pytest.fixture
-async def kernel_sdk():
+def kernel_sdk():
     sdk = KernelSDK(api_base, api_key)
     sdk.connect()
     yield sdk
@@ -40,7 +40,7 @@ async def kernel_sdk():
 @pytest.mark.asyncio
 async def test_async_smoke_test(kernel_sdk):
     code = "print('hello world!')"
-    sdk = await anext(kernel_sdk)
+    sdk = kernel_sdk
     api = OctopusAPIJsonOutput(sdk, api_data_dir)
     result = await api.arun(code)
     assert not result["result"]
@@ -49,7 +49,7 @@ async def test_async_smoke_test(kernel_sdk):
 
 @pytest.mark.asyncio
 async def test_get_result(kernel_sdk):
-    sdk = await anext(kernel_sdk)
+    sdk = kernel_sdk
     code = "5"
     api = OctopusAPIJsonOutput(sdk, api_data_dir)
     result = await api.arun(code)
@@ -62,7 +62,7 @@ async def test_get_result(kernel_sdk):
 
 @pytest.mark.asyncio
 async def test_sync_smoke_test_markdown(kernel_sdk):
-    sdk = await anext(kernel_sdk)
+    sdk = kernel_sdk
     code = "print('hello world!')"
     api = OctopusAPIMarkdownOutput(sdk, api_data_dir)
     result = await api.arun(code)
@@ -73,7 +73,7 @@ async def test_sync_smoke_test_markdown(kernel_sdk):
 
 @pytest.mark.asyncio
 async def test_get_result_markdown(kernel_sdk):
-    sdk = await anext(kernel_sdk)
+    sdk = kernel_sdk
     code = "5"
     api = OctopusAPIMarkdownOutput(sdk, api_data_dir)
     result = await api.arun(code)
@@ -83,7 +83,7 @@ async def test_get_result_markdown(kernel_sdk):
 
 @pytest.mark.asyncio
 async def test_display_result(kernel_sdk):
-    sdk = await anext(kernel_sdk)
+    sdk = kernel_sdk
     code = """
 import matplotlib.pyplot as plt 
 import numpy as np
