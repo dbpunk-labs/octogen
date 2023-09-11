@@ -4,7 +4,7 @@
 ps -eu | grep python3 | grep -v grep | awk '{print $2}' | while read line; do kill -9 $line; done
 WORKDIR=`pwd`
 
-cd ${WORKDIR}/proto && pip install .
+cd ${WORKDIR}/proto && make && pip install .
 cd ${WORKDIR}/kernel && pip install .
 cd ${WORKDIR}/agent && pip install .
 cd ${WORKDIR}/chat && pip install .
