@@ -1,0 +1,8 @@
+FROM python:3.11
+ADD requirements_kernel.txt /tmp/requirements.txt
+RUN pip install -r /tmp/requirements.txt
+RUN pip install octopus_proto octopus_kernel
+WORKDIR /kernel
+VOLUME /kernel
+ADD start_kernel.sh /kernel/
+CMD ["bash", "/kernel/start_kernel.sh"]

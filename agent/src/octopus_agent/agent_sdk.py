@@ -42,13 +42,11 @@ class AgentSyncSDK:
         self.channel = grpc.insecure_channel(self.endpoint)
         self.stub = AgentServerStub(self.channel)
 
-    def add_kernel(self, key, endpoint, workspace):
+    def add_kernel(self, key, endpoint):
         """
         add kernel instance to the agent and only admin can call this method
         """
-        request = agent_server_pb2.AddKernelRequest(
-            endpoint=endpoint, workspace=workspace, key=key
-        )
+        request = agent_server_pb2.AddKernelRequest(endpoint=endpoint, key=key)
         response = self.stub.add_kernel(request, metadata=self.metadata)
         return response
 
@@ -109,13 +107,11 @@ class AgentSDK:
         self.channel = channel
         self.stub = AgentServerStub(channel)
 
-    async def add_kernel(self, key, endpoint, workspace):
+    async def add_kernel(self, key, endpoint):
         """
         add kernel instance to the agent and only admin can call this method
         """
-        request = agent_server_pb2.AddKernelRequest(
-            endpoint=endpoint, workspace=workspace, key=key
-        )
+        request = agent_server_pb2.AddKernelRequest(endpoint=endpoint, key=key)
         response = await self.stub.add_kernel(request, metadata=self.metadata)
         return response
 

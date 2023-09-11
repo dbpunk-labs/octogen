@@ -18,22 +18,20 @@
 from langchain.agents import initialize_agent
 from langchain.schema.messages import SystemMessage
 from .tools import OctopusAPIMarkdownOutput
-from .gpt_tools import ExecutePythonCodeTool, ExecuteShellCodeTool, ExecuteTypescriptCodeTool, PrintCodeTool, PrintFinalAnswerTool
+from .gpt_tools import ExecutePythonCodeTool
 from .mock_tools import PrintFinalAnswerTool as MockPrintFinalAnswerTool
 from .prompt import OCTOPUS_FUNCTION_SYSTEM
 from .gpt_async_callback import AgentAsyncHandler
 from langchain.agents import AgentType
 
 
-def build_openai_agent(llm, sdk, workspace, max_iterations, verbose):
+def build_openai_agent(llm, sdk, max_iterations, verbose):
     """build openai function call agent"""
     # TODO a data dir per user
-    api = OctopusAPIMarkdownOutput(sdk, workspace)
+    api = OctopusAPIMarkdownOutput(sdk)
     # init the agent
     tools = [
         ExecutePythonCodeTool(octopus_api=api),
-        PrintCodeTool(),
-        PrintFinalAnswerTool(),
     ]
     prefix = (
         """%sBegin!
@@ -49,6 +47,7 @@ Question: {input}
         agent_kwargs={"system_message": system_message},
         verbose=verbose,
         max_iterations=max_iterations,
+        handle_parsing_errors=True,
     )
     return agent
 

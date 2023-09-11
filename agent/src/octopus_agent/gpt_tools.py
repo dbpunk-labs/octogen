@@ -51,64 +51,12 @@ class AskQuestionTool(StructuredTool):
         return "Yes"
 
 
-class PrintFinalAnswerInput(BaseModel):
-    answer: str = Field(description="the final answer")
-
-
-class PrintFinalAnswerTool(StructuredTool):
-    name = "print_final_answer"
-    description = """print the the final answer"""
-    args_schema: Type[BaseModel] = PrintFinalAnswerInput
-    return_direct = True
-
-    def _run(
-        self,
-        answer: str,
-        run_manager: Optional[CallbackManagerForToolRun] = None,
-        **kwargs: Any,
-    ) -> Any:
-        return ""
-
-    async def _arun(
-        self, answer: str, run_manager: Optional[AsyncCallbackManagerForToolRun] = None
-    ) -> str:
-        return ""
-
-
-class PrintCodeInput(BaseModel):
-    code: str = Field(description="the code showed to the human")
-    language: str = Field(description="the programing language")
-    explanation: str = Field(description="the explanation of the code")
-
-
-class PrintCodeTool(StructuredTool):
-    name = "print_code"
-    description = """print the code"""
-    args_schema: Type[BaseModel] = PrintCodeInput
-
-    def _run(
-        self,
-        code: str,
-        language: str,
-        explanation: str,
-        run_manager: Optional[CallbackManagerForToolRun] = None,
-    ) -> str:
-        return ""
-
-    async def _arun(
-        self,
-        code: str,
-        language: str,
-        explanation: str,
-        run_manager: Optional[AsyncCallbackManagerForToolRun] = None,
-    ) -> str:
-        return ""
-
-
 class ExecutePythonCodeInput(BaseModel):
     code: str = Field(description="the python code to be executed")
     explanation: str = Field(description="the explanation of the python code")
-    saved_filenames: Optional[List[str]] = Field(description="the saved filename list")
+    saved_filenames: Optional[List[str]] = Field(
+        description="the saved filename list", default=[]
+    )
 
 
 class ExecutePythonCodeTool(StructuredTool):
@@ -140,63 +88,3 @@ class ExecutePythonCodeTool(StructuredTool):
         if not self.octopus_api:
             self.octopus_api = OctopusAPIMarkdownOutput()
         return await self.octopus_api.arun(code)
-
-
-class ExecuteShellCodeInput(BaseModel):
-    code: str = Field(description="the shell code to be executed by bash")
-    explanation: str = Field(description="the explanation of the shell code")
-
-
-class ExecuteShellCodeTool(StructuredTool):
-    name = "run_shell_code"
-    description = """Execute arbitrary shell code Returns a Markdown format string including return code, result, stdout, stderr, error"""
-    args_schema: Type[BaseModel] = ExecuteShellCodeInput
-    octopus_api: OctopusAPIMarkdownOutput = None
-
-    def _run(
-        self,
-        code: str,
-        explanation: str,
-        run_manager: Optional[CallbackManagerForToolRun] = None,
-    ) -> str:
-        based_code = "%%bash" + "\n" + code
-        result = self.octopus_api.run(based_code)
-        return result
-
-    async def _arun(
-        self,
-        code: str,
-        explanation: str,
-        run_manager: Optional[AsyncCallbackManagerForToolRun] = None,
-    ) -> str:
-        based_code = "%%bash" + "\n" + code
-        return await self.octopus_api.arun(based_code)
-
-
-class ExecuteTypescriptCodeInput(BaseModel):
-    code: str = Field(description="the typescript code to be executed")
-    explanation: str = Field(description="the explanation of the typescript code")
-
-
-class ExecuteTypescriptCodeTool(StructuredTool):
-    name = "execute_ts_code"
-    description = """Execute arbitrary typescript code Returns a Markdown format string including return code, result, stdout, stderr, error"""
-    args_schema: Type[BaseModel] = ExecuteTypescriptCodeInput
-    octopus_api: OctopusAPIMarkdownOutput = None
-
-    def _run(
-        self,
-        code: str,
-        explanation: str,
-        run_manager: Optional[CallbackManagerForToolRun] = None,
-    ) -> str:
-        result = self.octopus_api.run(code, **{"kernel_name": "tslab"})
-        return result
-
-    async def _arun(
-        self,
-        code: str,
-        explanation: str,
-        run_manager: Optional[AsyncCallbackManagerForToolRun] = None,
-    ) -> str:
-        return await self.octopus_api.arun(code, **{"kernel_name": "tslab"})
