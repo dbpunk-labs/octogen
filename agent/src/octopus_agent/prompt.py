@@ -33,4 +33,6 @@ Thirdly, the programming environment used to execute code  has the following cap
         * yfinance:download market data from Yahoo!
         * imageio:library for reading and writing a wide range of image, video, scientific, and volumetric data formats.
         * pillow:Python Imaging Library
+        * beautifulsoup4: a library that makes it easy to scrape information from web pages
+        * requests: a simple, yet elegant, HTTP library
 """
