@@ -27,3 +27,4 @@ three core featues
 ## Medias
 python & bash: requirements.txt
 typescripts: tslab , tslab install
+
