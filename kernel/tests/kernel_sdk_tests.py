@@ -43,7 +43,7 @@ def bad_kernel_sdk():
 @pytest.mark.asyncio
 async def test_bad_sdk(bad_kernel_sdk):
     try:
-        await kernel_sdk.connect()
+        kernel_sdk.connect()
         assert kernel_sdk.stub is not None  # Check that stub is initialized
         await kernel_sdk.start()
         assert False
@@ -53,7 +53,7 @@ async def test_bad_sdk(bad_kernel_sdk):
 
 @pytest.mark.asyncio
 async def test_sdk_smoke_test(kernel_sdk):
-    await kernel_sdk.connect()
+    kernel_sdk.connect()
     assert kernel_sdk.stub is not None  # Check that stub is initialized
     if not await kernel_sdk.is_alive():
         await kernel_sdk.start()

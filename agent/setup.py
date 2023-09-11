@@ -32,6 +32,7 @@ setup(
     },
     install_requires=[
         "octopus_proto>=0.1.1",
+        "octopus_kernel>=0.1.1",
         "langchain>=0.0.227",
         "grpcio-tools>=1.57.0",
         "grpc-google-iam-v1>=0.12.6",
@@ -44,6 +45,7 @@ setup(
     entry_points={
         "console_scripts": [
             "octopus_agent_rpc_server = octopus_agent.agent_server:server_main",
+            "octopus_agent_setup = octopus_agent.agent_setup:setup",
         ]
     },
 )

@@ -31,6 +31,9 @@ from prompt_toolkit.completion import Completer, Completion
 from .utils import parse_file_path
 
 
+OCTOPUS_TITLE = "🐙[bold red]Octopus"
+
+
 class FilePathCompleter(Completer):
 
     def get_completions(self, document, complete_event):
@@ -87,7 +90,7 @@ def handle_action_output(segments, respond, live, saved_images, output_images, s
         Group(
             Panel(
                 Group(*segments),
-                title="🐙[bold red]Octopus",
+                title=OCTOPUS_TITLE,
                 title_align="left",
                 subtitle="[bold]token:%s" % (respond.token_usage),
                 subtitle_align="right",
@@ -138,7 +141,7 @@ def handle_action_start(segments, respond, live, saved_images, output_images, sp
         Group(
             Panel(
                 Group(*segments),
-                title="🐙[bold red]Octopus",
+                title=OCTOPUS_TITLE,
                 title_align="left",
                 subtitle="[bold]token:%s" % (respond.token_usage),
                 subtitle_align="right",
@@ -161,7 +164,7 @@ def handle_final_answer(segments, respond, live, saved_images, output_images, sp
         Group(
             Panel(
                 Group(*segments),
-                title="🐙[bold red]Octopus",
+                title=OCTOPUS_TITLE,
                 title_align="left",
                 subtitle="[bold]token:%s iteration:%s model:%s"
                 % (respond.token_usage, respond.iteration, respond.model_name),
@@ -226,7 +229,7 @@ def run_chat(prompt, sdk, session, console, spinner_name="hearts", filedir=None)
         live.update(
             Panel(
                 Group(*segments),
-                title="[bold Red]Octopus",
+                title=OCTOPUS_TITLE,
                 title_align="left",
                 subtitle="[bold]token:%s iteration:%s model:%s"
                 % (token_usage, iteration, model_name),

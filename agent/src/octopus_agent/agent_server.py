@@ -18,30 +18,20 @@ import asyncio
 import logging
 import sys
 import os
+import grpc
 from octopus_proto.agent_server_pb2_grpc import AgentServerServicer
 from octopus_proto.agent_server_pb2_grpc import add_AgentServerServicer_to_server
 from octopus_proto import agent_server_pb2
 from octopus_proto import common_pb2
 from octopus_proto import kernel_server_pb2
-from octopus_kernel.sdk.kernel_sdk import KernelSDK
 from dotenv import dotenv_values
 from typing import AsyncIterable, Any, Dict, List, Optional, Sequence, Union, Type
 from tempfile import gettempdir
-from langchain.agents import AgentType
 from grpc.aio import ServicerContext, server
-from langchain.agents import initialize_agent
-from langchain.schema.messages import SystemMessage
-from langchain.llms import OpenAI
-from langchain.chat_models import ChatOpenAI, AzureChatOpenAI
-from langchain import LLMChain
-from langchain.agents import ZeroShotAgent, Tool, AgentExecutor
-from langchain.memory import ConversationBufferMemory
-from langchain.agents.openai_functions_agent.base import OpenAIFunctionsAgent
-
-from .gpt_tools import ExecutePythonCodeTool, ExecuteShellCodeTool, ExecuteTypescriptCodeTool, PrintCodeTool, PrintFinalAnswerTool
-from .tools import OctopusAPIMarkdownOutput
-from .prompt import OCTOPUS_FUNCTION_SYSTEM
+from octopus_kernel.sdk.kernel_sdk import KernelSDK
 from .gpt_async_callback import AgentAsyncHandler
+from .agent_llm import LLMManager
+from .langchain_agent_builder import build_mock_agent, build_openai_agent
 
 config = dotenv_values(".env")
 LOG_LEVEL = logging.DEBUG
@@ -51,10 +41,6 @@ logging.basicConfig(
     handlers=[logging.StreamHandler(sys.stdout)],
 )
 logger = logging.getLogger(__name__)
-os.environ["OPENAI_API_TYPE"] = config["llm_type"]
-os.environ["OPENAI_API_VERSION"] = config["llm_api_version"]
-os.environ["OPENAI_API_BASE"] = config["llm_api_base"]
-os.environ["OPENAI_API_KEY"] = config["llm_api_key"]
 
 
 class AgentRpcServer(AgentServerServicer):
@@ -62,14 +48,9 @@ class AgentRpcServer(AgentServerServicer):
     def __init__(self):
         self.agents = {}
         self.max_file_size = int(config["max_file_size"])
-        self.verbose = (
-            True if "verbose" in config and config["verbose"] == "1" else False
-        )
-        self.llm = AzureChatOpenAI(
-            temperature=0,
-            deployment_name=config["llm_api_deployment"],
-            verbose=self.verbose,
-        )
+        self.verbose = config["verbose"]
+        self.llm_manager = LLMManager(config)
+        self.llm = self.llm_manager.get_llm()
 
     async def add_kernel(
         self, request: agent_server_pb2.AddKernelRequest, context: ServicerContext
@@ -82,38 +63,30 @@ class AgentRpcServer(AgentServerServicer):
             return agent_server_pb2.AddKernelResponse(code=0, msg="ok")
         # init the sdk
         sdk = KernelSDK(request.endpoint, request.key)
-        await sdk.connect()
-        # TODO a data dir per user
-        api = OctopusAPIMarkdownOutput(sdk, request.workspace)
-        # init the agent
-        tools = [
-            ExecutePythonCodeTool(octopus_api=api),
-            ExecuteShellCodeTool(octopus_api=api),
-            ExecuteTypescriptCodeTool(octopus_api=api),
-            PrintCodeTool(),
-            PrintFinalAnswerTool(),
-        ]
-        prefix = (
-            """%sBegin!
-Question: {input}
-{agent_scratchpad}"""
-            % OCTOPUS_FUNCTION_SYSTEM
-        )
-        system_message = SystemMessage(content=prefix)
-        agent = initialize_agent(
-            tools,
-            self.llm,
-            agent=AgentType.OPENAI_FUNCTIONS,
-            agent_kwargs={"system_message": system_message},
-            handle_parsing_errors=True,
-            verbose=self.verbose,
-            max_iterations=config.get("max_iterations", 5),
-        )
-        self.agents[request.key] = {
-            "sdk": sdk,
-            "workspace": request.workspace,
-            "agent": agent,
-        }
+        sdk.connect()
+        if config["llm_key"] == "azure_openai":
+            logger.info("create a azure openai agent for kernel")
+            agent = build_openai_agent(
+                self.llm,
+                sdk,
+                request.workspace,
+                config.get("max_iterations", 5),
+                self.verbose,
+            )
+            # TODO a data dir per user
+            self.agents[request.key] = {
+                "sdk": sdk,
+                "workspace": request.workspace,
+                "agent": agent,
+            }
+        elif config["llm_key"] == "mock":
+            logger.info("create a mock agent for kernel")
+            agent = build_mock_agent(self.llm)
+            self.agents[request.key] = {
+                "sdk": sdk,
+                "workspace": request.workspace,
+                "agent": agent,
+            }
         return agent_server_pb2.AddKernelResponse(code=0, msg="ok")
 
     async def send_task(
@@ -137,28 +110,44 @@ Question: {input}
                 return await agent.arun(task, callbacks=[handler])
             except Exception as ex:
                 logger.error("fail to run agent for %s", ex)
+                result = str(ex)
+                return result
 
         logger.debug("create the agent task")
-        task = asyncio.create_task(worker(request.task, agent, handler))
-        token_usage = 0
-        while True:
-            logger.debug("start wait the queue message")
-            respond = await queue.get()
-            if not respond:
-                logger.debug("exit the queue")
-                break
+        try:
+            task = asyncio.create_task(worker(request.task, agent, handler))
+            token_usage = 0
+            while True:
+                try:
+                    logger.debug("start wait the queue message")
+                    # TODO add timeout
+                    respond = await queue.get()
+                    if not respond:
+                        logger.debug("exit the queue")
+                        break
+                    logger.debug(f"respond {respond}")
+                    queue.task_done()
+                    yield respond
+                except Exception as ex:
+                    logger.error(f"fail to get respond for {ex}")
+                    break
+            await task
+            respond = agent_server_pb2.TaskRespond(
+                token_usage=handler.token_usage,
+                model_name=handler.model_name,
+                iteration=handler.iteration,
+                final_respond=agent_server_pb2.FinalRespond(answer=task.result()),
+            )
             logger.debug(f"respond {respond}")
-            queue.task_done()
             yield respond
-        await task
-        respond = agent_server_pb2.TaskRespond(
-            token_usage=handler.token_usage,
-            model_name=handler.model_name,
-            iteration=handler.iteration,
-            final_respond=agent_server_pb2.FinalRespond(answer=task.result()),
-        )
-        logger.debug(f"respond {respond}")
-        yield respond
+        except Exception as ex:
+            respond = agent_server_pb2.TaskRespond(
+                token_usage=0,
+                model_name="",
+                iteration=1,
+                final_respond=agent_server_pb2.FinalRespond(answer=str(ex)),
+            )
+            yield respond
 
     async def download(
         self, request: common_pb2.DownloadRequest, context: ServicerContext

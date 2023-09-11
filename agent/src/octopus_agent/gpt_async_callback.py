@@ -39,6 +39,7 @@ class AgentAsyncHandler(AsyncCallbackHandler):
         self.images = []
         self.saved_images = []
         self.queue = queue
+        self.stack = []
 
     async def on_tool_end(
         self,
@@ -50,6 +51,7 @@ class AgentAsyncHandler(AsyncCallbackHandler):
         **kwargs: Any,
     ) -> None:
         logger.debug(f"on_tool_end {output}")
+        self.stack.append("on_tool_end")
         output_files = []
         if output.find("the display data is saved to file") >= 0:
             output_files.append(output.split("`")[1])
@@ -71,6 +73,7 @@ class AgentAsyncHandler(AsyncCallbackHandler):
         **kwargs: Any,
     ) -> None:
         logger.debug(f"on agent action {action}")
+        self.stack.append("on_agent_action")
         respond = TaskRespond(
             token_usage=self.token_usage,
             on_agent_action=OnAgentAction(
@@ -81,8 +84,23 @@ class AgentAsyncHandler(AsyncCallbackHandler):
 
     async def on_agent_finish(self, finish: AgentFinish, **kwargs: Any) -> None:
         # end of the queue
-        logger.debug("on_agent_finish")
+        logger.debug(f"on_agent_finish {finish}")
+        self.stack.append("on_agent_finish")
+        logger.debug("the stack %s" % ("\n".join(self.stack)))
         await self.queue.put(None)
+
+    async def on_llm_start(
+        self,
+        serialized: Dict[str, Any],
+        prompts: List[str],
+        *,
+        run_id: UUID,
+        parent_run_id: Optional[UUID] = None,
+        tags: Optional[List[str]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        **kwargs: Any,
+    ):
+        self.stack.append("on_llm_start")
 
     async def on_llm_end(
         self,
@@ -95,6 +113,10 @@ class AgentAsyncHandler(AsyncCallbackHandler):
     ) -> None:
         """Run when LLM ends running."""
         logger.debug(f"on_llm_end {response.llm_output}")
-        self.token_usage += response.llm_output["token_usage"]["total_tokens"]
-        self.model_name = response.llm_output["model_name"]
-        self.iteration += 1
+        try:
+            self.stack.append("on_llm_end")
+            self.token_usage += response.llm_output["token_usage"]["total_tokens"]
+            self.model_name = response.llm_output["model_name"]
+            self.iteration += 1
+        except Exception as ex:
+            pass

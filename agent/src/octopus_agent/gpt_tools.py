@@ -25,6 +25,32 @@ from langchain.callbacks.manager import (
 )
 
 
+class AskQuestionInput(BaseModel):
+    question: str = Field(description="the question")
+
+
+class AskQuestionTool(StructuredTool):
+    name = "ask_question"
+    description = """ask the question from the human"""
+    args_schema: Type[BaseModel] = AskQuestionInput
+    return_direct = True
+
+    def _run(
+        self,
+        question: str,
+        run_manager: Optional[CallbackManagerForToolRun] = None,
+        **kwargs: Any,
+    ) -> Any:
+        return "Yes"
+
+    async def _arun(
+        self,
+        question: str,
+        run_manager: Optional[AsyncCallbackManagerForToolRun] = None,
+    ) -> str:
+        return "Yes"
+
+
 class PrintFinalAnswerInput(BaseModel):
     answer: str = Field(description="the final answer")
 
@@ -82,6 +108,7 @@ class PrintCodeTool(StructuredTool):
 class ExecutePythonCodeInput(BaseModel):
     code: str = Field(description="the python code to be executed")
     explanation: str = Field(description="the explanation of the python code")
+    saved_filenames: Optional[List[str]] = Field(description="the saved filename list")
 
 
 class ExecutePythonCodeTool(StructuredTool):
@@ -94,6 +121,7 @@ class ExecutePythonCodeTool(StructuredTool):
         self,
         code: str,
         explanation: str,
+        saved_filenames: Optional[List[str]] = None,
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> str:
         if not self.octopus_api:
@@ -106,6 +134,7 @@ class ExecutePythonCodeTool(StructuredTool):
         self,
         code: str,
         explanation: str,
+        saved_filenames: Optional[List[str]] = None,
         run_manager: Optional[AsyncCallbackManagerForToolRun] = None,
     ) -> str:
         if not self.octopus_api:
