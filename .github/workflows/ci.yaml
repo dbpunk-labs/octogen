@@ -27,8 +27,6 @@ jobs:
           pytest tests/*
           cd ${WS_DIR}/agent
           pytest tests/*
-          cd ${WS_DIR}
-          bash clean_sandbox.sh
       - uses: actions/upload-artifact@v3
         if: failure()
         with:
