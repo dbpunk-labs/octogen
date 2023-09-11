@@ -36,7 +36,7 @@ class KernelSDK:
             ("api_key", api_key),
         )
 
-    async def connect(self):
+    def connect(self):
         """
         Connect the remote kernel instance
         """

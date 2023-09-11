@@ -36,21 +36,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def clean_code(code: str):
-    start_tag = "```python"
-    end_tag = "```"
-    index = code.find(start_tag)
-    if index >= 0:
-        last = code.rfind(end_tag)
-        return code[index + len(start_tag) : last]
-    elif code.find(end_tag) >= 0:
-        return code.replace("```", "")
-    elif code.find("`") == 0:
-        return code.replace("`", "")
-    else:
-        return code
-
-
 class OctopusDiscordBot(discord.Client):
 
     def __init__(self, octopus_sdk, filedir, **kwargs):
@@ -70,7 +55,7 @@ class OctopusDiscordBot(discord.Client):
         arguments = json.loads(action.input)
         if action.tool == "execute_python_code" and action.input:
             explanation = arguments["explanation"]
-            code = clean_code(arguments["code"])
+            code = arguments["code"]
             mk = f"""{explanation}\n
 ```python
 {code}
@@ -78,7 +63,7 @@ class OctopusDiscordBot(discord.Client):
             segments.append(mk)
         elif action.tool == "execute_ts_code" and action.input:
             explanation = arguments["explanation"]
-            code = clean_code(arguments["code"])
+            code = arguments["code"]
             mk = f"""{explanation}\n
 ```typescript
 {code}
@@ -86,7 +71,7 @@ class OctopusDiscordBot(discord.Client):
             segments.append(mk)
         elif action.tool == "execute_shell_code" and action.input:
             explanation = arguments["explanation"]
-            code = clean_code(arguments["code"])
+            code = arguments["code"]
             mk = f"""{explanation}\n
 ```shell
 {code}
@@ -94,7 +79,7 @@ class OctopusDiscordBot(discord.Client):
             segments.append(mk)
         elif action.tool == "print_code" and action.input:
             explanation = arguments["explanation"]
-            code = clean_code(arguments["code"])
+            code = arguments["code"]
             language = arguments["language"]
             mk = f"""{explanation}\n
 ```shell

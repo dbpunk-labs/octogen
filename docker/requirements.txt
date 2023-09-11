@@ -13,3 +13,4 @@ discord.py==2.3.2
 imageio==2.31.3
 Pillow==10.0.0
 matplotlib==3.7.2
+wikipedia==1.4.0

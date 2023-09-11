@@ -1,0 +1,63 @@
+# vim:fenc=utf-8
+#
+# Copyright (C) 2023 dbpunk.com Author imotai <codego.me@gmail.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+""" """
+from langchain.agents import initialize_agent
+from langchain.schema.messages import SystemMessage
+from .tools import OctopusAPIMarkdownOutput
+from .gpt_tools import ExecutePythonCodeTool, ExecuteShellCodeTool, ExecuteTypescriptCodeTool, PrintCodeTool, PrintFinalAnswerTool
+from .mock_tools import PrintFinalAnswerTool as MockPrintFinalAnswerTool
+from .prompt import OCTOPUS_FUNCTION_SYSTEM
+from .gpt_async_callback import AgentAsyncHandler
+from langchain.agents import AgentType
+
+
+def build_openai_agent(llm, sdk, workspace, max_iterations, verbose):
+    """build openai function call agent"""
+    # TODO a data dir per user
+    api = OctopusAPIMarkdownOutput(sdk, workspace)
+    # init the agent
+    tools = [
+        ExecutePythonCodeTool(octopus_api=api),
+        ExecuteShellCodeTool(octopus_api=api),
+        ExecuteTypescriptCodeTool(octopus_api=api),
+        PrintCodeTool(),
+        PrintFinalAnswerTool(),
+    ]
+    prefix = (
+        """%sBegin!
+Question: {input}
+{agent_scratchpad}"""
+        % OCTOPUS_FUNCTION_SYSTEM
+    )
+    system_message = SystemMessage(content=prefix)
+    agent = initialize_agent(
+        tools,
+        llm,
+        agent=AgentType.OPENAI_FUNCTIONS,
+        agent_kwargs={"system_message": system_message},
+        verbose=verbose,
+        max_iterations=max_iterations,
+    )
+    return agent
+
+
+def build_mock_agent(llm):
+    tools = [
+        MockPrintFinalAnswerTool(),
+    ]
+    agent = initialize_agent(tools, llm, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION)
+    return agent

@@ -1,6 +1,7 @@
-[logo]()
+<p align="center">
+<img width="100px" src="./images/octopus_logo.png" align="center"/>
 
-Your Personalized Open-Source Code Interpretation Agent
+Your Exclusive Open-Source Code Interpreter
 
 three core featues
 1. a lot of LLM supported based on langchain
