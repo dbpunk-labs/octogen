@@ -236,7 +236,7 @@ class KernelRpcServer(KernelServerNodeServicer):
         if msg["msg_type"] == "display_data":
             if "image/png" in msg["content"]["data"]:
                 filename = "%s.png" % uuid.uuid4().hex
-                fullpath = "%s/%s" % (data_dir, filename)
+                fullpath = "%s/%s" % (workspace, filename)
                 with open(fullpath, "wb+") as fd:
                     data = msg["content"]["data"]["image/png"].encode("ascii")
                     buffer = base64.b64decode(data)
