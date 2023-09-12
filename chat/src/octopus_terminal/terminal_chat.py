@@ -127,16 +127,14 @@ def refresh(live, segments, spinner, token_usage="0", iteration="0", model_name=
     for index, segment in segments:
         table.add_row(f"/cc{index}", segment)
     if spinner:
+        table.add_row("", spinner)
         live.update(
-            Group(
-                Panel(
-                    table,
-                    title=OCTOPUS_TITLE,
-                    title_align="left",
-                    subtitle=f"[bold yellow]token:{token_usage} interation:{iteration} model:{model_name}",
-                    subtitle_align="right",
-                ),
-                spinner,
+            Panel(
+                table,
+                title=OCTOPUS_TITLE,
+                title_align="left",
+                subtitle=f"[bold yellow]token:{token_usage} interation:{iteration} model:{model_name}",
+                subtitle_align="right",
             )
         )
     else:
@@ -177,7 +175,7 @@ def handle_action_start(segments, respond, live, images, spinner, values):
     if action.tool == "execute_python_code" and action.input:
         explanation = arguments["explanation"]
         markdown = Markdown("\n" + explanation + "\n")
-        syntax = Syntax(arguments["code"], "python")
+        syntax = Syntax(arguments["code"], "python", line_numbers=True)
         values.append(explanation)
         segments.append((len(values) - 1, markdown))
         values.append(arguments["code"])
@@ -257,9 +255,8 @@ def run_chat(
     segments = []
     images = []
     with Live(Group(*segments), console=console) as live:
-        spinner = Spinner(spinner_name, text="Working...")
-        live.update(spinner)
-        live.refresh()
+        spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
+        refresh(live, segments, spinner)
         token_usage = 0
         iteration = 0
         model_name = ""

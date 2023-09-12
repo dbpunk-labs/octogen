@@ -93,14 +93,15 @@ class OctopusAPIMarkdownOutput(OctopusAPIBase):
         if response.stderr:
             output += json.loads(response.stderr)["data"]
         if output:
-            output = "The stdout/stderr \n```\n%s\n```" % output
+            output = "The stdout/stderr \n```text\n%s\n```" % output
         if response.result:
             result = json.loads(response.result)
             if result["msg_type"] == "execute_result":
-                output = "the result \n```text\n%s\n``` \n %s" % (
-                    result["data"]["text/plain"],
-                    output,
-                )
+                content = result["data"]["text/plain"]
+                content = bytes(content, "utf-8").decode("unicode_escape")
+                if content.startswith("'") and content.endswith("'"):
+                    content = content[1 : len(content) - 1]
+                output = "the result \n%s\n %s" % (content, output)
             elif result["msg_type"] == "display_data":
                 if "image/png" in result["data"]:
                     filename = result["data"]["image/png"]

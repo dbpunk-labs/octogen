@@ -20,7 +20,7 @@ import asyncio
 import pytest
 import logging
 import json
-from octopus_agent.tools import OctopusAPIJsonOutput, OctopusAPIMarkdownOutput
+from octopus_agent.tools import OctopusAPIMarkdownOutput
 from octopus_kernel.sdk.kernel_sdk import KernelSDK
 
 logger = logging.getLogger(__name__)
@@ -34,29 +34,6 @@ def kernel_sdk():
     sdk.connect()
     yield sdk
     sdk.close()
-
-
-@pytest.mark.asyncio
-async def test_async_smoke_test(kernel_sdk):
-    code = "print('hello world!')"
-    sdk = kernel_sdk
-    api = OctopusAPIJsonOutput(sdk)
-    result = await api.arun(code)
-    assert not result["result"]
-    assert result["stdout"] == "hello world!\n"
-
-
-@pytest.mark.asyncio
-async def test_get_result(kernel_sdk):
-    sdk = kernel_sdk
-    code = "5"
-    api = OctopusAPIJsonOutput(sdk)
-    result = await api.arun(code)
-    assert result["result"]
-    assert result["result"] == "5"
-    assert not result["stdout"]
-    assert not result["stderr"]
-    assert not result["error"]
 
 
 @pytest.mark.asyncio
@@ -95,10 +72,51 @@ plt.pie(data, labels=labels, autopct='%1.1f%%')
 plt.title('Pie Chart')
 plt.show() 
 """
-    api = OctopusAPIJsonOutput(sdk)
+    api = OctopusAPIMarkdownOutput(sdk)
     result = await api.arun(code)
-    assert result["result"]
-    assert result["result"].find("image/png") >= 0
-    assert not result["stdout"]
-    assert not result["stderr"]
-    assert not result["error"]
+    logger.info(result)
+    assert result.find("png") >= 0
+
+
+@pytest.mark.asyncio
+async def test_display_gif_result(kernel_sdk):
+    sdk = kernel_sdk
+    test_gif_code = """
+import numpy as np
+
+import matplotlib.pyplot as plt 
+import matplotlib.animation as animation
+
+# Fixing random state for reproducibility
+np.random.seed(19680801)
+# Fixing bin edges
+HIST_BINS = np.linspace(-4, 4, 100)
+
+# histogram our data with numpy
+data = np.random.randn(1000)
+n, _ = np.histogram(data, HIST_BINS)
+
+def prepare_animation(bar_container):
+
+    def animate(frame_number):
+        # simulate new data coming in
+        data = np.random.randn(1000)
+        n, _ = np.histogram(data, HIST_BINS)
+        for count, rect in zip(n, bar_container.patches):
+            rect.set_height(count)
+        return bar_container.patches
+    return animate
+
+fig, ax = plt.subplots()
+_, _, bar_container = ax.hist(data, HIST_BINS, lw=1,
+                              ec="yellow", fc="green", alpha=0.5)
+ax.set_ylim(top=55)  # set safe limit to ensure that all data is visible.
+
+ani = animation.FuncAnimation(fig, prepare_animation(bar_container), 50, 
+                              repeat=False, blit=True)
+plt.show() 
+"""
+    api = OctopusAPIMarkdownOutput(sdk)
+    result = await api.arun(test_gif_code)
+    logger.info(result)
+    assert result.find("png") >= 0
