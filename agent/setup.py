@@ -38,7 +38,7 @@ setup(
         "grpc-google-iam-v1>=0.12.6",
         "aiofiles",
         "python-dotenv",
-        "openai"
+        "openai",
     ],
     entry_points={
         "console_scripts": [

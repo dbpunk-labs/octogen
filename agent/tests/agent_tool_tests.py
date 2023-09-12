@@ -40,7 +40,7 @@ def kernel_sdk():
 async def test_async_smoke_test(kernel_sdk):
     code = "print('hello world!')"
     sdk = kernel_sdk
-    api = OctopusAPIJsonOutput(sdk, api_data_dir)
+    api = OctopusAPIJsonOutput(sdk)
     result = await api.arun(code)
     assert not result["result"]
     assert result["stdout"] == "hello world!\n"
