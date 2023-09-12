@@ -72,7 +72,6 @@ class AgentRpcServer(AgentServerServicer):
                 config.get("max_iterations", 5),
                 self.verbose,
             )
-            # TODO a data dir per user
             self.agents[request.key] = {
                 "sdk": sdk,
                 "agent": agent,

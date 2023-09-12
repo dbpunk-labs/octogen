@@ -19,7 +19,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="octopus_agent",
-    version="0.1.2",
+    version="0.1.1",
     description="Open source code interpreter agent for LLM",
     author="imotai",
     author_email="wangtaize@dbpunk.com",
@@ -33,14 +33,12 @@ setup(
     install_requires=[
         "octopus_proto",
         "octopus_kernel",
-        "langchain>=0.0.227",
+        "langchain>=0.0.286",
         "grpcio-tools>=1.57.0",
         "grpc-google-iam-v1>=0.12.6",
         "aiofiles",
-        "pydantic",
         "python-dotenv",
         "openai",
-        "aiosqlite",
     ],
     entry_points={
         "console_scripts": [

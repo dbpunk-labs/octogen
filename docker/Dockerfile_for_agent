@@ -1,0 +1,5 @@
+FROM octopus_base
+WORKDIR /agent
+VOLUME /agent
+ADD start_agent.sh /agent/
+CMD ["bash", "/agent/start_agent.sh"]
