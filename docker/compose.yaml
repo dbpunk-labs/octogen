@@ -1,0 +1,15 @@
+services:
+  kernel:
+    env_file:
+      - kernel.env
+    image: octopus_kernel:latest
+    ports:
+      - '9527:9527'
+  agent:
+    image: octopus_agent:latest
+    env_file:
+      - agent.env
+    ports:
+      - '9528:9528'
+    depends_on:
+      - kernel

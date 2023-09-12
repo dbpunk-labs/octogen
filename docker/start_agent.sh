@@ -3,7 +3,7 @@
 # start_kernel.sh
 
 echo "rpc_port=${rpc_port}" >.env
-echo "rpc_host=127.0.0.1" >>.env
+echo "rpc_host=0.0.0.0" >>.env
 echo "admin_key=${admin_key}" >>.env
 echo "llm_key=${llm_key}" >> .env
 echo "max_file_size=20480000" >> .env

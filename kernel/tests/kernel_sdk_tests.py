@@ -29,7 +29,9 @@ def kernel_sdk():
     endpoint = (
         "localhost:9527"  # Replace with the actual endpoint of your test gRPC server
     )
-    return KernelSDK(endpoint, "ZCeI9cYtOCyLISoi488BgZHeBkHWuFUH")
+    #return KernelSDK(endpoint, "ZCeI9cYtOCyLISoi488BgZHeBkHWuFUH")
+    return KernelSDK(endpoint, "z7XRkTTBkXifyCAa5rAQfabeTxtFqrVz")
+
 
 
 @pytest.fixture

@@ -18,13 +18,11 @@
 from langchain.tools import StructuredTool
 from .tools import OctopusAPIMarkdownOutput
 from typing import Any, Dict, List, Optional, Sequence, Union, Type
-from pydantic import BaseModel, Field
+from langchain.pydantic_v1 import BaseModel, Field
 from langchain.callbacks.manager import (
     AsyncCallbackManagerForToolRun,
     CallbackManagerForToolRun,
 )
-
-
 class AskQuestionInput(BaseModel):
     question: str = Field(description="the question")
 
@@ -58,12 +56,11 @@ class ExecutePythonCodeInput(BaseModel):
         description="the saved filename list", default=[]
     )
 
-
 class ExecutePythonCodeTool(StructuredTool):
     name = "execute_python_code"
     description = """Execute arbitrary Python code Returns a Markdown format string including return code, result, stdout, stderr, error"""
     args_schema: Type[BaseModel] = ExecutePythonCodeInput
-    octopus_api: OctopusAPIMarkdownOutput = None
+    octopus_api: Optional[OctopusAPIMarkdownOutput] = None
 
     def _run(
         self,
@@ -72,8 +69,6 @@ class ExecutePythonCodeTool(StructuredTool):
         saved_filenames: Optional[List[str]] = None,
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> str:
-        if not self.octopus_api:
-            self.octopus_api = OctopusAPIMarkdownOutput()
         code = code
         result = self.octopus_api.run(code)
         return result
@@ -85,6 +80,4 @@ class ExecutePythonCodeTool(StructuredTool):
         saved_filenames: Optional[List[str]] = None,
         run_manager: Optional[AsyncCallbackManagerForToolRun] = None,
     ) -> str:
-        if not self.octopus_api:
-            self.octopus_api = OctopusAPIMarkdownOutput()
         return await self.octopus_api.arun(code)
