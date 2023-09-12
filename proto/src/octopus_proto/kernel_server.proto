@@ -43,6 +43,7 @@ message StopKernelResponse {
 message RestartKernelRequest {
   string kernel_name = 1;
 }
+
 message RestartKernelResponse {
   int32 code = 2;
   string msg = 3;

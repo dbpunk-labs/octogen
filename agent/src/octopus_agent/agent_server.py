@@ -32,6 +32,9 @@ from octopus_kernel.sdk.kernel_sdk import KernelSDK
 from .gpt_async_callback import AgentAsyncHandler
 from .agent_llm import LLMManager
 from .langchain_agent_builder import build_mock_agent, build_openai_agent
+import langchain
+
+langchain.verbose = True
 
 config = dotenv_values(".env")
 LOG_LEVEL = logging.DEBUG
@@ -48,7 +51,7 @@ class AgentRpcServer(AgentServerServicer):
     def __init__(self):
         self.agents = {}
         self.max_file_size = int(config["max_file_size"])
-        self.verbose = config["verbose"]
+        self.verbose = config.get("verbose", False)
         self.llm_manager = LLMManager(config)
         self.llm = self.llm_manager.get_llm()
 
@@ -64,8 +67,8 @@ class AgentRpcServer(AgentServerServicer):
         # init the sdk
         sdk = KernelSDK(request.endpoint, request.key)
         sdk.connect()
-        if config["llm_key"] == "azure_openai":
-            logger.info("create a azure openai agent for kernel")
+        if config["llm_key"] == "azure_openai" or config["llm_key"] == "openai":
+            logger.info("create a openai agent")
             agent = build_openai_agent(
                 self.llm,
                 sdk,
@@ -77,7 +80,7 @@ class AgentRpcServer(AgentServerServicer):
                 "agent": agent,
             }
         elif config["llm_key"] == "mock":
-            logger.info("create a mock agent for kernel")
+            logger.info("create a mock agent")
             agent = build_mock_agent(self.llm)
             self.agents[request.key] = {
                 "sdk": sdk,
@@ -107,6 +110,7 @@ class AgentRpcServer(AgentServerServicer):
             except Exception as ex:
                 logger.error("fail to run agent for %s", ex)
                 result = str(ex)
+                await handler.exit_the_queue()
                 return result
 
         logger.debug("create the agent task")

@@ -94,84 +94,20 @@ class OctopusAPIMarkdownOutput(OctopusAPIBase):
             output += json.loads(response.stderr)["data"]
         if output:
             output = "The stdout/stderr \n```\n%s\n```" % output
-
         if response.result:
             result = json.loads(response.result)
             if result["msg_type"] == "execute_result":
-                output = "The code is 0 and the result \n```\n%s\n``` \n %s" % (
+                output = "the result \n```text\n%s\n``` \n %s" % (
                     result["data"]["text/plain"],
                     output,
                 )
             elif result["msg_type"] == "display_data":
                 if "image/png" in result["data"]:
                     filename = result["data"]["image/png"]
-                    output = (
-                        f"The code is 0 and the display data is saved to file `{filename}` \n%s"
-                        % output
-                    )
+                    output = f"the result \n [{filename}]({filename}) \n%s" % output
                 elif "image/gif" in result["data"]:
                     filename = result["data"]["image/gif"]
-                    output = (
-                        f"The code is 0 and the display data is saved to file `{filename}` \n%s"
-                        % output
-                    )
-                else:
-                    keys = ",".join(result["data"].keys())
-                    raise Exception(
-                        f"unsupported display data type {keys} for the result"
-                    )
-            else:
-                raise Exception(
-                    f"unsupported messsage type {result['msg_type']} for the result"
-                )
-        return output
-
-
-class OctopusAPIJsonOutput(OctopusAPIBase):
-    """Wrap the octopus kernel api with json output format
-
-    You create the api key from octopus.dbpunk.com
-    """
-
-    def render(self, response):
-        """
-        reader the response to a json
-
-        Args:
-            response (object): The response object from the kernel client.
-
-        Returns:
-            dict: The response data in JSON format.
-        """
-        output = {
-            "code": 0,
-            "result": None,
-            "stdout": None,
-            "stderr": None,
-            "error": None,
-        }
-        if response.stdout:
-            output["stdout"] = json.loads(response.stdout)["data"]
-        if response.stderr:
-            output["stderr"] = json.loads(response.stderr)["data"]
-        if response.traceback:
-            output["error"] = json.loads(response.traceback)["data"]
-            output["code"] = 1
-        if response.result:
-            result = json.loads(response.result)
-            if result["msg_type"] == "execute_result":
-                output["result"] = result["data"]["text/plain"]
-            elif result["msg_type"] == "display_data":
-                if "image/png" in result["data"]:
-                    filename = result["data"]["image/png"]
-                    output[
-                        "result"
-                    ] = f"the image/png format data has been saved to file `{filename}`"
-                elif "image/gif" in result["data"]:
-                    filename = result["data"]["image/gif"]
-                    output[
-                        "result"
-                    ] = f"the image/gif format data has been saved to file `{filename}`"
+                    output = f"the result \n [{filename}]({filename}) \n%s" % output
                 else:
                     keys = ",".join(result["data"].keys())
                     raise Exception(

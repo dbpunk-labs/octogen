@@ -17,7 +17,7 @@
 """ """
 
 import logging
-from langchain.chat_models import AzureChatOpenAI
+from langchain.chat_models import AzureChatOpenAI, ChatOpenAI
 from langchain.llms.fake import FakeListLLM
 
 logger = logging.getLogger(__name__)
@@ -35,6 +35,9 @@ class LLMManager:
         if self.config["llm_key"] == "azure_openai":
             self._build_azure_openai()
             self.llm_key = "azure_openai"
+        elif self.config["llm_key"] == "openai":
+            self.llm_key = "openai"
+            self._build_openai()
         elif self.config["llm_key"] == "mock":
             self._build_mock_llm()
             self.llm_key = "mock"
@@ -52,6 +55,23 @@ class LLMManager:
         for key in keys:
             if not self.config.get(key, None):
                 raise Exception(f"the value of required {key} is empty")
+
+    def _build_openai(self):
+        self._no_empty_value_required([
+            "openai_api_key",
+            "openai_api_model",
+        ])
+        api_base = self.config.get("openai_api_base", None)
+        api_key = self.config["openai_api_key"]
+        api_model = self.config["openai_api_model"]
+        temperature = self.config.get("temperature", 0)
+        llm = ChatOpenAI(
+            openai_api_base=api_base,
+            openai_api_key=api_key,
+            model_name=api_model,
+            temperature=temperature,
+        )
+        self.llms["openai"] = llm
 
     def _build_azure_openai(self):
         """
