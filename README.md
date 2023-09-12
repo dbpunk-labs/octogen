@@ -1,8 +1,6 @@
 <p align="center">
 <img width="100px" src="./images/octopus_logo.png" align="center"/>
 
-Your Exclusive Open-Source Code Interpreter
-
 three core featues
 1. a lot of LLM supported based on langchain
 2. a lof of data service based on llamaindex
@@ -27,7 +25,6 @@ three core featues
 ## Medias
 python & bash: requirements.txt
 typescripts: tslab , tslab install
-
 
 
 ## Thanks

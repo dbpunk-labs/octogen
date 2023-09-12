@@ -41,6 +41,9 @@ class AgentAsyncHandler(AsyncCallbackHandler):
         self.queue = queue
         self.stack = []
 
+    async def exit_the_queue(self):
+        await self.queue.put(None)
+
     async def on_tool_end(
         self,
         output: str,

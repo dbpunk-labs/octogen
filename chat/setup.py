@@ -19,7 +19,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="octopus_chat",
-    version="0.1.0",
+    version="0.2.1",
     description="the chat client for open source code interpreter octopus",
     author="imotai",
     author_email="wangtaize@dbpunk.com",
@@ -38,6 +38,7 @@ setup(
         "prompt_toolkit>=3.0.0",
         "click>=8.0.0",
         "discord.py>=2.3.2",
+        "clipboard>=0.0.4",
     ],
     entry_points={
         "console_scripts": [

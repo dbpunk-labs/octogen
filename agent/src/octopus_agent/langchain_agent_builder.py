@@ -47,7 +47,7 @@ Question: {input}
         agent_kwargs={"system_message": system_message},
         verbose=verbose,
         max_iterations=max_iterations,
-        handle_parsing_errors=True,
+        handle_parsing_errors="Invalid function calling. Check the arguments passed to the function!",
     )
     return agent
 

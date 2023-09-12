@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from langchain.tools import StructuredTool
 from .tools import OctopusAPIMarkdownOutput
 from typing import Any, Dict, List, Optional, Sequence, Union, Type
@@ -23,32 +22,6 @@ from langchain.callbacks.manager import (
     AsyncCallbackManagerForToolRun,
     CallbackManagerForToolRun,
 )
-
-
-class AskQuestionInput(BaseModel):
-    question: str = Field(description="the question")
-
-
-class AskQuestionTool(StructuredTool):
-    name = "ask_question"
-    description = """ask the question from the human"""
-    args_schema: Type[BaseModel] = AskQuestionInput
-    return_direct = True
-
-    def _run(
-        self,
-        question: str,
-        run_manager: Optional[CallbackManagerForToolRun] = None,
-        **kwargs: Any,
-    ) -> Any:
-        return "Yes"
-
-    async def _arun(
-        self,
-        question: str,
-        run_manager: Optional[AsyncCallbackManagerForToolRun] = None,
-    ) -> str:
-        return "Yes"
 
 
 class ExecutePythonCodeInput(BaseModel):
@@ -61,7 +34,7 @@ class ExecutePythonCodeInput(BaseModel):
 
 class ExecutePythonCodeTool(StructuredTool):
     name = "execute_python_code"
-    description = """Execute arbitrary Python code Returns a Markdown format string including return code, result, stdout, stderr, error"""
+    description = """Execute arbitrary Python code Returns a markdown format string including result, stdout, stderr, error"""
     args_schema: Type[BaseModel] = ExecutePythonCodeInput
     octopus_api: Optional[OctopusAPIMarkdownOutput] = None
 

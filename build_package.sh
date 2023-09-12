@@ -5,11 +5,13 @@
 
 
 WORKDIR=`pwd`
-echo "$1"
-sed -i -E 's/version\s*=\s*"[^"]*"/version="$1"/' proto/setup.py
-sed -i -E 's/version\s*=\s*"[^"]*"/version="$1"/' kernel/setup.py
-sed -i -E 's/version\s*=\s*"[^"]*"/version="$1"/' agent/setup.py
-sed -i -E 's/version\s*=\s*"[^"]*"/version="$1"/' chat/setup.py
+VERSION=$1
+echo $VERSION
+sed -i "s/version=\"[0-9]*\.[0-9]*\.[0-9]*\",/version=\"$VERSION\",/g" proto/setup.py
+sed -i "s/version=\"[0-9]*\.[0-9]*\.[0-9]*\",/version=\"$VERSION\",/g" agent/setup.py
+sed -i "s/version=\"[0-9]*\.[0-9]*\.[0-9]*\",/version=\"$VERSION\",/g" kernel/setup.py
+sed -i "s/version=\"[0-9]*\.[0-9]*\.[0-9]*\",/version=\"$VERSION\",/g" chat/setup.py
+
 echo "the proto new version"
 python3 proto/setup.py --version
 echo "the kernel new version"
