@@ -52,7 +52,6 @@ message TaskRespond {
 
 message AddKernelRequest {
   string endpoint = 1;
-  string workspace = 2;
   string key = 3;
 }
 

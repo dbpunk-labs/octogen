@@ -38,10 +38,7 @@ def agent_sdk():
 @pytest.mark.asyncio
 async def test_upload_smoke_test(agent_sdk):
     sdk = agent_sdk
-    try:
-        await sdk.add_kernel(api_key, "127.0.0.1:9527", "/tmp/ws1")
-    except Exception as ex:
-        pass
+    await sdk.add_kernel(api_key, "127.0.0.1:9527")
     path = os.path.abspath(__file__)
     await sdk.upload_file(path, "agent_sdk_tests.py")
     try:

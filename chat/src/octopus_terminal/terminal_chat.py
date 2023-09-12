@@ -61,22 +61,7 @@ def check_parameter(octopus_config, console):
     return True
 
 
-def clean_code(code: str):
-    start_tag = "```python"
-    end_tag = "```"
-    index = code.find(start_tag)
-    if index >= 0:
-        last = code.rfind(end_tag)
-        return code[index + len(start_tag) : last]
-    elif code.find(end_tag) >= 0:
-        return code.replace("```", "")
-    elif code.find("`") == 0:
-        return code.replace("`", "")
-    else:
-        return code
-
-
-def handle_action_output(segments, respond, live, saved_images, output_images, spinner):
+def handle_action_output(segments, respond, live, images, spinner):
     if not respond.on_agent_action_end:
         return
     output = respond.on_agent_action_end.output
@@ -84,7 +69,7 @@ def handle_action_output(segments, respond, live, saved_images, output_images, s
         return
     mk = output
     markdown = Markdown(mk)
-    output_images.extend(respond.on_agent_action_end.output_files)
+    images.extend(respond.on_agent_action_end.output_files)
     segments.append(markdown)
     live.update(
         Group(
@@ -101,7 +86,7 @@ def handle_action_output(segments, respond, live, saved_images, output_images, s
     live.refresh()
 
 
-def handle_action_start(segments, respond, live, saved_images, output_images, spinner):
+def handle_action_start(segments, respond, live, images, spinner):
     """Run on agent action."""
     if not respond.on_agent_action:
         return
@@ -112,19 +97,20 @@ def handle_action_start(segments, respond, live, saved_images, output_images, sp
     if action.tool == "execute_python_code" and action.input:
         explanation = arguments["explanation"]
         markdown = Markdown("\n" + explanation + "\n")
-        syntax = Syntax(clean_code(arguments["code"]), "python")
+        syntax = Syntax(arguments["code"], "python")
         segments.append(markdown)
         segments.append(syntax)
+        images.extend(arguments.get("saved_filenames", []))
     elif action.tool == "execute_ts_code" and action.input:
         explanation = arguments["explanation"]
         markdown = Markdown("\n" + explanation + "\n")
-        syntax = Syntax(clean_code(arguments["code"]), "ts")
+        syntax = Syntax(arguments["code"], "ts")
         segments.append(markdown)
         segments.append(syntax)
     elif action.tool == "execute_shell_code" and action.input:
         explanation = arguments["explanation"]
         markdown = Markdown("\n" + explanation + "\n")
-        syntax = Syntax(clean_code(arguments["code"]), "ts")
+        syntax = Syntax(arguments["code"], "ts")
         segments.append(markdown)
         segments.append(syntax)
     elif action.tool == "print_code" and action.input:
@@ -152,7 +138,7 @@ def handle_action_start(segments, respond, live, saved_images, output_images, sp
     live.refresh()
 
 
-def handle_final_answer(segments, respond, live, saved_images, output_images, spinner):
+def handle_final_answer(segments, respond, live, spinner):
     if not respond.final_respond:
         return
     answer = respond.final_respond.answer
@@ -202,8 +188,7 @@ def run_chat(prompt, sdk, session, console, spinner_name="hearts", filedir=None)
     run the chat
     """
     segments = []
-    saved_images = []
-    output_images = []
+    images = []
     with Live(Group(*segments), console=console) as live:
         spinner = Spinner(spinner_name, text="Working...")
         live.update(spinner)
@@ -217,15 +202,9 @@ def run_chat(prompt, sdk, session, console, spinner_name="hearts", filedir=None)
             token_usage = respond.token_usage
             iteration = respond.iteration
             model_name = respond.model_name
-            handle_action_start(
-                segments, respond, live, saved_images, output_images, spinner
-            )
-            handle_action_output(
-                segments, respond, live, saved_images, output_images, spinner
-            )
-            handle_final_answer(
-                segments, respond, live, saved_images, output_images, spinner
-            )
+            handle_action_start(segments, respond, live, images, spinner)
+            handle_action_output(segments, respond, live, images, spinner)
+            handle_final_answer(segments, respond, live, spinner)
         live.update(
             Panel(
                 Group(*segments),
@@ -238,7 +217,7 @@ def run_chat(prompt, sdk, session, console, spinner_name="hearts", filedir=None)
         )
         live.refresh()
     # display the images
-    render_image(output_images, sdk, filedir)
+    render_image(images, sdk, filedir)
 
 
 @click.command()

@@ -30,9 +30,8 @@ logger = logging.getLogger(__name__)
 class OctopusAPIBase:
     """Wrap the Octopus Kernel API"""
 
-    def __init__(self, sdk, data_dir):
+    def __init__(self, sdk):
         self.sdk = sdk
-        self.octopus_data_dir = data_dir
 
     def run(self, code: str, **kwargs: Any) -> str:
         """Run python code
@@ -59,7 +58,7 @@ class OctopusAPIBase:
         messages = []
         response = await self.sdk.execute(code, kernel_name=kernel_name)
         # render the response to markdown
-        output = self.render(response, self.octopus_data_dir)
+        output = self.render(response)
         return output
 
     def render(self, response, data_dir):
@@ -72,13 +71,12 @@ class OctopusAPIMarkdownOutput(OctopusAPIBase):
     You create the api key from octopus.dbpunk.com
     """
 
-    def render(self, response, data_dir):
+    def render(self, response):
         """
         reader the response to a markdown
 
         Args:
             response (object): The response object from the kernel client.
-            data_dir (str): The directory to save the display data.
 
         Returns:
             str: The response data in Markdown format.
@@ -106,23 +104,13 @@ class OctopusAPIMarkdownOutput(OctopusAPIBase):
                 )
             elif result["msg_type"] == "display_data":
                 if "image/png" in result["data"]:
-                    filename = "%s.png" % uuid.uuid4().hex
-                    fullpath = "%s/%s" % (data_dir, filename)
-                    with open(fullpath, "wb+") as fd:
-                        data = result["data"]["image/png"].encode("ascii")
-                        buffer = base64.b64decode(data)
-                        fd.write(buffer)
+                    filename = result["data"]["image/png"]
                     output = (
                         f"The code is 0 and the display data is saved to file `{filename}` \n%s"
                         % output
                     )
                 elif "image/gif" in result["data"]:
-                    filename = "%s.png" % uuid.uuid4().hex
-                    fullpath = "%s/%s" % (data_dir, filename)
-                    with open(fullpath, "wb+") as fd:
-                        data = result["data"]["image/gif"].encode("ascii")
-                        buffer = base64.b64decode(data)
-                        fd.write(buffer)
+                    filename = result["data"]["image/gif"]
                     output = (
                         f"The code is 0 and the display data is saved to file `{filename}` \n%s"
                         % output
@@ -145,13 +133,12 @@ class OctopusAPIJsonOutput(OctopusAPIBase):
     You create the api key from octopus.dbpunk.com
     """
 
-    def render(self, response, data_dir):
+    def render(self, response):
         """
         reader the response to a json
 
         Args:
             response (object): The response object from the kernel client.
-            data_dir (str): The directory to save the display data.
 
         Returns:
             dict: The response data in JSON format.
@@ -176,22 +163,12 @@ class OctopusAPIJsonOutput(OctopusAPIBase):
                 output["result"] = result["data"]["text/plain"]
             elif result["msg_type"] == "display_data":
                 if "image/png" in result["data"]:
-                    filename = "%s.png" % uuid.uuid4().hex
-                    fullpath = "%s/%s" % (data_dir, filename)
-                    with open(fullpath, "wb+") as fd:
-                        data = result["data"]["image/png"].encode("ascii")
-                        buffer = base64.b64decode(data)
-                        fd.write(buffer)
+                    filename = result["data"]["image/png"]
                     output[
                         "result"
                     ] = f"the image/png format data has been saved to file `{filename}`"
                 elif "image/gif" in result["data"]:
-                    filename = "%s.gif" % uuid.uuid4().hex
-                    fullpath = "%s/%s" % (data_dir, filename)
-                    with open(fullpath, "wb+") as fd:
-                        data = result["data"]["image/gif"].encode("ascii")
-                        buffer = base64.b64decode(data)
-                        fd.write(buffer)
+                    filename = result["data"]["image/gif"]
                     output[
                         "result"
                     ] = f"the image/gif format data has been saved to file `{filename}`"

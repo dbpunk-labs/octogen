@@ -28,6 +28,7 @@ import re
 import uuid
 import random
 import string
+import base64
 from pathlib import Path
 from typing import Awaitable, Callable, Optional, AsyncIterable
 from grpc.aio import ServicerContext, server, ServerInterceptor
@@ -222,17 +223,50 @@ class KernelRpcServer(KernelServerNodeServicer):
             "stderr": None,
             "traceback": None,
         }
-        async for msg in self.kcs[kernel_name].read_response():
+        async for msg in self.kcs[kernel_name].read_response(5):
             if not msg:
                 break
-            (key, payload) = self._build_payload(msg)
+            (key, payload) = self._build_payload(msg, config["workspace"])
             if not key or not payload:
                 continue
             response_args[key] = json.dumps(payload)
         return kernel_server_pb2.ExecuteResponse(**response_args)
 
-    def _build_payload(self, msg):
-        if msg["msg_type"] in ["execute_result", "display_data"]:
+    def _build_payload(self, msg, workspace):
+        if msg["msg_type"] == "display_data":
+            if "image/png" in msg["content"]["data"]:
+                filename = "%s.png" % uuid.uuid4().hex
+                fullpath = "%s/%s" % (data_dir, filename)
+                with open(fullpath, "wb+") as fd:
+                    data = msg["content"]["data"]["image/png"].encode("ascii")
+                    buffer = base64.b64decode(data)
+                    fd.write(buffer)
+                return (
+                    "result",
+                    {
+                        "data": {"image/png": filename},
+                        "msg_type": msg["msg_type"],
+                    },
+                )
+            elif "image/gif" in msg["content"]["data"]:
+                filename = "%s.png" % uuid.uuid4().hex
+                fullpath = "%s/%s" % (workspace, filename)
+                with open(fullpath, "wb+") as fd:
+                    data = msg["content"]["data"]["image/gif"].encode("ascii")
+                    buffer = base64.b64decode(data)
+                    fd.write(buffer)
+                return (
+                    "result",
+                    {
+                        "data": {"image/gif": filename},
+                        "msg_type": msg["msg_type"],
+                    },
+                )
+            else:
+                keys = ",".join(result["data"].keys())
+                raise Exception(f"unsupported display data type {keys} for the result")
+
+        if msg["msg_type"] == "execute_result":
             logger.debug("result data %s", msg["content"]["data"])
             return (
                 "result",

@@ -69,14 +69,12 @@ class AgentRpcServer(AgentServerServicer):
             agent = build_openai_agent(
                 self.llm,
                 sdk,
-                request.workspace,
                 config.get("max_iterations", 5),
                 self.verbose,
             )
             # TODO a data dir per user
             self.agents[request.key] = {
                 "sdk": sdk,
-                "workspace": request.workspace,
                 "agent": agent,
             }
         elif config["llm_key"] == "mock":
@@ -84,7 +82,6 @@ class AgentRpcServer(AgentServerServicer):
             agent = build_mock_agent(self.llm)
             self.agents[request.key] = {
                 "sdk": sdk,
-                "workspace": request.workspace,
                 "agent": agent,
             }
         return agent_server_pb2.AddKernelResponse(code=0, msg="ok")

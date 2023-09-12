@@ -28,3 +28,8 @@ three core featues
 python & bash: requirements.txt
 typescripts: tslab , tslab install
 
+
+
+## Thanks
+
+* [Octopus icons created by Whitevector - Flaticon](https://www.flaticon.com/free-icons/octopus)
