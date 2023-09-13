@@ -31,6 +31,8 @@ from dotenv import dotenv_values
 from prompt_toolkit.completion import Completer, Completion
 from .utils import parse_file_path
 import clipboard
+from PIL import Image
+from term_image.image import AutoImage
 
 OCTOPUS_TITLE = "🐙[bold red]Octopus"
 
@@ -90,10 +92,6 @@ class OctopusCompleter(Completer):
             if word_before_cursor:
                 for comp in glob.glob(word_before_cursor + "*"):
                     yield Completion(comp, -len(word_before_cursor))
-        # elif document.current_line_before_cursor.find("/cc") >= 0:
-        #    index = document.current_line_before_cursor.find("/cc")
-        #    word_before_cursor = document.current_line_before_cursor[index + 3:]
-        #    numbers = list(parse_numbers(word_before_cursor))
 
 
 def check_parameter(octopus_config, console):
@@ -125,7 +123,7 @@ def refresh(live, segments, spinner, token_usage="0", iteration="0", model_name=
     table.add_column("Index", no_wrap=True, justify="center", style="bold red")
     table.add_column("Content")
     for index, segment in segments:
-        table.add_row(f"/cc{index}", segment)
+        table.add_row(f"{index}", segment)
     if spinner:
         table.add_row("", spinner)
         live.update(
@@ -225,25 +223,13 @@ def handle_final_answer(segments, respond, live, spinner, values):
     )
 
 
-def render_image(images, sdk, image_dir):
-    cmd = None
-    if "TERM_PROGRAM" in os.environ and os.environ["TERM_PROGRAM"] == "iTerm.app":
-        # iterm2
-        cmd = "viu -w 45"
-    elif "TERM" in os.environ and os.environ["TERM"] == "xterm-kitty":
-        # kitty
-        cmd = "viu -w 45"
-    elif "GNOME_SHELL_SESSION_MODE" in os.environ:
-        # use open
-        cmd = "open"
-    else:
-        # not supported
-        return
+def render_image(images, sdk, image_dir, console):
     for image in images:
         sdk.download_file(image, image_dir)
         fullpath = "%s/%s" % (image_dir, image)
-        cmd = cmd + " " + fullpath
-        os.system(cmd)
+        pil_image = Image.open(fullpath)
+        auto_image = AutoImage(image=pil_image, width=int(pil_image.size[0] / 8))
+        print(f"{auto_image:1.1#}")
 
 
 def run_chat(
@@ -278,7 +264,7 @@ def run_chat(
             model_name=model_name,
         )
     # display the images
-    render_image(images, sdk, filedir)
+    render_image(images, sdk, filedir, console)
 
 
 @click.command()
@@ -313,6 +299,8 @@ def app(octopus_dir):
     show_welcome(console)
     while True:
         real_prompt = session.prompt("[%s]%s>" % (index, "🎧"), multiline=True)
+        if not "".join(real_prompt.strip().split("\n")):
+            continue
         if real_prompt.find("/help") >= 0:
             show_help(console)
             continue

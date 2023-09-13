@@ -19,10 +19,27 @@ from langchain.agents import initialize_agent
 from langchain.schema.messages import SystemMessage
 from .tools import OctopusAPIMarkdownOutput
 from .gpt_tools import ExecutePythonCodeTool
+from .codellama_tools import ExecutePythonCodeTool as CodellamaExecutePythonCodeTool
 from .mock_tools import PrintFinalAnswerTool as MockPrintFinalAnswerTool
-from .prompt import OCTOPUS_FUNCTION_SYSTEM
+from .prompt import OCTOPUS_FUNCTION_SYSTEM, OCTOPUS_CODELLAMA_SYSTEM
 from .gpt_async_callback import AgentAsyncHandler
 from langchain.agents import AgentType
+from .codellama_agent import CodellamaAgent
+from .codellama_client import CodellamaClient
+
+
+def build_codellama_agent(endpoint, key, sdk, grammer_path):
+    with open(grammer_path, "r") as fd:
+        grammar = fd.read()
+
+    client = CodellamaClient(
+        endpoint, key, OCTOPUS_CODELLAMA_SYSTEM, "Octopus", "User", grammar
+    )
+    """build openai function call agent"""
+    # TODO a data dir per user
+    api = OctopusAPIMarkdownOutput(sdk)
+    # init the agent
+    return CodellamaAgent(client, api)
 
 
 def build_openai_agent(llm, sdk, max_iterations, verbose):

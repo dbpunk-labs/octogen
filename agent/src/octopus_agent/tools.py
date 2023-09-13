@@ -39,7 +39,7 @@ class OctopusAPIBase:
         Arguments:
         code  -- the python code to be executed
         """
-        return asyncio.run(self.arun(code, **kwargs))
+        return asyncio.get_event_loop(None, self.arun, code, **kwargs)
 
     async def arun(self, code: str, **kwargs: Any) -> str:
         """Run python code in async
