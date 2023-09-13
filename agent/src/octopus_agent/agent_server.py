@@ -34,6 +34,8 @@ from .gpt_async_callback import AgentAsyncHandler
 from .agent_llm import LLMManager
 from .langchain_agent_builder import build_mock_agent, build_openai_agent, build_codellama_agent
 import langchain
+import databases
+import orm
 
 langchain.verbose = True
 
@@ -44,9 +46,24 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[logging.StreamHandler(sys.stdout)],
 )
+
 logger = logging.getLogger(__name__)
 
+database = database.Database("sqlite://%s"%config['db_path'])
+models = orm.ModelRegistry(database=database)
 
+class LiteApp(orm.Model):
+    tablename = "lite_app"
+    registry = models
+    fields = {
+        "key_hash": orm.String(max_length=64, primary_key=True),
+        "name":orm.String(max_length=20, primary_key=True),
+        "language":orm.String(max_length=20, allow_null=False),
+        "code":orm.Text(),
+        "time":orm.DateTime(),
+        "desc":orm.String(max_length=100),
+        "saved_filenames": orm.String(max_length=512)
+    }
 class AgentRpcServer(AgentServerServicer):
 
     def __init__(self):
@@ -55,6 +72,12 @@ class AgentRpcServer(AgentServerServicer):
         self.verbose = config.get("verbose", False)
         self.llm_manager = LLMManager(config)
         self.llm = self.llm_manager.get_llm()
+
+    async def assemble(self, request: agent_server_pb2.AssembleAppRequest, context: ServicerContext
+            ) -> agent_server_pb2.AssembleAppResponse:
+        if request.key not in self.agents or not self.agents[request.key]:
+            await context.abort(10, "Please provider valid api key")
+        m = hashlib.sha256(request.key.encode('UTF-8'))
 
     async def add_kernel(
         self, request: agent_server_pb2.AddKernelRequest, context: ServicerContext
@@ -255,6 +278,7 @@ async def serve() -> None:
         config["rpc_host"],
         config["rpc_port"],
     )
+    await models.create_all()
     serv = server()
     add_AgentServerServicer_to_server(AgentRpcServer(), serv)
     listen_addr = "%s:%s" % (config["rpc_host"], config["rpc_port"])
