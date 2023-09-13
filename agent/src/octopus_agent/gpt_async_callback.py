@@ -25,6 +25,7 @@ from langchain.callbacks.base import AsyncCallbackHandler, BaseCallbackHandler
 from octopus_proto.agent_server_pb2 import OnAgentAction, TaskRespond, OnAgentActionEnd
 from langchain.schema.agent import AgentAction, AgentFinish
 from langchain.schema import LLMResult
+from .utils import parse_link
 
 logger = logging.getLogger(__name__)
 
@@ -56,8 +57,9 @@ class AgentAsyncHandler(AsyncCallbackHandler):
         logger.debug(f"on_tool_end {output}")
         self.stack.append("on_tool_end")
         output_files = []
-        if output.find("the display data is saved to file") >= 0:
-            output_files.append(output.split("`")[1])
+        name, link = parse_link(output)
+        if name and link:
+            output_files.append(link)
         respond = TaskRespond(
             token_usage=self.token_usage,
             on_agent_action_end=OnAgentActionEnd(

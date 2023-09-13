@@ -39,6 +39,8 @@ setup(
         "click>=8.0.0",
         "discord.py>=2.3.2",
         "clipboard>=0.0.4",
+        "Pillow",
+        "term-image>=0.7.0",
     ],
     entry_points={
         "console_scripts": [

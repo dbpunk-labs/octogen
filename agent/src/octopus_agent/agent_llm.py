@@ -32,24 +32,22 @@ class LLMManager:
         """
         self.config = config
         self.llms = {}
+        self.llm_key = self.config["llm_key"]
         if self.config["llm_key"] == "azure_openai":
             self._build_azure_openai()
-            self.llm_key = "azure_openai"
         elif self.config["llm_key"] == "openai":
-            self.llm_key = "openai"
             self._build_openai()
         elif self.config["llm_key"] == "mock":
             self._build_mock_llm()
-            self.llm_key = "mock"
 
     def get_llm(self):
-        return self.llms[self.llm_key]
+        return self.llms.get(self.llm_key, None)
 
     def get_llm_by_key(self, llm_key):
         """
         get llm with a key, the supported keys are 'mock', 'openai', 'azure_openai', 'codellama'
         """
-        return self.llms[llm_key]
+        return self.llms.get(self.llm_key, None)
 
     def _no_empty_value_required(self, keys):
         for key in keys:
@@ -71,7 +69,7 @@ class LLMManager:
             model_name=api_model,
             temperature=temperature,
         )
-        self.llms["openai"] = llm
+        self.llms[self.llm_key] = llm
 
     def _build_azure_openai(self):
         """
@@ -100,7 +98,7 @@ class LLMManager:
             temperature=temperature,
             verbose=verbose,
         )
-        self.llms["azure_openai"] = llm
+        self.llms[self.llm_key] = llm
 
     def _build_mock_llm(self):
         """

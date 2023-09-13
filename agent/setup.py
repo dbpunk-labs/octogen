@@ -39,7 +39,10 @@ setup(
         "aiofiles",
         "python-dotenv",
         "openai",
+        "json-stream",
+        "aiohttp>=3.8.5",
     ],
+    package_data={"octopus_agent": ["*.bnf"]},
     entry_points={
         "console_scripts": [
             "octopus_agent_rpc_server = octopus_agent.agent_server:server_main",
