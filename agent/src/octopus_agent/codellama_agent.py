@@ -74,6 +74,7 @@ class CodellamaAgent:
                 if respond["stop"]:
                     state = respond
             json_respose = json.loads("".join(response))
+            logger.info(f"{json_respose}")
             if (
                 json_respose["action"] == "execute_python_code"
                 and json_respose["action_input"]
@@ -81,7 +82,7 @@ class CodellamaAgent:
                 tool_input = json.dumps({
                     "code": json_respose["action_input"],
                     "explanation": json_respose["explanation"],
-                    "saved_filenames": [],
+                    "saved_filenames": json_respose['saved_filenames'],
                 })
                 await queue.put(
                     TaskRespond(

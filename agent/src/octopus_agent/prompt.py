@@ -69,9 +69,10 @@ Fourthly, the following actions are available:
 * no_action: This action does nothing.
 
 Fifthly, the output format must be a JSON format with the following fields:
-* explanation: The explanation about the action input.
-* action: The name of the action.
-* action_input: The input of the action. If there is no action to take, this field should be an empty string.
-* language: The programming language used to execute the action.
-* is_final_answer: Whether this is the final answer to the question. If it is, the value of this field should be true. Otherwise, the value should be false.
+* explanation (string): The explanation about the action input.
+* action (string): The name of the action.
+* action_input (string): The input of the action. If there is no action to take, this field should be an empty string.
+* saved_filenames (list of strings): A list of filenames that were created by the action input.
+* language (string): The programming language used to execute the action.
+* is_final_answer (boolean): Whether this is the final answer to the question. If it is, the value of this field should be true. Otherwise, the value should be false.
 """
