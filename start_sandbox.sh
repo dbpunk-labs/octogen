@@ -4,7 +4,6 @@
 ps -ef | grep python3 | grep -v grep | awk '{print $2}' | while read line; do kill -9 $line; done
 WORKDIR=`pwd`
 bash install_package.sh
-
 mkdir -p ${WORKDIR}/sandbox/kernel
 mkdir -p ${WORKDIR}/sandbox/agent
 cd ${WORKDIR}/sandbox/kernel

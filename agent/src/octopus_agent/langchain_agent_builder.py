@@ -19,7 +19,6 @@ from langchain.agents import initialize_agent
 from langchain.schema.messages import SystemMessage
 from .tools import OctopusAPIMarkdownOutput
 from .gpt_tools import ExecutePythonCodeTool
-from .codellama_tools import ExecutePythonCodeTool as CodellamaExecutePythonCodeTool
 from .mock_tools import PrintFinalAnswerTool as MockPrintFinalAnswerTool
 from .prompt import OCTOPUS_FUNCTION_SYSTEM, OCTOPUS_CODELLAMA_SYSTEM
 from .gpt_async_callback import AgentAsyncHandler

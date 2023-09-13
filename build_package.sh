@@ -11,7 +11,6 @@ sed -i "s/version=\"[0-9]*\.[0-9]*\.[0-9]*\",/version=\"$VERSION\",/g" proto/set
 sed -i "s/version=\"[0-9]*\.[0-9]*\.[0-9]*\",/version=\"$VERSION\",/g" agent/setup.py
 sed -i "s/version=\"[0-9]*\.[0-9]*\.[0-9]*\",/version=\"$VERSION\",/g" kernel/setup.py
 sed -i "s/version=\"[0-9]*\.[0-9]*\.[0-9]*\",/version=\"$VERSION\",/g" chat/setup.py
-
 echo "the proto new version"
 python3 proto/setup.py --version
 echo "the kernel new version"
