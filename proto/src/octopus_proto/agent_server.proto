@@ -60,9 +60,23 @@ message AddKernelResponse {
   string msg = 2;
 }
 
+message AssembleAppRequest {
+  string name = 1;
+  string language = 2;
+  string code = 3;
+  repeated string saved_filenames = 4;
+  string desc = 5;
+}
+
+message AssembleAppResponse {
+  int32 code = 1;
+  string msg = 2;
+}
+
 service AgentServer {
   rpc upload(stream octopus_common_proto.FileChunk) returns (octopus_common_proto.FileUploaded) {}
   rpc download(octopus_common_proto.DownloadRequest) returns (stream octopus_common_proto.FileChunk) {}
   rpc send_task(SendTaskRequest) returns (stream TaskRespond) {}
   rpc add_kernel(AddKernelRequest) returns (AddKernelResponse) {}
+  rpc assemble(AssembleAppRequest) returns (AssembleAppResponse) {}
 }

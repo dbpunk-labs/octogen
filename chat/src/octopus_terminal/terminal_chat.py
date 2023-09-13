@@ -48,13 +48,14 @@ You can use [bold yellow]/help[/] to look for help
 def show_help(console):
     help = """
 Shortcut:
-    [bold yellow]esc+enter[/]   submit your question to octopus
+    [bold yellow]esc+enter[/]                               submit your question to octopus
 
 Commands:
-    [bold yellow]/clear[/]      clear the screen
-    [bold yellow]/cc{number}[/] copy the output of octopus to clipboard
-    [bold yellow]/exit[/]       exit the octopus cli
-    [bold yellow]/up[/]         upload the files from local, you can use it in your question
+    [bold yellow]/clear[/]                                  clear the screen
+    [bold yellow]/cc{number}[/]                             copy the output of octopus to clipboard
+    [bold yellow]/exit[/]                                   exit the octopus cli
+    [bold yellow]/up[/]                                     upload the files from local, you can use it in your question
+    [bold yellow]/assemble {name} {number1} {number2}[/]    assemble the code segment into an application
 
 Ask for help:
     1. You can create an issue from https://github.com/dbpunk-labs/octopus/issues
@@ -157,7 +158,7 @@ def handle_action_output(segments, respond, live, images, spinner, values):
     mk = output
     markdown = Markdown(mk)
     images.extend(respond.on_agent_action_end.output_files)
-    values.append(mk)
+    values.append(("text", mk, []))
     segments.append((len(values) - 1, markdown))
     refresh(live, segments, spinner)
 
@@ -174,9 +175,11 @@ def handle_action_start(segments, respond, live, images, spinner, values):
         explanation = arguments["explanation"]
         markdown = Markdown("\n" + explanation + "\n")
         syntax = Syntax(arguments["code"], "python", line_numbers=True)
-        values.append(explanation)
+        values.append(("text", explanation, []))
         segments.append((len(values) - 1, markdown))
-        values.append(arguments["code"])
+        values.append(
+            ("python", arguments["code"], arguments.get("saved_filenames", []))
+        )
         segments.append((len(values) - 1, syntax))
         images.extend(arguments.get("saved_filenames", []))
         refresh(live, segments, spinner)
@@ -190,19 +193,20 @@ def find_code(content, segments, values):
             second_pos = content.find("```", first_pos + 1)
             if second_pos >= 0:
                 sub_content = content[start_index:first_pos]
-                values.append(sub_content)
+                values.append(("text", sub_content, []))
                 segments.append((len(values) - 1, Markdown(sub_content)))
                 start_index = first_pos
                 code_content = content[first_pos : second_pos + 3]
                 clean_code_content = clean_code(code_content)
-                values.append(clean_code_content)
+                # TODO parse language
+                values.append(("python", clean_code_content))
                 segments.append((len(values) - 1, Markdown(code_content)))
                 start_index = second_pos + 3
         else:
             break
     if start_index < len(content):
         sub_content = content[start_index:]
-        values.append(sub_content)
+        values.append(("text", sub_content, []))
         segments.append((len(values) - 1, Markdown(sub_content)))
 
 
@@ -268,6 +272,32 @@ def run_chat(
     render_image(images, sdk, filedir, console)
 
 
+def assemble_app(sdk, name, numbers, values):
+    code = []
+    language = "python"
+    saved_filenames = []
+    for number in numbers:
+        if values[number][0] == "text":
+            continue
+        if values[number][0] == "python":
+            code.append(values[number][1])
+            saved_filenames.extend(values[number][2])
+            language = values[number][0]
+    try:
+        response = sdk.assemble(
+            name,
+            "".join(code),
+            language,
+            desc="",
+            saved_filenames=list(set(saved_filenames)),
+        )
+        if response.code == 0:
+            return True
+        return False
+    except:
+        return False
+
+
 @click.command()
 @click.option("--octopus_dir", default="~/.octopus", help="the root path of octopus")
 def app(octopus_dir):
@@ -316,12 +346,32 @@ def app(octopus_dir):
             for number in parse_numbers(real_prompt):
                 num = int(number)
                 if num < len(values):
-                    clipboard.copy(values[num])
+                    clipboard.copy(values[num][1])
                     console.print(f"👍 /cc{number} has been copied to clipboard!")
                     break
                 else:
                     console.print(f"❌ /cc{number} was not found!")
             continue
+        if real_prompt.find("/assemble") >= 0:
+            parts = real_prompt.split(" ")
+            if len(parts) < 3:
+                console.print(f"❌ please add at least on code segment number")
+                continue
+            try:
+                name = parts[1]
+                numbers = [int(number) for number in parts[2:]]
+                if assemble_app(sdk, name, numbers, values):
+                    console.print(
+                        f"👍 the app {name} has been assembled! use /run {name} to run this app."
+                    )
+                    continue
+                else:
+                    console.print(f"❌ fail to assemble the app {name}")
+                    continue
+            except Exception as ex:
+                console.print(f"❌ invalid numbers {ex}")
+                continue
+
         # try to upload first⌛⏳❌
         filepaths = parse_file_path(real_prompt)
         if filepaths:

@@ -19,6 +19,7 @@ import logging
 import sys
 import os
 import pathlib
+import hashlib
 import grpc
 from octopus_proto.agent_server_pb2_grpc import AgentServerServicer
 from octopus_proto.agent_server_pb2_grpc import add_AgentServerServicer_to_server
@@ -36,6 +37,8 @@ from .langchain_agent_builder import build_mock_agent, build_openai_agent, build
 import langchain
 import databases
 import orm
+from datetime import datetime
+
 
 langchain.verbose = True
 
@@ -49,21 +52,25 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-database = database.Database("sqlite://%s"%config['db_path'])
+database = databases.Database("sqlite:///%s" % config["db_path"])
 models = orm.ModelRegistry(database=database)
+
 
 class LiteApp(orm.Model):
     tablename = "lite_app"
     registry = models
     fields = {
-        "key_hash": orm.String(max_length=64, primary_key=True),
-        "name":orm.String(max_length=20, primary_key=True),
-        "language":orm.String(max_length=20, allow_null=False),
-        "code":orm.Text(),
-        "time":orm.DateTime(),
-        "desc":orm.String(max_length=100),
-        "saved_filenames": orm.String(max_length=512)
+        "id": orm.Integer(primary_key=True),
+        "key_hash": orm.String(max_length=64, index=True),
+        "name": orm.String(max_length=20, index=True),
+        "language": orm.String(max_length=20, allow_null=False),
+        "code": orm.Text(),
+        "time": orm.DateTime(),
+        "desc": orm.String(max_length=100, allow_null=True),
+        "saved_filenames": orm.String(max_length=512, allow_null=True),
     }
+
+
 class AgentRpcServer(AgentServerServicer):
 
     def __init__(self):
@@ -73,11 +80,34 @@ class AgentRpcServer(AgentServerServicer):
         self.llm_manager = LLMManager(config)
         self.llm = self.llm_manager.get_llm()
 
-    async def assemble(self, request: agent_server_pb2.AssembleAppRequest, context: ServicerContext
-            ) -> agent_server_pb2.AssembleAppResponse:
-        if request.key not in self.agents or not self.agents[request.key]:
-            await context.abort(10, "Please provider valid api key")
-        m = hashlib.sha256(request.key.encode('UTF-8'))
+    async def assemble(
+        self, request: agent_server_pb2.AssembleAppRequest, context: ServicerContext
+    ) -> agent_server_pb2.AssembleAppResponse:
+        metadata = dict(context.invocation_metadata())
+        if (
+            "api_key" not in metadata
+            or metadata["api_key"] not in self.agents
+            or not self.agents[metadata["api_key"]]
+        ):
+            await context.abort(10, "invalid api key")
+        key = metadata["api_key"]
+        key_hash = hashlib.sha256(key.encode("UTF-8")).hexdigest()
+        if await LiteApp.objects.filter(key_hash=key_hash, name=request.name).first():
+            await context.abort(10, f"the app name {request.name} exist")
+
+        logger.debug(
+            f"the code {request.code} key {key_hash}, language {request.language}"
+        )
+        await LiteApp.objects.create(
+            key_hash=key_hash,
+            name=request.name,
+            language=request.language,
+            code=request.code,
+            time=datetime.now(),
+            desc=request.desc,
+            saved_filenames=",".join(request.saved_filenames),
+        )
+        return agent_server_pb2.AssembleAppResponse(code=0, msg="ok")
 
     async def add_kernel(
         self, request: agent_server_pb2.AddKernelRequest, context: ServicerContext

@@ -48,3 +48,15 @@ async def test_upload_smoke_test(agent_sdk):
         assert len(responds) > 0, "no responds for the prompt"
     except Exception as ex:
         assert 0, str(ex)
+
+
+@pytest.mark.asyncio
+async def test_assemble_test(agent_sdk):
+    sdk = agent_sdk
+    await sdk.add_kernel(api_key, "127.0.0.1:9527")
+    try:
+        code = "print('hello')"
+        response = await sdk.assemble("hello", code, "python")
+        assert response.code == 0
+    except Exception as ex:
+        assert 0, str(ex)
