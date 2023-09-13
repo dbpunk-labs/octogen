@@ -121,9 +121,8 @@ class AgentRpcServer(AgentServerServicer):
                 try:
                     return await agent.arun(task, queue)
                 except Exception as ex:
-                    logger.error("fail to run agent for %s", ex)
+                    logger.exception("fail to run agent")
                     result = str(ex)
-                    await handler.exit_the_queue()
                     return result
 
             logger.debug("create the agent task")

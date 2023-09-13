@@ -55,74 +55,94 @@ class CodellamaAgent:
             )
             return answer_code
 
-    async def arun(self, question, queue):
+    async def arun(self, question, queue, max_iteration=5):
         """
         run the agent
         """
         history = []
+        current_question = question
         # TODO Streaming and reason action
-        response = []
         state = None
+        iteration = 0
         try:
-            async for line in self.client.run(
-                question, chat_history="\n".join(history)
-            ):
-                if len(line) < 6:
-                    continue
-                respond = json.loads(line[6:])
-                response.append(respond["content"])
-                if respond["stop"]:
-                    state = respond
-            json_respose = json.loads("".join(response))
-            logger.info(f"{json_respose}")
-            if (
-                json_respose["action"] == "execute_python_code"
-                and json_respose["action_input"]
-            ):
-                tool_input = json.dumps({
-                    "code": json_respose["action_input"],
-                    "explanation": json_respose["explanation"],
-                    "saved_filenames": json_respose['saved_filenames'],
-                })
-                await queue.put(
-                    TaskRespond(
+            while iteration < max_iteration:
+                iteration += 1
+                response = []
+                async for line in self.client.run(
+                    current_question, chat_history="\n".join(history)
+                ):
+                    if len(line) < 6:
+                        continue
+                    respond = json.loads(line[6:])
+                    response.append(respond["content"])
+                    if respond["stop"]:
+                        state = respond
+                json_respose = json.loads("".join(response))
+                logger.info(f"{json_respose}")
+                if (
+                    json_respose["action"] == "execute_python_code"
+                    and json_respose["action_input"]
+                ):
+                    tool_input = json.dumps({
+                        "code": json_respose["action_input"],
+                        "explanation": json_respose["explanation"],
+                        "saved_filenames": json_respose["saved_filenames"],
+                    })
+                    await queue.put(
+                        TaskRespond(
+                            token_usage=state["tokens_cached"]
+                            + state["tokens_evaluated"]
+                            + state["tokens_predicted"],
+                            iteration=iteration,
+                            model_name=state["generation_settings"]["model"],
+                            on_agent_action=OnAgentAction(
+                                input=tool_input, tool="execute_python_code"
+                            ),
+                        )
+                    )
+                    output = await self.tool.arun(code=json_respose["action_input"])
+                    output_files = []
+                    name, link = parse_link(output)
+                    if name and link:
+                        output_files.append(link)
+                    execute_result = TaskRespond(
                         token_usage=state["tokens_cached"]
                         + state["tokens_evaluated"]
                         + state["tokens_predicted"],
-                        iteration=1,
+                        iteration=iteration,
                         model_name=state["generation_settings"]["model"],
-                        on_agent_action=OnAgentAction(
-                            input=tool_input, tool="execute_python_code"
+                        on_agent_action_end=OnAgentActionEnd(
+                            output=output, output_files=output_files
                         ),
                     )
-                )
-                output = await self.tool.arun(code=json_respose["action_input"])
-                output_files = []
-                name, link = parse_link(output)
-                if name and link:
-                    output_files.append(link)
-                execute_result = TaskRespond(
-                    token_usage=state["tokens_cached"]
-                    + state["tokens_evaluated"]
-                    + state["tokens_predicted"],
-                    iteration=1,
-                    model_name=state["generation_settings"]["model"],
-                    on_agent_action_end=OnAgentActionEnd(
-                        output=output, output_files=output_files
-                    ),
-                )
-                await queue.put(execute_result)
-            else:
-                result = self._format_output(json_respose)
-                await queue.put(
-                    TaskRespond(
-                        token_usage=state["tokens_cached"]
-                        + state["tokens_evaluated"]
-                        + state["tokens_predicted"],
-                        iteration=1,
-                        model_name=state["generation_settings"]["model"],
-                        final_respond=FinalRespond(answer=result),
+                    await queue.put(execute_result)
+                    if (
+                        not json_respose["is_final_answer"]
+                        or output.find("with the error") >= 0
+                    ):
+                        history.append("User:%s" % current_question)
+                        history.append("Octopus:%s\n" % ("".join(response)))
+                        current_question = (
+                            "the output of execute_python_code is \n%s" % output
+                        )
+                        logger.debug(
+                            "continue to iterate with codellama with question %s"
+                            % output
+                        )
+                    else:
+                        break
+                else:
+                    result = self._format_output(json_respose)
+                    await queue.put(
+                        TaskRespond(
+                            token_usage=state["tokens_cached"]
+                            + state["tokens_evaluated"]
+                            + state["tokens_predicted"],
+                            iteration=iteration,
+                            model_name=state["generation_settings"]["model"],
+                            final_respond=FinalRespond(answer=result),
+                        )
                     )
-                )
+                    break
         finally:
             await queue.put(None)

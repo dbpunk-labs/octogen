@@ -224,7 +224,8 @@ def handle_final_answer(segments, respond, live, spinner, values):
 
 
 def render_image(images, sdk, image_dir, console):
-    for image in images:
+    image_set = set(images)
+    for image in image_set:
         sdk.download_file(image, image_dir)
         fullpath = "%s/%s" % (image_dir, image)
         pil_image = Image.open(fullpath)
