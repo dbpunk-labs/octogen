@@ -27,7 +27,7 @@ echo "admin_key=${AGENT_RPC_KEY}">> .env
 echo "llm_key=mock" >> .env
 echo "max_file_size=10240000" >> .env
 echo "verbose=True" >> .env
-echo "db_path=/tmp/octopus_sandbox.db"
+echo "db_path=/tmp/octopus_sandbox.db" >> .env
 octopus_agent_rpc_server > agent_rpc.log 2>&1 &
 sleep 2
 echo "add a kernel"

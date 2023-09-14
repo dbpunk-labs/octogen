@@ -21,6 +21,7 @@ import os
 import pathlib
 import hashlib
 import grpc
+import json
 from octopus_proto.agent_server_pb2_grpc import AgentServerServicer
 from octopus_proto.agent_server_pb2_grpc import add_AgentServerServicer_to_server
 from octopus_proto import agent_server_pb2
@@ -34,14 +35,13 @@ from octopus_kernel.sdk.kernel_sdk import KernelSDK
 from .gpt_async_callback import AgentAsyncHandler
 from .agent_llm import LLMManager
 from .langchain_agent_builder import build_mock_agent, build_openai_agent, build_codellama_agent
+from .tools import OctopusAPIMarkdownOutput
 import langchain
 import databases
 import orm
 from datetime import datetime
 from .utils import parse_link
 
-
-langchain.verbose = True
 
 config = dotenv_values(".env")
 LOG_LEVEL = logging.DEBUG
@@ -50,9 +50,9 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[logging.StreamHandler(sys.stdout)],
 )
-
 logger = logging.getLogger(__name__)
 
+langchain.verbose = config.get("verbose", False)
 database = databases.Database("sqlite:///%s" % config["db_path"])
 models = orm.ModelRegistry(database=database)
 
@@ -106,7 +106,9 @@ class AgentRpcServer(AgentServerServicer):
             code=request.code,
             time=datetime.now(),
             desc=request.desc,
-            saved_filenames=",".join(request.saved_filenames),
+            saved_filenames=",".join(request.saved_filenames)
+            if request.saved_filenames
+            else "",
         )
         return agent_server_pb2.AssembleAppResponse(code=0, msg="ok")
 
@@ -133,7 +135,9 @@ class AgentRpcServer(AgentServerServicer):
         tool_input = json.dumps({
             "code": lite_app.code,
             "explanation": "",
-            "saved_filenames": lite_app.saved_filenames.split(","),
+            "saved_filenames": lite_app.saved_filenames.split(",")
+            if lite_app.saved_filenames
+            else [],
         })
         yield agent_server_pb2.TaskRespond(
             on_agent_action=agent_server_pb2.OnAgentAction(

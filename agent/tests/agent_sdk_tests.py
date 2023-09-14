@@ -20,7 +20,9 @@ import os
 import pytest
 import asyncio
 import logging
+import json
 from octopus_agent.agent_sdk import AgentSDK
+from octopus_agent.utils import random_str
 
 logger = logging.getLogger(__name__)
 api_base = "127.0.0.1:9528"
@@ -56,10 +58,11 @@ async def test_assemble_test(agent_sdk):
     await sdk.add_kernel(api_key, "127.0.0.1:9527")
     try:
         code = "print('hello')"
-        response = await sdk.assemble("hello", code, "python")
+        name = random_str(10)
+        response = await sdk.assemble(name, code, "python")
         assert response.code == 0, "fail to assemble app"
         responds = []
-        async for respond in sdk.run("hello"):
+        async for respond in sdk.run(name):
             responds.append(respond)
         assert len(responds) == 2, "bad responds for run application"
         assert (
