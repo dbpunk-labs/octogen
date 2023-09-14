@@ -26,11 +26,10 @@ from langchain.callbacks.manager import (
 
 class ExecutePythonCodeInput(BaseModel):
     code: str = Field(description="the python code to be executed")
-    explanation: str = Field(description="the explanation of the python code")
-    saved_filenames: Optional[List[str]] = Field(
-        description="the saved filename list", default=[]
+    explanation: str = Field(description="the explanation about the python code")
+    saved_filenames: List[str] = Field(
+        description="A list of filenames that were created by the code", default=[]
     )
-
 
 class ExecutePythonCodeTool(StructuredTool):
     name = "execute_python_code"
@@ -42,7 +41,7 @@ class ExecutePythonCodeTool(StructuredTool):
         self,
         code: str,
         explanation: str,
-        saved_filenames: Optional[List[str]] = None,
+        saved_filenames: List[str] = [],
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> str:
         code = code
@@ -53,7 +52,7 @@ class ExecutePythonCodeTool(StructuredTool):
         self,
         code: str,
         explanation: str,
-        saved_filenames: Optional[List[str]] = None,
+        saved_filenames:List[str] = [],
         run_manager: Optional[AsyncCallbackManagerForToolRun] = None,
     ) -> str:
         return await self.octopus_api.arun(code)
