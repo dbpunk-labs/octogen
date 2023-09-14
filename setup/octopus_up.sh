@@ -9,11 +9,11 @@ Start octopus
 Usage: octopus_up [SUBCOMMAND]
 
 Flags:
-  -h, --help     Prints help information
+  -h             Prints help information
 
 Subcommands:
   cli            Install Octopus CLI only
-  unsafe-local   Install and start Octopus Agent without Docker (unsafe)
+  local          Install and start Octopus Agent without Docker (unsafe)
   docker-local   Install and start Octopus Agent with Docker
 help_message
     return 0
@@ -58,7 +58,7 @@ function start_unsafe_local_instance() {
 
 function request_codellama_opt() {
     ROOT_DIR=$1
-    read -sp 'LlamaCpp Server Endpoint: ' llama_endpoint
+    read -p 'LlamaCpp Server Endpoint: ' llama_endpoint
     if [[ -z $llama_endpoint ]]; then
         echo "empty llama_endpoint"
         exit 1
@@ -120,11 +120,11 @@ function generate_common_env() {
     ROOT_DIR=$1
     password_length=32
     if [[ "$OSTYPE" == "darwin"* ]]; then
-        KERNEL_KEY=$(LC_ALL=C tr -dc 'A-Za-z0-9!@#$%^&*()-+=' </dev/urandom | head -c $password_length)
-        AGENT_ADMIN_KEY=$(LC_ALL=C tr -dc 'A-Za-z0-9!@#$%^&*()-+=' </dev/urandom | head -c $password_length)
+        KERNEL_KEY=$(LC_ALL=C tr -dc 'A-Za-z0-9!@#$%^&*()-+' </dev/urandom | head -c $password_length)
+        AGENT_ADMIN_KEY=$(LC_ALL=C tr -dc 'A-Za-z0-9!@#$%^&*()-+' </dev/urandom | head -c $password_length)
     else
-        KERNEL_KEY=$(tr -dc 'A-Za-z0-9!@#$%^&*()-+=' </dev/urandom | head -c $password_length)
-        AGENT_ADMIN_KEY=$(tr -dc 'A-Za-z0-9!@#$%^&*()-+=' </dev/urandom | head -c $password_length)
+        KERNEL_KEY=$(tr -dc 'A-Za-z0-9!@#$%^&*()-+' </dev/urandom | head -c $password_length)
+        AGENT_ADMIN_KEY=$(tr -dc 'A-Za-z0-9!@#$%^&*()-+' </dev/urandom | head -c $password_length)
     fi
     mkdir -p ${ROOT_DIR}/agent
     mkdir -p ${ROOT_DIR}/kernel/ws
@@ -147,8 +147,8 @@ function generate_common_env() {
         echo "backup the old cli config to $HOME/.octopus/config.bk"
         cp $HOME/.octopus/config $HOME/.octopus/config.bk
     fi
-    echo "endpoint=127.0.0.1:9528" >~/.octopus/config
-    echo "api_key=${KERNEL_KEY}" >~/.octopus/config
+    echo "endpoint=127.0.0.1:9528" >$HOME/.octopus/config
+    echo "api_key=${KERNEL_KEY}" >>$HOME/.octopus/config
     echo "✅ Update octopus cli config done"
 }
 
@@ -192,7 +192,7 @@ function start_unsafe_local() {
         echo "❌ Create octopus app dir failed"
         exit 1
     fi
-    PS3='Please enter your LLM choice: '
+    PS3='Please enter your LLM choice number: '
     options=("OpenAI" "Azure OpenAI" "Codellama" "Quit")
     select opt in "${options[@]}"; do
         case $opt in
@@ -221,14 +221,6 @@ function start_unsafe_local() {
 
 # Parse the command lines
 function get_opts() {
-    python_version=$(python --version 2>&1 | awk '{print $2}')
-    major_version=$(echo $python_version | awk -F. '{print $1}')
-    minor_version=$(echo $python_version | awk -F. '{print $2}')
-    if [ "$major_version" -ge 3 ] && [ "$minor_version" -ge 9 ]; then
-    else
-        echo "Python version is less than 3.9. Please upgrade your python version"
-        exit 1
-    fi
     while getopts ":h" opt; do
         case "${opt}" in
         h)
@@ -242,6 +234,15 @@ function get_opts() {
             ;;
         esac
     done
+    python_version=$(python3 --version 2>&1 | awk '{print $2}')
+    major_version=$(echo $python_version | awk -F. '{print $1}')
+    minor_version=$(echo $python_version | awk -F. '{print $2}')
+    if [[ "$major_version" -ge 3 ]] && [[ "$minor_version" -ge 9 ]]; then
+        echo "Python version matchs the requirement"
+    else
+        echo "Python version is less than 3.9. Please upgrade your python version"
+        exit 1
+    fi
     shift $((OPTIND - 1))
     # Remove the main command from the argument list.
     local -r _subcommand="${1:-}"
@@ -254,7 +255,7 @@ function get_opts() {
     cli)
         install_cli
         ;;
-    unsafe-local)
+    local)
         start_unsafe_local
         ;;
     docker-local)

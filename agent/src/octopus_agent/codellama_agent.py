@@ -31,18 +31,18 @@ class CodellamaAgent:
         self.client = client
         self.tool = tool
 
-    def _format_output(self, response):
+    def _format_output(self, json_response):
         """
         format the response and send it to the user
         """
-        answer = json_respose["explanation"]
-        if json_respose["action"] == "no_action":
+        answer = json_response["explanation"]
+        if json_response["action"] == "no_action":
             return answer
-        elif json_respose["action"] == "print_message":
-            if json_respose["action_input"]:
-                return json_respose["action_input"]
+        elif json_response["action"] == "print_message":
+            if json_response["action_input"]:
+                return json_response["action_input"]
             else:
-                return json_respose["explanation"]
+                return json_response["explanation"]
         else:
             answer_code = """%s
 ```%s
@@ -50,8 +50,8 @@ class CodellamaAgent:
 ```
 """ % (
                 answer,
-                json_respose["language"],
-                json_respose["action_input"],
+                json_response["language"],
+                json_response["action_input"],
             )
             return answer_code
 
