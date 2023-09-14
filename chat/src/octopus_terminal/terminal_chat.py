@@ -398,6 +398,7 @@ def app(octopus_dir):
     index = 0
     show_welcome(console)
     while True:
+        index = index + 1
         real_prompt = session.prompt("[%s]%s>" % (index, "🎧"), multiline=True)
         if not "".join(real_prompt.strip().split("\n")):
             continue
@@ -487,4 +488,3 @@ def app(octopus_dir):
             spinner_name=octopus_config.get("spinner", "dots2"),
             filedir=filedir,
         )
-        index = index + 1
