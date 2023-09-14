@@ -181,6 +181,7 @@ def handle_action_output(segments, respond, images, values):
     values.append(("text", mk, []))
     segments.append((len(values) - 1, markdown))
 
+
 def handle_action_start(segments, respond, images, values):
     """Run on agent action."""
     if not respond.on_agent_action:
@@ -235,6 +236,7 @@ def handle_final_answer(segments, respond, values):
     if not answer:
         return
     find_code(answer, segments, values)
+
 
 def render_image(images, sdk, image_dir, console):
     image_set = set(images)

@@ -101,10 +101,10 @@ class OctopusAPIMarkdownOutput(OctopusAPIBase):
             elif result["msg_type"] == "display_data":
                 if "image/png" in result["data"]:
                     filename = result["data"]["image/png"]
-                    output = f"[{filename}]({filename})"
+                    return filename
                 elif "image/gif" in result["data"]:
                     filename = result["data"]["image/gif"]
-                    output = f"[{filename}]({filename})%s"
+                    return filename
                 else:
                     keys = ",".join(result["data"].keys())
                     raise Exception(

@@ -34,7 +34,7 @@ setup(
     },
     install_requires=[
         "octopus_agent>=0.1.0",
-        "rich",
+        "rich>=13.5.2",
         "prompt_toolkit>=3.0.0",
         "click>=8.0.0",
         "discord.py>=2.3.2",

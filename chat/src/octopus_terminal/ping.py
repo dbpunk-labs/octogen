@@ -14,15 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-
-"""
+""" """
 import sys
 import os
 import click
 from octopus_agent.agent_sdk import AgentSyncSDK
 from rich.console import Console
 from dotenv import dotenv_values
+
 
 @click.command()
 @click.option("--octopus_dir", default="~/.octopus", help="the root path of octopus")
@@ -38,7 +37,9 @@ def app(octopus_dir):
     console = Console()
     try:
         if "api_key" not in octopus_config or "endpoint" not in octopus_config:
-            console.print(f"❌ api key and endpoint are required! please check your config {octopus_dir}/config")
+            console.print(
+                f"❌ api key and endpoint are required! please check your config {octopus_dir}/config"
+            )
             sys.exit(1)
         sdk = AgentSyncSDK(octopus_config["endpoint"], octopus_config["api_key"])
         sdk.connect()
@@ -50,4 +51,6 @@ def app(octopus_dir):
             console.print(f"❌ {response.msg}")
             sys.exit(1)
     except Exception as ex:
-        console.print(f"❌ please check your config {octopus_dir}/config with error {ex}")
+        console.print(
+            f"❌ please check your config {octopus_dir}/config with error {ex}"
+        )

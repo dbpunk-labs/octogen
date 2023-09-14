@@ -31,6 +31,7 @@ class ExecutePythonCodeInput(BaseModel):
         description="A list of filenames that were created by the code", default=[]
     )
 
+
 class ExecutePythonCodeTool(StructuredTool):
     name = "execute_python_code"
     description = """Execute arbitrary Python code Returns a markdown format string including result, stdout, stderr, error"""
@@ -52,7 +53,7 @@ class ExecutePythonCodeTool(StructuredTool):
         self,
         code: str,
         explanation: str,
-        saved_filenames:List[str] = [],
+        saved_filenames: List[str] = [],
         run_manager: Optional[AsyncCallbackManagerForToolRun] = None,
     ) -> str:
         return await self.octopus_api.arun(code)
