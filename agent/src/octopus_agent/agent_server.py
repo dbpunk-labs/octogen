@@ -38,6 +38,7 @@ import langchain
 import databases
 import orm
 from datetime import datetime
+from .utils import parse_link
 
 
 langchain.verbose = True
@@ -109,6 +110,47 @@ class AgentRpcServer(AgentServerServicer):
         )
         return agent_server_pb2.AssembleAppResponse(code=0, msg="ok")
 
+    async def run(
+        self, request: agent_server_pb2.RunAppRequest, context: ServicerContext
+    ) -> AsyncIterable[agent_server_pb2.TaskRespond]:
+        metadata = dict(context.invocation_metadata())
+        if (
+            "api_key" not in metadata
+            or metadata["api_key"] not in self.agents
+            or not self.agents[metadata["api_key"]]
+        ):
+            logger.debug("invalid api key")
+            await context.abort(10, "invalid api key")
+        logger.debug(f"run application {request.name}")
+        key = metadata["api_key"]
+        key_hash = hashlib.sha256(key.encode("UTF-8")).hexdigest()
+        lite_app = await LiteApp.objects.filter(
+            key_hash=key_hash, name=request.name
+        ).first()
+        if not lite_app:
+            await context.abort(10, f"no application with name {request.name}")
+        tool = self.agents[metadata["api_key"]]["tool"]
+        tool_input = json.dumps({
+            "code": lite_app.code,
+            "explanation": "",
+            "saved_filenames": lite_app.saved_filenames.split(","),
+        })
+        yield agent_server_pb2.TaskRespond(
+            on_agent_action=agent_server_pb2.OnAgentAction(
+                input=tool_input, tool="execute_python_code"
+            ),
+        )
+        output = await tool.arun(lite_app.code)
+        output_files = []
+        name, link = parse_link(output)
+        if name and link:
+            output_files.append(link)
+        yield agent_server_pb2.TaskRespond(
+            on_agent_action_end=agent_server_pb2.OnAgentActionEnd(
+                output=output, output_files=output_files
+            ),
+        )
+
     async def add_kernel(
         self, request: agent_server_pb2.AddKernelRequest, context: ServicerContext
     ) -> agent_server_pb2.AddKernelResponse:
@@ -121,6 +163,7 @@ class AgentRpcServer(AgentServerServicer):
         # init the sdk
         sdk = KernelSDK(request.endpoint, request.key)
         sdk.connect()
+        tool = OctopusAPIMarkdownOutput(sdk)
         if config["llm_key"] == "azure_openai" or config["llm_key"] == "openai":
             logger.info("create a openai agent")
             agent = build_openai_agent(
@@ -129,17 +172,11 @@ class AgentRpcServer(AgentServerServicer):
                 config.get("max_iterations", 5),
                 self.verbose,
             )
-            self.agents[request.key] = {
-                "sdk": sdk,
-                "agent": agent,
-            }
+            self.agents[request.key] = {"sdk": sdk, "agent": agent, "tool": tool}
         elif config["llm_key"] == "mock":
             logger.info("create a mock agent")
             agent = build_mock_agent(self.llm)
-            self.agents[request.key] = {
-                "sdk": sdk,
-                "agent": agent,
-            }
+            self.agents[request.key] = {"sdk": sdk, "agent": agent, "tool": tool}
         elif config["llm_key"] == "codellama":
             logger.info("create a codellama agent")
             grammer_path = os.path.join(
@@ -148,10 +185,7 @@ class AgentRpcServer(AgentServerServicer):
             agent = build_codellama_agent(
                 config["llama_api_base"], config["llama_api_key"], sdk, grammer_path
             )
-            self.agents[request.key] = {
-                "sdk": sdk,
-                "agent": agent,
-            }
+            self.agents[request.key] = {"sdk": sdk, "agent": agent, "tool": tool}
         return agent_server_pb2.AddKernelResponse(code=0, msg="ok")
 
     async def send_task(

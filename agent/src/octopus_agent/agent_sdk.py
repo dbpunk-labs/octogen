@@ -53,6 +53,12 @@ class AgentSyncSDK:
         response = self.stub.assemble(request, metadata=self.metadata)
         return response
 
+    def run(self, name):
+        # TODO support input files
+        request = agent_server_pb2.RunAppRequest(name=name)
+        for respond in self.stub.run(request, metadata=self.metadata):
+            yield respond
+
     def add_kernel(self, key, endpoint):
         """
         add kernel instance to the agent and only admin can call this method
@@ -128,6 +134,12 @@ class AgentSDK:
         )
         response = await self.stub.assemble(request, metadata=self.metadata)
         return response
+
+    async def run(self, name):
+        # TODO support input files
+        request = agent_server_pb2.RunAppRequest(name=name)
+        async for respond in self.stub.run(request, metadata=self.metadata):
+            yield respond
 
     async def add_kernel(self, key, endpoint):
         """

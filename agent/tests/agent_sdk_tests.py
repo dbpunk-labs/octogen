@@ -57,6 +57,14 @@ async def test_assemble_test(agent_sdk):
     try:
         code = "print('hello')"
         response = await sdk.assemble("hello", code, "python")
-        assert response.code == 0
+        assert response.code == 0, "fail to assemble app"
+        responds = []
+        async for respond in sdk.run("hello"):
+            responds.append(respond)
+        assert len(responds) == 2, "bad responds for run application"
+        assert (
+            json.loads(responds[0].on_agent_action.input)["code"] == code
+        ), "remote code !eq the local code"
+        assert responds[1].on_agent_action_end.output.find("hello") >= 0, "bad output"
     except Exception as ex:
         assert 0, str(ex)

@@ -7,7 +7,6 @@ on:
   pull_request:
     branches:
       - main
-
 jobs:
   build:
     runs-on: self-hosted
@@ -32,4 +31,5 @@ jobs:
         with:
           name: log-artifact
           path: |
-            kernel/*.log
+            sandbox/agent/*.log
+            sandbox/kernel/*.log

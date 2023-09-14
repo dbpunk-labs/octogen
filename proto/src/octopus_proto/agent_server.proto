@@ -73,10 +73,18 @@ message AssembleAppResponse {
   string msg = 2;
 }
 
+message RunAppRequest {
+  string name = 1;
+}
+
 service AgentServer {
+  // upload the file
   rpc upload(stream octopus_common_proto.FileChunk) returns (octopus_common_proto.FileUploaded) {}
   rpc download(octopus_common_proto.DownloadRequest) returns (stream octopus_common_proto.FileChunk) {}
   rpc send_task(SendTaskRequest) returns (stream TaskRespond) {}
   rpc add_kernel(AddKernelRequest) returns (AddKernelResponse) {}
+  // assemble the application
   rpc assemble(AssembleAppRequest) returns (AssembleAppResponse) {}
+  // run assembled application
+  rpc run(RunAppRequest) returns (stream TaskRespond) {}
 }
