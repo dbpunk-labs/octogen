@@ -19,6 +19,7 @@ octopus_kernel_rpc_server > kernel_rpc.log 2>&1 &
 sleep 2
 cd ${WORKDIR}/sandbox/agent
 AGENT_RPC_KEY=ZCeI9cYtOCyLISoi488BgZHeBkHWuFUH
+test -f /tmp/octopus_sandbox.db && rm /tmp/octopus_sandbox.db
 echo "start agent with endpoint 127.0.0.1:9528"
 echo "rpc_host=127.0.0.1">> .env
 echo "rpc_port=9528">> .env
@@ -26,6 +27,7 @@ echo "admin_key=${AGENT_RPC_KEY}">> .env
 echo "llm_key=mock" >> .env
 echo "max_file_size=10240000" >> .env
 echo "verbose=True" >> .env
+echo "db_path=/tmp/octopus_sandbox.db" >> .env
 octopus_agent_rpc_server > agent_rpc.log 2>&1 &
 sleep 2
 echo "add a kernel"

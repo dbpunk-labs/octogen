@@ -37,6 +37,7 @@ setup(
         "grpcio-tools>=1.57.0",
         "grpc-google-iam-v1>=0.12.6",
         "aiofiles",
+        "orm[sqlite]",
         "python-dotenv",
         "openai",
         "json-stream",

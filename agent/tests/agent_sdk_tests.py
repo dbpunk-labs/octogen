@@ -20,7 +20,9 @@ import os
 import pytest
 import asyncio
 import logging
+import json
 from octopus_agent.agent_sdk import AgentSDK
+from octopus_agent.utils import random_str
 
 logger = logging.getLogger(__name__)
 api_base = "127.0.0.1:9528"
@@ -46,5 +48,29 @@ async def test_upload_smoke_test(agent_sdk):
         async for respond in sdk.prompt("write a hello world in python"):
             responds.append(respond)
         assert len(responds) > 0, "no responds for the prompt"
+    except Exception as ex:
+        assert 0, str(ex)
+
+
+@pytest.mark.asyncio
+async def test_assemble_test(agent_sdk):
+    sdk = agent_sdk
+    await sdk.add_kernel(api_key, "127.0.0.1:9527")
+    try:
+        code = "print('hello')"
+        name = random_str(10)
+        response = await sdk.assemble(name, code, "python")
+        assert response.code == 0, "fail to assemble app"
+        apps = await sdk.query_apps()
+        app = list(filter(lambda x: x.name == name, apps.apps))
+        assert len(app) == 1, "fail to get the app with name " + name
+        responds = []
+        async for respond in sdk.run(name):
+            responds.append(respond)
+        assert len(responds) == 2, "bad responds for run application"
+        assert (
+            json.loads(responds[0].on_agent_action.input)["code"] == code
+        ), "remote code !eq the local code"
+        assert responds[1].on_agent_action_end.output.find("hello") >= 0, "bad output"
     except Exception as ex:
         assert 0, str(ex)

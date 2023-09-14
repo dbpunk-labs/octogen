@@ -16,6 +16,8 @@
 
 """ """
 import re
+import string
+import random
 
 
 def clean_code(code: str):
@@ -43,3 +45,10 @@ def parse_link(text):
         return match.groups()
     else:
         return None, None
+
+
+def random_str(n):
+    # using random.choices()
+    # generating random strings
+    res = "".join(random.choices(string.ascii_uppercase + string.digits, k=n))
+    return str(res)
