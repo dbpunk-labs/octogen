@@ -103,7 +103,6 @@ class OctopusDiscordBot(discord.Client):
             await message.channel.send("working...")
             files = []
             for att in message.attachments:
-
                 async def generate_chunk(att):
                     # TODO split
                     chunk = await att.read()
