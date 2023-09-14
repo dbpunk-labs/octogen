@@ -77,6 +77,19 @@ message RunAppRequest {
   string name = 1;
 }
 
+message AppInfo {
+  string name = 1;
+  string language = 2;
+  // second
+  int32 ctime = 3;
+}
+
+message QueryAppsRequest {}
+
+message QueryAppsResponse {
+  repeated AppInfo apps = 1;
+}
+
 service AgentServer {
   // upload the file
   rpc upload(stream octopus_common_proto.FileChunk) returns (octopus_common_proto.FileUploaded) {}
@@ -87,4 +100,6 @@ service AgentServer {
   rpc assemble(AssembleAppRequest) returns (AssembleAppResponse) {}
   // run assembled application
   rpc run(RunAppRequest) returns (stream TaskRespond) {}
+  // query all apps
+  rpc query_apps(QueryAppsRequest) returns (QueryAppsResponse) {}
 }

@@ -61,6 +61,9 @@ async def test_assemble_test(agent_sdk):
         name = random_str(10)
         response = await sdk.assemble(name, code, "python")
         assert response.code == 0, "fail to assemble app"
+        apps = await sdk.query_apps()
+        app = list(filter(lambda x: x.name == name, apps.apps))
+        assert len(app) == 1, "fail to get the app with name " + name
         responds = []
         async for respond in sdk.run(name):
             responds.append(respond)

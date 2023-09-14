@@ -59,6 +59,10 @@ class AgentSyncSDK:
         for respond in self.stub.run(request, metadata=self.metadata):
             yield respond
 
+    def query_apps(self):
+        request = agent_server_pb2.QueryAppsRequest()
+        return self.stub.query_apps(request, metadata=self.metadata)
+
     def add_kernel(self, key, endpoint):
         """
         add kernel instance to the agent and only admin can call this method
@@ -140,6 +144,11 @@ class AgentSDK:
         request = agent_server_pb2.RunAppRequest(name=name)
         async for respond in self.stub.run(request, metadata=self.metadata):
             yield respond
+
+    async def query_apps(self):
+        """query all apps"""
+        request = agent_server_pb2.QueryAppsRequest()
+        return await self.stub.query_apps(request, metadata=self.metadata)
 
     async def add_kernel(self, key, endpoint):
         """

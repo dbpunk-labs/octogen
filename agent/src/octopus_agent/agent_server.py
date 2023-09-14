@@ -155,6 +155,32 @@ class AgentRpcServer(AgentServerServicer):
             ),
         )
 
+    async def query_apps(
+        self, request: agent_server_pb2.QueryAppsRequest, context: ServicerContext
+    ) -> agent_server_pb2.QueryAppsResponse:
+        metadata = dict(context.invocation_metadata())
+        if (
+            "api_key" not in metadata
+            or metadata["api_key"] not in self.agents
+            or not self.agents[metadata["api_key"]]
+        ):
+            logger.debug("invalid api key")
+            await context.abort(10, "invalid api key")
+        key = metadata["api_key"]
+        key_hash = hashlib.sha256(key.encode("UTF-8")).hexdigest()
+        lite_apps = (
+            await LiteApp.objects.filter(key_hash=key_hash).order_by("-time").all()
+        )
+        apps = [
+            agent_server_pb2.AppInfo(
+                name=lite_app.name,
+                language=lite_app.language,
+                ctime=int(lite_app.time.timestamp()),
+            )
+            for lite_app in lite_apps
+        ]
+        return agent_server_pb2.QueryAppsResponse(apps=apps)
+
     async def add_kernel(
         self, request: agent_server_pb2.AddKernelRequest, context: ServicerContext
     ) -> agent_server_pb2.AddKernelResponse:
