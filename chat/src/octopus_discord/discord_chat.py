@@ -61,35 +61,6 @@ class OctopusDiscordBot(discord.Client):
 {code}
 ```"""
             segments.append(mk)
-        elif action.tool == "execute_ts_code" and action.input:
-            explanation = arguments["explanation"]
-            code = arguments["code"]
-            mk = f"""{explanation}\n
-```typescript
-{code}
-```"""
-            segments.append(mk)
-        elif action.tool == "execute_shell_code" and action.input:
-            explanation = arguments["explanation"]
-            code = arguments["code"]
-            mk = f"""{explanation}\n
-```shell
-{code}
-```"""
-            segments.append(mk)
-        elif action.tool == "print_code" and action.input:
-            explanation = arguments["explanation"]
-            code = arguments["code"]
-            language = arguments["language"]
-            mk = f"""{explanation}\n
-```shell
-{code}
-```"""
-            segments.append(mk)
-        elif action.tool == "print_final_answer" and action.input:
-            mk = """%s""" % (arguments["answer"])
-            segments.append(mk)
-        return segments
 
     def handle_final_answer(self, respond):
         segments = []
@@ -186,7 +157,6 @@ class OctopusDiscordBot(discord.Client):
         except Exception as ex:
             logging.error(f"fail to process message {ex}")
 
-
 async def app():
     octopus_discord_bot_dir = "~/.octopus_discord_bot"
     if octopus_discord_bot_dir.find("~") == 0:
@@ -205,7 +175,6 @@ async def app():
     intents.message_content = True
     client = OctopusDiscordBot(sdk, filedir, intents=intents)
     await client.start(octopus_config["discord_bot_token"])
-
 
 def run_app():
     asyncio.run(app())
