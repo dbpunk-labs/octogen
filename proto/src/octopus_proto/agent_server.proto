@@ -90,7 +90,14 @@ message QueryAppsResponse {
   repeated AppInfo apps = 1;
 }
 
+message PingRequest {}
+message PongResponse {
+  int32 code = 1;
+  string msg = 2;
+}
 service AgentServer {
+  // check the connection is ok
+  rpc ping(PingRequest) returns (PongResponse) {}
   // upload the file
   rpc upload(stream octopus_common_proto.FileChunk) returns (octopus_common_proto.FileUploaded) {}
   rpc download(octopus_common_proto.DownloadRequest) returns (stream octopus_common_proto.FileChunk) {}

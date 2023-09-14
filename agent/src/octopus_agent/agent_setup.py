@@ -29,7 +29,6 @@ async def add_kernel(endpoint, api_key, kernel_endpoint, kernel_api_key):
     except Exception as ex:
         print("add kernel %s failed %s" % (kernel_endpoint, ex))
 
-
 @click.command()
 @click.option("--kernel_endpoint", help="the endpoint of kernel")
 @click.option("--kernel_api_key", help="the api key of kernel")
