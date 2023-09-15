@@ -355,7 +355,7 @@ def assemble_app(sdk, name, numbers, values):
     try:
         response = sdk.assemble(
             name,
-            "".join(code),
+            "\n".join(code),
             language,
             desc="",
             saved_filenames=list(set(saved_filenames)),
