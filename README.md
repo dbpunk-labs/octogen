@@ -1,7 +1,7 @@
 <p align="center">
 <img width="100px" src="./images/octopus_logo.png" align="center"/>
 
-Octopus, an Open-Source Code Interpreter, empowers developers to build personalized tools in minutes
+Octopus, an Open-Source Code Interpreter, empowers developers to build productive tools in minutes
 
 [video](https://github.com/dbpunk-labs/octopus/assets/8623385/1b7a47e5-8ac9-4d42-9eb2-848b47b8db84)
 
