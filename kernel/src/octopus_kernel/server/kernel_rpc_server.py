@@ -46,7 +46,9 @@ from aiofiles import os as aio_os
 
 config = dotenv_values(".env")
 
-LOG_LEVEL = logging.DEBUG
+LOG_LEVEL = (
+    logging.DEBUG if config.get("log_level", "info") == "debug" else logging.INFO
+)
 
 logging.basicConfig(
     level=LOG_LEVEL,
@@ -263,11 +265,13 @@ class KernelRpcServer(KernelServerNodeServicer):
                     },
                 )
             else:
-                keys = ",".join(result["data"].keys())
-                raise Exception(f"unsupported display data type {keys} for the result")
+                keys = ",".join(msg["content"]["data"].keys())
+                raise Exception(
+                    f"unsupported display data type {keys} for the result {msg}"
+                )
 
         if msg["msg_type"] == "execute_result":
-            logger.debug("result data %s", msg["content"]["data"])
+            logger.debug("result data %s", msg["content"]["data"]["text/plain"])
             return (
                 "result",
                 {

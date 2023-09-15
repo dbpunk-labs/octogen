@@ -20,7 +20,7 @@ python3 agent/setup.py --version
 echo "the chat new version"
 python3 chat/setup.py --version
 # build octopus proto package
-cd ${WORKDIR}/proto && make && python3 -m build
+cd ${WORKDIR}/proto  && make && python3 -m build
 # build octopus kernel package
 cd ${WORKDIR}/kernel && python3 -m build
 # build agent package

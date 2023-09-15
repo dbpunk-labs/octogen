@@ -174,6 +174,7 @@ def handle_action_output(segments, respond, images, values):
     output = respond.on_agent_action_end.output
     if not output:
         return
+
     mk = output
     markdown = Markdown(mk)
     images.extend(respond.on_agent_action_end.output_files)
@@ -354,7 +355,7 @@ def assemble_app(sdk, name, numbers, values):
     try:
         response = sdk.assemble(
             name,
-            "".join(code),
+            "\n".join(code),
             language,
             desc="",
             saved_filenames=list(set(saved_filenames)),
@@ -397,6 +398,7 @@ def app(octopus_dir):
     index = 0
     show_welcome(console)
     while True:
+        index = index + 1
         real_prompt = session.prompt("[%s]%s>" % (index, "🎧"), multiline=True)
         if not "".join(real_prompt.strip().split("\n")):
             continue
@@ -464,7 +466,9 @@ def app(octopus_dir):
             segments = [spinner]
             mk = """The following files will be uploaded
 """
-            with Live(Group(*segments), console=console) as live:
+            with Live(
+                Group(*segments), console=console, vertical_overflow="visible"
+            ) as live:
                 live.update(spinner)
                 for file in filepaths:
                     filename = file.split("/")[-1]
@@ -486,4 +490,3 @@ def app(octopus_dir):
             spinner_name=octopus_config.get("spinner", "dots2"),
             filedir=filedir,
         )
-        index = index + 1

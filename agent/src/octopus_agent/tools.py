@@ -82,33 +82,29 @@ class OctopusAPIMarkdownOutput(OctopusAPIBase):
             str: The response data in Markdown format.
         """
         if response.traceback:
-            return (
-                "The code is `1` with the error\n```\n%s\n```"
-                % json.loads(response.traceback)["data"]
-            )
-
+            return json.loads(response.traceback)["data"]
         output = ""
         if response.stdout:
             output = json.loads(response.stdout)["data"]
         if response.stderr:
             output += json.loads(response.stderr)["data"]
-        if output:
-            output = "The stdout/stderr \n```text\n%s\n```" % output
         if response.result:
+            logger.debug(response.result)
             result = json.loads(response.result)
             if result["msg_type"] == "execute_result":
                 content = result["data"]["text/plain"]
                 content = bytes(content, "utf-8").decode("unicode_escape")
                 if content.startswith("'") and content.endswith("'"):
                     content = content[1 : len(content) - 1]
-                output = "the result \n%s\n %s" % (content, output)
+                logger.debug(f"{content}")
+                return content
             elif result["msg_type"] == "display_data":
                 if "image/png" in result["data"]:
                     filename = result["data"]["image/png"]
-                    output = f"the result \n [{filename}]({filename}) \n%s" % output
+                    return filename
                 elif "image/gif" in result["data"]:
                     filename = result["data"]["image/gif"]
-                    output = f"the result \n [{filename}]({filename}) \n%s" % output
+                    return filename
                 else:
                     keys = ",".join(result["data"].keys())
                     raise Exception(
@@ -118,4 +114,5 @@ class OctopusAPIMarkdownOutput(OctopusAPIBase):
                 raise Exception(
                     f"unsupported messsage type {result['msg_type']} for the result"
                 )
-        return output
+        else:
+            return output

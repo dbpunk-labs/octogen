@@ -44,7 +44,9 @@ from .utils import parse_link
 
 
 config = dotenv_values(".env")
-LOG_LEVEL = logging.DEBUG
+LOG_LEVEL = (
+    logging.DEBUG if config.get("log_level", "info") == "debug" else logging.INFO
+)
 logging.basicConfig(
     level=LOG_LEVEL,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -80,6 +82,23 @@ class AgentRpcServer(AgentServerServicer):
         self.verbose = config.get("verbose", False)
         self.llm_manager = LLMManager(config)
         self.llm = self.llm_manager.get_llm()
+
+    async def ping(
+        self, request: agent_server_pb2.PingRequest, context: ServicerContext
+    ) -> agent_server_pb2.PongResponse:
+        metadata = dict(context.invocation_metadata())
+        if (
+            "api_key" not in metadata
+            or metadata["api_key"] not in self.agents
+            or not self.agents[metadata["api_key"]]
+        ):
+            return agent_server_pb2.PongResponse(
+                code=-1, msg="Your API Key is invalid!"
+            )
+        else:
+            return agent_server_pb2.PongResponse(
+                code=0, msg="Connect to Octopus Agent Ok!"
+            )
 
     async def assemble(
         self, request: agent_server_pb2.AssembleAppRequest, context: ServicerContext

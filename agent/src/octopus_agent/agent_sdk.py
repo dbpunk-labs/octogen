@@ -71,6 +71,11 @@ class AgentSyncSDK:
         response = self.stub.add_kernel(request, metadata=self.metadata)
         return response
 
+    def ping(self):
+        request = agent_server_pb2.PingRequest()
+        response = self.stub.ping(request, metadata=self.metadata)
+        return response
+
     def download_file(self, filename, parent_path):
         request = common_pb2.DownloadRequest(filename=filename)
         fullpath = "%s/%s" % (parent_path, filename)
@@ -127,6 +132,11 @@ class AgentSDK:
         channel = aio.insecure_channel(self.endpoint)
         self.channel = channel
         self.stub = AgentServerStub(channel)
+
+    async def ping(self):
+        request = agent_server_pb2.PingRequest()
+        response = await self.stub.ping(request, metadata=self.metadata)
+        return response
 
     async def assemble(self, name, code, language, desc="", saved_filenames=[]):
         request = agent_server_pb2.AssembleAppRequest(
