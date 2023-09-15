@@ -466,7 +466,9 @@ def app(octopus_dir):
             segments = [spinner]
             mk = """The following files will be uploaded
 """
-            with Live(Group(*segments), console=console) as live:
+            with Live(
+                Group(*segments), console=console, vertical_overflow="visible"
+            ) as live:
                 live.update(spinner)
                 for file in filepaths:
                     filename = file.split("/")[-1]

@@ -46,7 +46,9 @@ from aiofiles import os as aio_os
 
 config = dotenv_values(".env")
 
-LOG_LEVEL = logging.DEBUG
+LOG_LEVEL = (
+    logging.DEBUG if config.get("log_level", "info") == "debug" else logging.INFO
+)
 
 logging.basicConfig(
     level=LOG_LEVEL,

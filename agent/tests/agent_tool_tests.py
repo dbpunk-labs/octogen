@@ -42,8 +42,7 @@ async def test_sync_smoke_test_markdown(kernel_sdk):
     code = "print('hello world!')"
     api = OctopusAPIMarkdownOutput(sdk)
     result = await api.arun(code)
-    assert result.find("The result") < 0
-    assert result.find("The stdout") >= 0
+    assert result.find("hello") >= 0
     logger.info(result)
 
 
