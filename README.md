@@ -23,7 +23,7 @@ Core components
 For security, it is recommended to run the kernel and agent as Docker containers.
 
 <p align="center">
-<img width="800px" src="https://github.com/dbpunk-labs/octopus/assets/8623385/3a3e158c-5af2-46e9-8da8-5e07b69f3433" align="center"/>
+<img width="800px" src="https://github.com/dbpunk-labs/octopus/assets/8623385/b67ce64e-4ca8-41b0-9cb8-3b13610ff970" align="center"/>
 
 ## What can we do with octopus
 
