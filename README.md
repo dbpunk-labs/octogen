@@ -7,7 +7,10 @@ Octopus, an open-source code interpreter, helps developers build productive tool
 
 ## Getting Started
 
-## Supported Externel Service
+## How it works
+
+
+<img width="500px" src="https://github.com/dbpunk-labs/octopus/assets/8623385/3a3e158c-5af2-46e9-8da8-5e07b69f3433" align="center"/>
 
 ### LLM
 
