@@ -1,9 +1,9 @@
 <p align="center">
 <img width="100px" src="./images/octopus_logo.png" align="center"/>
-Your Exclusive Open-Source Code Interpreter
 
-* use octopus to solve the meanful problem in ai-in-time programming
-* assemble the generated code segment into an application and run it directly in the future
+Octopus, an Open-Source Code Interpreter, empowers developers to build personalized tools in minutes
+
+
 
 ## Getting Started
 
