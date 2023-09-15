@@ -46,7 +46,7 @@ setup(
         "console_scripts": [
             "octopus = octopus_terminal.terminal_chat:app",
             "octopus_ping = octopus_terminal.ping:app",
-            # "octopus_discord_bot = octopus_discord.discord_chat:run_app",
+            "octopus_discord_bot = octopus_discord.discord_chat:run_app",
         ]
     },
 )

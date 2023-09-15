@@ -23,6 +23,7 @@ import json
 import sys
 import os
 import click
+from datetime import datetime
 from dotenv import dotenv_values
 from octopus_proto import common_pb2
 from octopus_agent.agent_sdk import AgentSDK
@@ -43,7 +44,7 @@ class OctopusDiscordBot(discord.Client):
         self.octopus_sdk = octopus_sdk
         self.filedir = filedir
 
-    def handle_action_start(self, respond):
+    def handle_action_start(self, respond, saved_images):
         """Run on agent action."""
         segments = []
         if not respond.on_agent_action:
@@ -56,12 +57,13 @@ class OctopusDiscordBot(discord.Client):
         if action.tool == "execute_python_code" and action.input:
             explanation = arguments["explanation"]
             code = arguments["code"]
+            saved_images.extend(arguments.get("saved_filenames", []))
             mk = f"""{explanation}\n
 ```python
 {code}
 ```"""
             segments.append(mk)
-
+        return segments
     def handle_final_answer(self, respond):
         segments = []
         if not respond.final_respond:
@@ -77,14 +79,14 @@ class OctopusDiscordBot(discord.Client):
         segments.append("%s\n%s" % (answer, state))
         return segments
 
-    def handle_action_output(self, respond, saved_images, output_images):
+    def handle_action_output(self, respond, saved_images):
         segments = []
         if not respond.on_agent_action_end:
             return segments
         mk = respond.on_agent_action_end.output
         if not mk:
             return segments
-        output_images.extend(respond.on_agent_action_end.output_files)
+        saved_images.extend(respond.on_agent_action_end.output_files)
         segments.append(mk)
         return segments
 
@@ -95,20 +97,65 @@ class OctopusDiscordBot(discord.Client):
     async def on_ready(self):
         logger.info(f"Logged in as {self.user} (ID: {self.user.id})")
 
+    async def run_app(self, name, message):
+        saved_images = []
+        async for respond in self.octopus_sdk.run(name):
+            if not respond:
+                break
+            if respond.on_agent_action_end:
+                segments = self.handle_action_output(
+                    respond, saved_images
+                )
+                msg = "".join(segments)
+                if msg:
+                    await message.channel.send(msg)
+            if respond.on_agent_action:
+                segments = self.handle_action_start(respond, saved_images)
+                msg = "".join(segments)
+                if msg:
+                    await message.channel.send(msg)
+        saved_images = list(set(saved_images))
+        if saved_images:
+            await self.download_files(saved_images)
+            for filename in saved_images:
+                fullpath = "%s/%s" % (self.filedir, filename)
+                await message.channel.send(
+                    "", file=discord.File(fullpath)
+                )
+                break
+
+    async def show_apps(self):
+        header = """Apps
+"""
+        rows = []
+        apps = await self.octopus_sdk.query_apps()
+        for index, app in enumerate(apps.apps):
+            ctime = datetime.fromtimestamp(app.ctime).strftime("%m/%d/%Y")
+            rows.append(f"{index+1}.{app.name}")
+        table = header + "\n".join(rows)
+        return table
     async def on_message(self, message):
         # we do not want the bot to reply to itself
         try:
             if message.author.id == self.user.id:
                 return
+            if message.content.find("/apps") >=0:
+                apps = await self.show_apps()
+                await message.channel.send(
+                        apps)
+                return
+            content = message.content
+            if content.find("/run") >=0:
+                name = content.split(" ")[1]
+                await self.run_app(name, message)
+                return
             await message.channel.send("working...")
             files = []
             for att in message.attachments:
-
                 async def generate_chunk(att):
                     # TODO split
                     chunk = await att.read()
                     yield common_pb2.FileChunk(buffer=chunk, filename=att.filename)
-
                 await sdk.upload_binary(generate_chunk(att), att.filename)
                 files.append("uploaded " + att.filename)
             if files:
@@ -122,16 +169,15 @@ class OctopusDiscordBot(discord.Client):
                     logger.info(f"{respond}")
                     if respond.on_agent_action_end:
                         saved_images = []
-                        output_images = []
                         segments = self.handle_action_output(
-                            respond, saved_images, output_images
+                            respond, saved_images
                         )
                         msg = "".join(segments)
                         logger.info(f"action output {msg}")
                         if msg:
-                            if output_images:
-                                await self.download_files(output_images)
-                                for filename in output_images:
+                            if saved_images:
+                                await self.download_files(saved_images)
+                                for filename in saved_images:
                                     fullpath = "%s/%s" % (self.filedir, filename)
                                     await message.channel.send(
                                         msg, file=discord.File(fullpath)
@@ -140,7 +186,8 @@ class OctopusDiscordBot(discord.Client):
                             else:
                                 await message.channel.send(msg)
                     if respond.on_agent_action:
-                        segments = self.handle_action_start(respond)
+                        saved_images = []
+                        segments = self.handle_action_start(respond, saved_images)
                         msg = "".join(segments)
                         logger.info(f"action start {msg}")
                         if msg:
@@ -155,8 +202,7 @@ class OctopusDiscordBot(discord.Client):
                 logger.error(f"fail to get file {ex}")
                 await message.channel.send("I am sorry for the internal error")
         except Exception as ex:
-            logging.error(f"fail to process message {ex}")
-
+            logging.exception(ex)
 
 async def app():
     octopus_discord_bot_dir = "~/.octopus_discord_bot"
@@ -176,7 +222,6 @@ async def app():
     intents.message_content = True
     client = OctopusDiscordBot(sdk, filedir, intents=intents)
     await client.start(octopus_config["discord_bot_token"])
-
 
 def run_app():
     asyncio.run(app())
