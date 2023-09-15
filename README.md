@@ -3,7 +3,7 @@
 
 Octopus, an Open-Source Code Interpreter, empowers developers to build personalized tools in minutes
 
-
+[video](https://github.com/dbpunk-labs/octopus/assets/8623385/1b7a47e5-8ac9-4d42-9eb2-848b47b8db84)
 
 ## Getting Started
 
