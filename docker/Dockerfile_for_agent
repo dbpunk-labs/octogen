@@ -1,4 +1,4 @@
-FROM octopus_base
+FROM imotai/octopus_base:0.3.3
 WORKDIR /agent
 VOLUME /agent
 ADD start_agent.sh /agent/

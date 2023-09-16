@@ -1,0 +1,15 @@
+services:
+  kernel:
+    image: imotai/octopus_kernel:0.3.4
+    ports:
+      - '9527:9527'
+    volumes:
+      - ./app/kernel:/kernel
+  agent:
+    image: imotai/octopus_agent:0.3.4
+    ports:
+      - '9528:9528'
+    volumes:
+      - ./app/agent:/agent
+    depends_on:
+      - kernel

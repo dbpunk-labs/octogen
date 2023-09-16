@@ -1,14 +1,10 @@
 services:
   kernel:
-    env_file:
-      - kernel.env
-    image: octopus_kernel:latest
+    image: imotai/octopus_kernel:0.3.3
     ports:
       - '9527:9527'
   agent:
-    image: octopus_agent:latest
-    env_file:
-      - agent.env
+    image: imotai/octopus_agent:0.3.3
     ports:
       - '9528:9528'
     depends_on:

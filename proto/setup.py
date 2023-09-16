@@ -19,7 +19,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="octopus_proto",
-    version="0.2.3",
+    version="0.3.3",
     description="Open source code interpreter agent for LLM",
     author="imotai",
     author_email="wangtaize@dbpunk.com",

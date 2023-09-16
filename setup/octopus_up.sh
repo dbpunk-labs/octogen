@@ -56,6 +56,18 @@ function start_unsafe_local_instance() {
     octopus_ping
 }
 
+function start_docker_local_instance() {
+    ROOT_DIR=$1
+    COMPOSE_DIR="$(dirname "$ROOT_DIR")"
+    cd $COMPOSE_DIR && docker compose up -d
+    sleep 3
+    AGENT_RPC_KEY=$(cat ${ROOT_DIR}/agent/.env | grep admin_key | cut -d "=" -f 2)
+    KERNEL_RPC_KEY=$(cat ${ROOT_DIR}/kernel/.env | grep rpc_key | cut -d "=" -f 2)
+    octopus_agent_setup --kernel_endpoint=127.0.0.1:9527 --kernel_api_key=${KERNEL_RPC_KEY} --agent_endpoint=127.0.0.1:9528 --admin_key=${AGENT_RPC_KEY}
+    cd ${ROOT_DIR}
+    octopus_ping
+}
+
 function request_codellama_opt() {
     ROOT_DIR=$1
     read -p 'LlamaCpp Server Endpoint: ' llama_endpoint
@@ -156,6 +168,10 @@ function install_octopus_package() {
     pip3 install octopus_agent octopus_kernel hapless octopus_chat
 }
 
+function install_octopus_cli_package() {
+    pip3 install octopus_chat octopus_agent
+}
+
 function install_unsafe_local_openai() {
     ROOT_DIR=$1
     generate_common_env ${ROOT_DIR}
@@ -220,6 +236,52 @@ function start_unsafe_local() {
     done
 }
 
+function start_docker_local() {
+    ROOT_DIR="./app"
+    if [ -f ${ROOT_DIR}/agent/.env ]; then
+        echo "✅ You have setup the environment, the dir is ${ROOT_DIR}"
+        start_unsafe_local_instance ${ROOT_DIR}
+        exit 0
+    fi
+    read -p 'Please specify the install folder(default:./app): ' new_dir
+    if [[ ! -z $new_dir ]]; then
+        ROOT_DIR=${new_dir}
+    fi
+    mkdir -p ${ROOT_DIR}
+    if [ $? -eq 0 ]; then
+        echo "✅ Create octopus app dir ${ROOT_DIR} done "
+    else
+        echo "❌ Create octopus app dir failed"
+        exit 1
+    fi
+    install_octopus_cli_package
+    PS3='Please enter your LLM choice number: '
+    options=("OpenAI" "Azure OpenAI" "Codellama" "Quit")
+    select opt in "${options[@]}"; do
+        case $opt in
+        "OpenAI")
+            install_unsafe_local_openai ${ROOT_DIR}
+            start_docker_local_instance ${ROOT_DIR}
+            exit 0
+            ;;
+        "Azure OpenAI")
+            install_unsafe_local_azure_openai ${ROOT_DIR}
+            start_docker_local_instance ${ROOT_DIR}
+            exit 0
+            ;;
+        "Codellama")
+            install_unsafe_local_codellama ${ROOT_DIR}
+            start_docker_local_instance ${ROOT_DIR}
+            exit 0
+            ;;
+        "Quit")
+            exit 0
+            ;;
+        *) echo "invalid option $REPLY" ;;
+        esac
+    done
+}
+
 # Parse the command lines
 function get_opts() {
     while getopts ":h" opt; do
@@ -260,7 +322,7 @@ function get_opts() {
         start_unsafe_local
         ;;
     docker-local)
-        start_localnet
+        start_docker_local
         ;;
     *)
         # Unrecognized option, get help.

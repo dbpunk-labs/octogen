@@ -1,7 +1,6 @@
 <p align="center">
 <img width="100px" src="https://github.com/dbpunk-labs/octopus/assets/8623385/6c60cb2b-415f-4979-9dc2-b8ce1958e17a" align="center"/>
 
-
 ![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/dbpunk-labs/octopus/ci.yml?branch=main&style=flat-square)
 [![Discord](https://badgen.net/badge/icon/discord?icon=discord&label)](https://discord.gg/UjSHsjaz66)
 
@@ -24,12 +23,6 @@ For security, it is recommended to run the kernel and agent as Docker containers
 
 <p align="center">
 <img width="800px" src="https://github.com/dbpunk-labs/octopus/assets/8623385/b67ce64e-4ca8-41b0-9cb8-3b13610ff970" align="center"/>
-
-## What can we do with octopus
-
-there are some ideas for you
-* building a github issue board in terminal to manage your issue status
-* building a hackernews list in terminal to get the latest news
 
 ## Demo
 

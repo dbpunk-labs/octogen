@@ -31,10 +31,13 @@ from octopus_agent.agent_sdk import AgentSyncSDK
 from dotenv import dotenv_values
 from prompt_toolkit.completion import Completer, Completion
 from .utils import parse_file_path
+from .markdown import CodeBlock
 import clipboard
 from PIL import Image
 from term_image.image import AutoImage
 
+Markdown.elements["fence"] = CodeBlock
+Markdown.elements["code_block"] = CodeBlock
 OCTOPUS_TITLE = "🐙[bold red]Octopus"
 OCTOPUS_APP_TITLE = "🐙[bold red]App"
 
@@ -196,7 +199,9 @@ def handle_action_start(segments, respond, images, values):
             markdown = Markdown("\n" + explanation + "\n")
             values.append(("text", explanation, []))
             segments.append((len(values) - 1, markdown))
-        syntax = Syntax(arguments["code"], "python", line_numbers=True)
+        syntax = Syntax(
+            arguments["code"], "python", line_numbers=True, background_color="default"
+        )
         values.append(
             ("python", arguments["code"], arguments.get("saved_filenames", []))
         )
@@ -466,9 +471,7 @@ def app(octopus_dir):
             segments = [spinner]
             mk = """The following files will be uploaded
 """
-            with Live(
-                Group(*segments), console=console, vertical_overflow="visible"
-            ) as live:
+            with Live(Group(*segments), console=console, screen=True) as live:
                 live.update(spinner)
                 for file in filepaths:
                     filename = file.split("/")[-1]

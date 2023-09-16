@@ -68,7 +68,7 @@ class CodellamaAgent:
             while iteration < max_iteration:
                 iteration += 1
                 response = []
-                async for line in self.client.run(
+                async for line in self.client.prompt(
                     current_question, chat_history="\n".join(history)
                 ):
                     if len(line) < 6:
@@ -118,7 +118,7 @@ class CodellamaAgent:
                     await queue.put(execute_result)
                     if (
                         not json_respose["is_final_answer"]
-                        or output.find("with the error") >= 0
+                        or output.find("Traceback") >= 0
                     ):
                         history.append("User:%s" % current_question)
                         history.append("Octopus:%s\n" % ("".join(response)))
