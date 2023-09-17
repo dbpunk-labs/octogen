@@ -43,7 +43,7 @@ class CodeBlock(TextElement):
         syntax = Syntax(
             code,
             self.lexer_name,
-            background_color="default",
+            # background_color="default",
             line_numbers=True,
             theme=self.theme,
             word_wrap=True,

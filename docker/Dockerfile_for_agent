@@ -1,5 +1,5 @@
 FROM imotai/octopus_base:0.3.3
 WORKDIR /agent
 VOLUME /agent
-ADD start_agent.sh /agent/
-CMD ["bash", "/agent/start_agent.sh"]
+ADD start_agent.sh /bin/
+CMD ["bash", "/bin/start_agent.sh"]

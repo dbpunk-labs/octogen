@@ -58,9 +58,8 @@ function start_unsafe_local_instance() {
 
 function start_docker_local_instance() {
     ROOT_DIR=$1
-    COMPOSE_DIR="$(dirname "$ROOT_DIR")"
-    cd $COMPOSE_DIR && docker compose up -d
-    sleep 3
+    cd $ROOT_DIR && docker compose up -d
+    sleep 4
     AGENT_RPC_KEY=$(cat ${ROOT_DIR}/agent/.env | grep admin_key | cut -d "=" -f 2)
     KERNEL_RPC_KEY=$(cat ${ROOT_DIR}/kernel/.env | grep rpc_key | cut -d "=" -f 2)
     octopus_agent_setup --kernel_endpoint=127.0.0.1:9527 --kernel_api_key=${KERNEL_RPC_KEY} --agent_endpoint=127.0.0.1:9528 --admin_key=${AGENT_RPC_KEY}
@@ -143,16 +142,15 @@ function generate_common_env() {
     mkdir -p ${ROOT_DIR}/kernel/config
     echo "config_root_path=${ROOT_DIR}/kernel/config" >${ROOT_DIR}/kernel/.env
     echo "workspace=${ROOT_DIR}/kernel/ws" >>${ROOT_DIR}/kernel/.env
-    echo "rpc_host=127.0.0.1" >>${ROOT_DIR}/kernel/.env
+    echo "rpc_host=0.0.0.0" >>${ROOT_DIR}/kernel/.env
     echo "rpc_port=9527" >>${ROOT_DIR}/kernel/.env
     echo "rpc_key=${KERNEL_KEY}" >>${ROOT_DIR}/kernel/.env
 
-    echo "rpc_host=127.0.0.1" >${ROOT_DIR}/agent/.env
+    echo "rpc_host=0.0.0.0" >${ROOT_DIR}/agent/.env
     echo "rpc_port=9528" >>${ROOT_DIR}/agent/.env
     echo "admin_key=${AGENT_ADMIN_KEY}" >>${ROOT_DIR}/agent/.env
     echo "max_file_size=10240000" >>${ROOT_DIR}/agent/.env
     echo "verbose=True" >>${ROOT_DIR}/agent/.env
-    echo "db_path=${ROOT_DIR}/agent/octopus.db" >>${ROOT_DIR}/agent/.env
     echo "install the octopus"
     echo "✅ Install octopus to dir ${ROOT_DIR} done"
     if [ -f $HOME/.octopus/config ]; then
@@ -215,16 +213,19 @@ function start_unsafe_local() {
         case $opt in
         "OpenAI")
             install_unsafe_local_openai ${ROOT_DIR}
+            echo "db_path=${ROOT_DIR}/agent/octopus.db" >>${ROOT_DIR}/agent/.env
             start_unsafe_local_instance ${ROOT_DIR}
             exit 0
             ;;
         "Azure OpenAI")
             install_unsafe_local_azure_openai ${ROOT_DIR}
+            echo "db_path=${ROOT_DIR}/agent/octopus.db" >>${ROOT_DIR}/agent/.env
             start_unsafe_local_instance ${ROOT_DIR}
             exit 0
             ;;
         "Codellama")
             install_unsafe_local_codellama ${ROOT_DIR}
+            echo "db_path=${ROOT_DIR}/agent/octopus.db" >>${ROOT_DIR}/agent/.env
             start_unsafe_local_instance ${ROOT_DIR}
             exit 0
             ;;
@@ -237,10 +238,11 @@ function start_unsafe_local() {
 }
 
 function start_docker_local() {
-    ROOT_DIR="./app"
+    CDIR=`pwd`
+    ROOT_DIR="$CDIR/app"
     if [ -f ${ROOT_DIR}/agent/.env ]; then
         echo "✅ You have setup the environment, the dir is ${ROOT_DIR}"
-        start_unsafe_local_instance ${ROOT_DIR}
+        start_docker_local_instance ${ROOT_DIR}
         exit 0
     fi
     read -p 'Please specify the install folder(default:./app): ' new_dir
@@ -248,6 +250,7 @@ function start_docker_local() {
         ROOT_DIR=${new_dir}
     fi
     mkdir -p ${ROOT_DIR}
+    cp compose.yaml  ${ROOT_DIR}
     if [ $? -eq 0 ]; then
         echo "✅ Create octopus app dir ${ROOT_DIR} done "
     else
@@ -261,16 +264,19 @@ function start_docker_local() {
         case $opt in
         "OpenAI")
             install_unsafe_local_openai ${ROOT_DIR}
+            echo "db_path=/agent/octopus.db" >>${ROOT_DIR}/agent/.env
             start_docker_local_instance ${ROOT_DIR}
             exit 0
             ;;
         "Azure OpenAI")
             install_unsafe_local_azure_openai ${ROOT_DIR}
+            echo "db_path=/agent/octopus.db" >>${ROOT_DIR}/agent/.env
             start_docker_local_instance ${ROOT_DIR}
             exit 0
             ;;
         "Codellama")
             install_unsafe_local_codellama ${ROOT_DIR}
+            echo "db_path=/agent/octopus.db" >>${ROOT_DIR}/agent/.env
             start_docker_local_instance ${ROOT_DIR}
             exit 0
             ;;

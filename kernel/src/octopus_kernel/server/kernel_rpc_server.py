@@ -265,10 +265,18 @@ class KernelRpcServer(KernelServerNodeServicer):
                     },
                 )
             else:
-                keys = ",".join(msg["content"]["data"].keys())
-                raise Exception(
-                    f"unsupported display data type {keys} for the result {msg}"
+                logger.warning(f" unsupported display_data {msg}")
+                return (
+                    "result",
+                    {
+                        "data": msg["content"]["data"],
+                        "msg_type": msg["msg_type"],
+                    },
                 )
+                # keys = ",".join(msg["content"]["data"].keys())
+                # raise Exception(
+                #    f"unsupported display data type {keys} for the result {msg}"
+                # )
 
         if msg["msg_type"] == "execute_result":
             logger.debug("result data %s", msg["content"]["data"]["text/plain"])

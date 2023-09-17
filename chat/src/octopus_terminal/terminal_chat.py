@@ -177,12 +177,14 @@ def handle_action_output(segments, respond, images, values):
     output = respond.on_agent_action_end.output
     if not output:
         return
-
     mk = output
-    markdown = Markdown(mk)
-    images.extend(respond.on_agent_action_end.output_files)
+    syntax = Syntax(
+        mk,
+        line_numbers=True,  # background_color="default"
+    )
+    # images.extend(respond.on_agent_action_end.output_files)
     values.append(("text", mk, []))
-    segments.append((len(values) - 1, markdown))
+    segments.append((len(values) - 1, syntax))
 
 
 def handle_action_start(segments, respond, images, values):
@@ -200,7 +202,9 @@ def handle_action_start(segments, respond, images, values):
             values.append(("text", explanation, []))
             segments.append((len(values) - 1, markdown))
         syntax = Syntax(
-            arguments["code"], "python", line_numbers=True, background_color="default"
+            arguments["code"],
+            "python",
+            line_numbers=True,  # background_color="default"
         )
         values.append(
             ("python", arguments["code"], arguments.get("saved_filenames", []))
@@ -246,11 +250,14 @@ def handle_final_answer(segments, respond, values):
 def render_image(images, sdk, image_dir, console):
     image_set = set(images)
     for image in image_set:
-        sdk.download_file(image, image_dir)
-        fullpath = "%s/%s" % (image_dir, image)
-        pil_image = Image.open(fullpath)
-        auto_image = AutoImage(image=pil_image, width=int(pil_image.size[0] / 8))
-        print(f"{auto_image:1.1#}")
+        try:
+            sdk.download_file(image, image_dir)
+            fullpath = "%s/%s" % (image_dir, image)
+            pil_image = Image.open(fullpath)
+            auto_image = AutoImage(image=pil_image, width=int(pil_image.size[0] / 20))
+            print(f"{auto_image:1.1#}")
+        except Exception as ex:
+            pass
 
 
 def run_chat(
@@ -261,12 +268,12 @@ def run_chat(
     """
     segments = []
     images = []
-    with Live(Group(*segments), console=console) as live:
+    token_usage = 0
+    iteration = 0
+    model_name = ""
+    with Live(Group(*segments), console=console, vertical_overflow="visible") as live:
         spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
         refresh(live, segments, spinner)
-        token_usage = 0
-        iteration = 0
-        model_name = ""
         for respond in sdk.prompt(prompt):
             if not respond:
                 break
@@ -343,7 +350,7 @@ def query_apps(sdk, console):
             app.language,
             datetime.fromtimestamp(app.ctime).strftime("%m/%d/%Y"),
         )
-    console.print(app_table)
+    console.print(Panel(app_table, title=OCTOPUS_APP_TITLE, title_align="left"))
 
 
 def assemble_app(sdk, name, numbers, values):
