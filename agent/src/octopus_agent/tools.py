@@ -106,10 +106,7 @@ class OctopusAPIMarkdownOutput(OctopusAPIBase):
                     filename = result["data"]["image/gif"]
                     return filename
                 else:
-                    keys = ",".join(result["data"].keys())
-                    raise Exception(
-                        f"unsupported display data type {keys} for the result"
-                    )
+                    return ""
             else:
                 raise Exception(
                     f"unsupported messsage type {result['msg_type']} for the result"

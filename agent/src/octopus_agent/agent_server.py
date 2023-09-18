@@ -40,7 +40,7 @@ import langchain
 import databases
 import orm
 from datetime import datetime
-from .utils import parse_link
+from .utils import parse_image_filename
 
 
 config = dotenv_values(".env")
@@ -159,16 +159,18 @@ class AgentRpcServer(AgentServerServicer):
             else [],
         })
         yield agent_server_pb2.TaskRespond(
+            respond_type=agent_server_pb2.TaskRespond.OnAgentActionType,
             on_agent_action=agent_server_pb2.OnAgentAction(
                 input=tool_input, tool="execute_python_code"
             ),
         )
         output = await tool.arun(lite_app.code)
         output_files = []
-        name, link = parse_link(output)
-        if name and link:
-            output_files.append(link)
+        filename = parse_image_filename(output)
+        if filename:
+            output_files.append(filename)
         yield agent_server_pb2.TaskRespond(
+            respond_type=agent_server_pb2.TaskRespond.OnAgentActionEndType,
             on_agent_action_end=agent_server_pb2.OnAgentActionEnd(
                 output=output, output_files=output_files
             ),
@@ -212,9 +214,13 @@ class AgentRpcServer(AgentServerServicer):
         # init the sdk
         sdk = KernelSDK(request.endpoint, request.key)
         sdk.connect()
+        try:
+            await sdk.is_alive()
+        except Exception as ex:
+            await context.abort(10, f"Connecting to kernel {request.endpoint} failed")
         tool = OctopusAPIMarkdownOutput(sdk)
         if config["llm_key"] == "azure_openai" or config["llm_key"] == "openai":
-            logger.info("create a openai agent")
+            logger.info(f"create a openai agent {request.endpoint}")
             agent = build_openai_agent(
                 self.llm,
                 sdk,
@@ -223,11 +229,11 @@ class AgentRpcServer(AgentServerServicer):
             )
             self.agents[request.key] = {"sdk": sdk, "agent": agent, "tool": tool}
         elif config["llm_key"] == "mock":
-            logger.info("create a mock agent")
+            logger.info(f"create a mock agent to kernel {request.endpoint}")
             agent = build_mock_agent(self.llm)
             self.agents[request.key] = {"sdk": sdk, "agent": agent, "tool": tool}
         elif config["llm_key"] == "codellama":
-            logger.info("create a codellama agent")
+            logger.info(f"create a codellama agent {request.endpoint}")
             grammer_path = os.path.join(
                 pathlib.Path(__file__).parent.resolve(), "grammar.bnf"
             )
@@ -284,6 +290,7 @@ class AgentRpcServer(AgentServerServicer):
                     token_usage=0,
                     model_name="",
                     iteration=1,
+                    respond_type=agent_server_pb2.TaskRespond.OnFinalAnswerType,
                     final_respond=agent_server_pb2.FinalRespond(answer=str(ex)),
                 )
                 yield respond
@@ -322,6 +329,7 @@ class AgentRpcServer(AgentServerServicer):
                     token_usage=handler.token_usage,
                     model_name=handler.model_name,
                     iteration=handler.iteration,
+                    respond_type=agent_server_pb2.TaskRespond.OnFinalAnswerType,
                     final_respond=agent_server_pb2.FinalRespond(answer=task.result()),
                 )
                 logger.debug(f"respond {respond}")
@@ -331,6 +339,7 @@ class AgentRpcServer(AgentServerServicer):
                     token_usage=0,
                     model_name="",
                     iteration=1,
+                    respond_type=agent_server_pb2.TaskRespond.OnFinalAnswerType,
                     final_respond=agent_server_pb2.FinalRespond(answer=str(ex)),
                 )
                 yield respond

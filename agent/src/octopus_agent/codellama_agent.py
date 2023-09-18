@@ -20,7 +20,7 @@ import json
 import logging
 from .codellama_client import CodellamaClient
 from octopus_proto.agent_server_pb2 import OnAgentAction, TaskRespond, OnAgentActionEnd, FinalRespond
-from .utils import parse_link
+from .utils import parse_image_filename
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +94,7 @@ class CodellamaAgent:
                             + state["tokens_evaluated"]
                             + state["tokens_predicted"],
                             iteration=iteration,
+                            respond_type=TaskRespond.OnAgentActionType,
                             model_name=state["generation_settings"]["model"],
                             on_agent_action=OnAgentAction(
                                 input=tool_input, tool="execute_python_code"
@@ -102,14 +103,15 @@ class CodellamaAgent:
                     )
                     output = await self.tool.arun(code=json_respose["action_input"])
                     output_files = []
-                    name, link = parse_link(output)
-                    if name and link:
-                        output_files.append(link)
+                    filename = parse_image_filename(output)
+                    if filename:
+                        output_files.append(filename)
                     execute_result = TaskRespond(
                         token_usage=state["tokens_cached"]
                         + state["tokens_evaluated"]
                         + state["tokens_predicted"],
                         iteration=iteration,
+                        respond_type=TaskRespond.OnAgentActionEndType,
                         model_name=state["generation_settings"]["model"],
                         on_agent_action_end=OnAgentActionEnd(
                             output=output, output_files=output_files
@@ -139,6 +141,7 @@ class CodellamaAgent:
                             + state["tokens_evaluated"]
                             + state["tokens_predicted"],
                             iteration=iteration,
+                            respond_type=TaskRespond.OnFinalAnswerType,
                             model_name=state["generation_settings"]["model"],
                             final_respond=FinalRespond(answer=result),
                         )

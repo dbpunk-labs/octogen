@@ -22,12 +22,14 @@ from rich.progress import Progress
 from rich.rule import Rule
 from rich.live import Live
 from rich.spinner import Spinner
+from rich.emoji import Emoji
 from rich import box
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.shortcuts import CompleteStyle, clear
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit import PromptSession
 from octopus_agent.agent_sdk import AgentSyncSDK
+from octopus_proto import agent_server_pb2
 from dotenv import dotenv_values
 from prompt_toolkit.completion import Completer, Completion
 from .utils import parse_file_path
@@ -140,11 +142,13 @@ def refresh(
 ):
     table = Table.grid(padding=1, pad_edge=True)
     table.add_column("Index", no_wrap=True, justify="center", style="bold red")
+    table.add_column("Status", no_wrap=True, justify="center", style="bold red")
     table.add_column("Content")
-    for index, segment in segments:
-        table.add_row(f"{index}", segment)
+    for index, status, segment in segments:
+        table.add_row(f"{index}", status, segment)
     if spinner:
-        table.add_row("", spinner)
+        if not segments:
+            table.add_row("", spinner)
         live.update(
             Panel(
                 table,
@@ -172,24 +176,31 @@ def refresh(
 
 
 def handle_action_output(segments, respond, images, values):
-    if not respond.on_agent_action_end:
+    if respond.respond_type != agent_server_pb2.TaskRespond.OnAgentActionEndType:
         return
     output = respond.on_agent_action_end.output
-    if not output:
-        return
     mk = output
+    has_error = "✅"
+    # simple to handle error
+    if mk.find("Traceback") >= 0:
+        has_error = "❌"
     syntax = Syntax(
         mk,
+        "text",
         line_numbers=True,  # background_color="default"
     )
-    # images.extend(respond.on_agent_action_end.output_files)
-    values.append(("text", mk, []))
-    segments.append((len(values) - 1, syntax))
+    if not images:
+        images.extend(respond.on_agent_action_end.output_files)
+    segment = segments.pop()
+    segments.append((segment[0], has_error, segment[2]))
+    if output:
+        values.append(("text", mk, []))
+        segments.append((len(values) - 1, "💻", syntax))
 
 
 def handle_action_start(segments, respond, images, values):
     """Run on agent action."""
-    if not respond.on_agent_action:
+    if respond.respond_type != agent_server_pb2.TaskRespond.OnAgentActionType:
         return
     action = respond.on_agent_action
     if not action.input:
@@ -200,7 +211,7 @@ def handle_action_start(segments, respond, images, values):
         if explanation:
             markdown = Markdown("\n" + explanation + "\n")
             values.append(("text", explanation, []))
-            segments.append((len(values) - 1, markdown))
+            segments.append((len(values) - 1, "🧠", markdown))
         syntax = Syntax(
             arguments["code"],
             "python",
@@ -209,7 +220,8 @@ def handle_action_start(segments, respond, images, values):
         values.append(
             ("python", arguments["code"], arguments.get("saved_filenames", []))
         )
-        segments.append((len(values) - 1, syntax))
+        spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
+        segments.append((len(values) - 1, spinner, syntax))
         images.extend(arguments.get("saved_filenames", []))
 
 
@@ -222,28 +234,26 @@ def find_code(content, segments, values):
             if second_pos >= 0:
                 sub_content = content[start_index:first_pos]
                 values.append(("text", sub_content, []))
-                segments.append((len(values) - 1, Markdown(sub_content)))
+                segments.append((len(values) - 1, "🧠", Markdown(sub_content)))
                 start_index = first_pos
                 code_content = content[first_pos : second_pos + 3]
                 clean_code_content = clean_code(code_content)
                 # TODO parse language
                 values.append(("python", clean_code_content))
-                segments.append((len(values) - 1, Markdown(code_content)))
+                segments.append((len(values) - 1, "", Markdown(code_content)))
                 start_index = second_pos + 3
         else:
             break
     if start_index < len(content):
         sub_content = content[start_index:]
         values.append(("text", sub_content, []))
-        segments.append((len(values) - 1, Markdown(sub_content)))
+        segments.append((len(values) - 1, "🧠", Markdown(sub_content)))
 
 
 def handle_final_answer(segments, respond, values):
-    if not respond.final_respond:
+    if respond.respond_type != agent_server_pb2.TaskRespond.OnFinalAnswerType:
         return
     answer = respond.final_respond.answer
-    if not answer:
-        return
     find_code(answer, segments, values)
 
 
