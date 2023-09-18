@@ -20,6 +20,7 @@ import pytest
 import logging
 import json
 from octopus_kernel.sdk.kernel_sdk import KernelSDK
+from octopus_proto.kernel_server_pb2 import ExecuteResponse
 
 logger = logging.getLogger(__name__)
 
@@ -58,10 +59,29 @@ async def test_sdk_smoke_test(kernel_sdk):
     if not await kernel_sdk.is_alive():
         await kernel_sdk.start()
     code = """print('hello world!')"""
-    response = await kernel_sdk.execute(code)
+    responds = []
+    async for respond in kernel_sdk.execute(code):
+        responds.append(respond)
     await kernel_sdk.stop()
-    assert not response.result
-    assert not response.traceback
-    assert not response.stderr
-    assert response.stdout
-    assert json.loads(response.stdout)["data"] == "hello world!\n"
+    assert len(responds) == 1
+    assert responds[0].output_type == ExecuteResponse.StdoutType
+    assert json.loads(responds[0].output)["text"] == "hello world!\n"
+
+
+@pytest.mark.asyncio
+async def test_sdk_result_test(kernel_sdk):
+    kernel_sdk.connect()
+    assert kernel_sdk.stub is not None  # Check that stub is initialized
+    if not await kernel_sdk.is_alive():
+        await kernel_sdk.start()
+    code = """print('hello world!')
+5"""
+    responds = []
+    async for respond in kernel_sdk.execute(code):
+        responds.append(respond)
+    await kernel_sdk.stop()
+    assert len(responds) == 2
+    assert responds[0].output_type == ExecuteResponse.StdoutType
+    assert responds[1].output_type == ExecuteResponse.ResultType
+    assert json.loads(responds[0].output)["text"] == "hello world!\n"
+    assert json.loads(responds[1].output)["text/plain"] == "5"

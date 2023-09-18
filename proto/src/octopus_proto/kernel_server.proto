@@ -55,14 +55,18 @@ message ExecuteRequest {
 }
 
 message ExecuteResponse {
-  // the result of code execution
-  string result = 1;
-  // the stdout of code execution
-  string stdout = 2;
-  // the stderr of code execution
-  string stderr = 3;
-  // the exception of code execution
-  string traceback = 4;
+  enum OutputType {
+    // the stdout stream
+    StdoutType = 0;
+    // the stderr stream
+    StderrType = 1;
+    // the result
+    ResultType = 2;
+    // the traceback
+    TracebackType = 3;
+  }
+  OutputType output_type = 1;
+  string output = 2;
 }
 
 message GetStatusRequest {
@@ -78,7 +82,7 @@ message GetStatusResponse {
 service KernelServerNode {
   rpc start(StartKernelRequest) returns (StartKernelResponse) {}
   rpc stop(StopKernelRequest) returns (StopKernelResponse) {}
-  rpc execute(ExecuteRequest) returns (ExecuteResponse) {}
+  rpc execute(ExecuteRequest) returns (stream ExecuteResponse) {}
   rpc get_status(GetStatusRequest) returns (GetStatusResponse) {}
   rpc upload(stream octopus_common_proto.FileChunk) returns (octopus_common_proto.FileUploaded) {}
   rpc download(octopus_common_proto.DownloadRequest) returns (stream octopus_common_proto.FileChunk) {}

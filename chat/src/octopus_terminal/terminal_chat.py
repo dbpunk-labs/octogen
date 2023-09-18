@@ -29,6 +29,7 @@ from prompt_toolkit.shortcuts import CompleteStyle, clear
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit import PromptSession
 from octopus_agent.agent_sdk import AgentSyncSDK
+from octopus_agent.utils import process_char_stream
 from octopus_proto import agent_server_pb2
 from dotenv import dotenv_values
 from prompt_toolkit.completion import Completer, Completion
@@ -134,7 +135,6 @@ def clean_code(code: str):
 def refresh(
     live,
     segments,
-    spinner,
     token_usage="0",
     iteration="0",
     model_name="",
@@ -146,41 +146,53 @@ def refresh(
     table.add_column("Content")
     for index, status, segment in segments:
         table.add_row(f"{index}", status, segment)
-    if spinner:
-        if not segments:
-            table.add_row("", spinner)
-        live.update(
-            Panel(
-                table,
-                title=title,
-                title_align="left",
-                subtitle=f"[bold yellow]token:{token_usage} interation:{iteration} model:{model_name}"
-                if model_name
-                else "",
-                subtitle_align="right",
-            )
+    live.update(
+        Panel(
+            table,
+            title=title,
+            title_align="left",
+            subtitle=f"[bold yellow]token:{token_usage} interation:{iteration} model:{model_name}"
+            if model_name
+            else "",
+            subtitle_align="right",
         )
-    else:
-        live.update(
-            Panel(
-                table,
-                title=title,
-                title_align="left",
-                subtitle=f"[bold yellow]token:{token_usage} interation:{iteration} model:{model_name}"
-                if model_name
-                else "",
-                subtitle_align="right",
-            )
-        )
+    )
     live.refresh()
 
 
-def handle_action_output(segments, respond, images, values):
+def handle_action_output(segments, respond, values):
+    if respond.respond_type not in [
+        agent_server_pb2.TaskRespond.OnAgentActionStdout,
+        agent_server_pb2.TaskRespond.OnAgentActionStderr,
+    ]:
+        return
+
+    value = values.pop()
+    new_stdout = value[1][0]
+    new_stderr = value[1][1]
+    segment = segments.pop()
+    if respond.respond_type == agent_server_pb2.TaskRespond.OnAgentActionStdout:
+        new_stdout += respond.console_stdout
+        new_stdout = process_char_stream(new_stdout)
+    elif respond.respond_type == agent_server_pb2.TaskRespond.OnAgentActionStderr:
+        new_stderr += respond.console_stderr
+        new_stderr = process_char_stream(new_stderr)
+    values.append(("text", (new_stdout, new_stderr), []))
+    syntax = Syntax(
+        f"{new_stdout}\n{new_stderr}",
+        "text",
+        line_numbers=True,  # background_color="default"
+    )
+    segments.append((len(values) - 1, segment[1], syntax))
+
+
+def handle_action_end(segments, respond, images, values):
     if respond.respond_type != agent_server_pb2.TaskRespond.OnAgentActionEndType:
         return
     output = respond.on_agent_action_end.output
-    mk = output
     has_error = "✅"
+    segment = segments.pop()
+    mk = segment[2].code
     # simple to handle error
     if mk.find("Traceback") >= 0:
         has_error = "❌"
@@ -191,11 +203,11 @@ def handle_action_output(segments, respond, images, values):
     )
     if not images:
         images.extend(respond.on_agent_action_end.output_files)
-    segment = segments.pop()
-    segments.append((segment[0], has_error, segment[2]))
-    if output:
-        values.append(("text", mk, []))
-        segments.append((len(values) - 1, "💻", syntax))
+    segments.append((len(values) - 1, has_error, syntax))
+    # add the next steps loading
+    spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
+    values.append(("text", "", []))
+    segments.append((len(values) - 1, spinner, ""))
 
 
 def handle_action_start(segments, respond, images, values):
@@ -207,6 +219,8 @@ def handle_action_start(segments, respond, images, values):
         return
     arguments = json.loads(action.input)
     if action.tool == "execute_python_code" and action.input:
+        values.pop()
+        segments.pop()
         explanation = arguments["explanation"]
         if explanation:
             markdown = Markdown("\n" + explanation + "\n")
@@ -220,9 +234,16 @@ def handle_action_start(segments, respond, images, values):
         values.append(
             ("python", arguments["code"], arguments.get("saved_filenames", []))
         )
-        spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
-        segments.append((len(values) - 1, spinner, syntax))
+        segments.append((len(values) - 1, "📖", syntax))
         images.extend(arguments.get("saved_filenames", []))
+        spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
+        values.append(("text", ("", ""), []))
+        syntax = Syntax(
+            "",
+            "text",
+            line_numbers=True,  # background_color="default"
+        )
+        segments.append((len(values) - 1, spinner, syntax))
 
 
 def find_code(content, segments, values):
@@ -254,6 +275,8 @@ def handle_final_answer(segments, respond, values):
     if respond.respond_type != agent_server_pb2.TaskRespond.OnFinalAnswerType:
         return
     answer = respond.final_respond.answer
+    values.pop()
+    segments.pop()
     find_code(answer, segments, values)
 
 
@@ -264,7 +287,7 @@ def render_image(images, sdk, image_dir, console):
             sdk.download_file(image, image_dir)
             fullpath = "%s/%s" % (image_dir, image)
             pil_image = Image.open(fullpath)
-            auto_image = AutoImage(image=pil_image, width=int(pil_image.size[0] / 20))
+            auto_image = AutoImage(image=pil_image, width=int(pil_image.size[0] / 15))
             print(f"{auto_image:1.1#}")
         except Exception as ex:
             pass
@@ -283,6 +306,8 @@ def run_chat(
     model_name = ""
     with Live(Group(*segments), console=console, vertical_overflow="visible") as live:
         spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
+        values.append(("text", "", []))
+        segments.append((len(values) - 1, spinner, ""))
         refresh(live, segments, spinner)
         for respond in sdk.prompt(prompt):
             if not respond:
@@ -291,12 +316,12 @@ def run_chat(
             iteration = respond.iteration
             model_name = respond.model_name
             handle_action_start(segments, respond, images, values)
-            handle_action_output(segments, respond, images, values)
+            handle_action_output(segments, respond, values)
+            handle_action_end(segments, respond, images, values)
             handle_final_answer(segments, respond, values)
             refresh(
                 live,
                 segments,
-                spinner,
                 token_usage=token_usage,
                 iteration=iteration,
                 model_name=model_name,
@@ -304,7 +329,6 @@ def run_chat(
         refresh(
             live,
             segments,
-            None,
             token_usage=token_usage,
             iteration=iteration,
             model_name=model_name,

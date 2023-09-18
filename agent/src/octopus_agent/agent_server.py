@@ -34,14 +34,13 @@ from grpc.aio import ServicerContext, server
 from octopus_kernel.sdk.kernel_sdk import KernelSDK
 from .gpt_async_callback import AgentAsyncHandler
 from .agent_llm import LLMManager
-from .langchain_agent_builder import build_mock_agent, build_openai_agent, build_codellama_agent
+from .agent_builder import build_mock_agent, build_openai_agent, build_codellama_agent
 from .tools import OctopusAPIMarkdownOutput
 import langchain
 import databases
 import orm
 from datetime import datetime
 from .utils import parse_image_filename
-
 
 config = dotenv_values(".env")
 LOG_LEVEL = (
@@ -222,10 +221,8 @@ class AgentRpcServer(AgentServerServicer):
         if config["llm_key"] == "azure_openai" or config["llm_key"] == "openai":
             logger.info(f"create a openai agent {request.endpoint}")
             agent = build_openai_agent(
-                self.llm,
                 sdk,
-                config.get("max_iterations", 5),
-                self.verbose,
+                config["openai_api_model"],
             )
             self.agents[request.key] = {"sdk": sdk, "agent": agent, "tool": tool}
         elif config["llm_key"] == "mock":
@@ -257,7 +254,11 @@ class AgentRpcServer(AgentServerServicer):
             await context.abort(10, "invalid api key")
         agent = self.agents[metadata["api_key"]]["agent"]
         queue = asyncio.Queue()
-        if config["llm_key"] == "codellama":
+        if (
+            config["llm_key"] == "codellama"
+            or config["llm_key"] == "azure_openai"
+            or config["llm_key"] == "openai"
+        ):
 
             async def worker(task, agent, queue):
                 try:
@@ -294,7 +295,9 @@ class AgentRpcServer(AgentServerServicer):
                     final_respond=agent_server_pb2.FinalRespond(answer=str(ex)),
                 )
                 yield respond
+
         else:
+            # just for the mock
             handler = AgentAsyncHandler(queue)
 
             async def worker(task, agent, handler):

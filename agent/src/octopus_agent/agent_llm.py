@@ -17,6 +17,7 @@
 """ """
 
 import logging
+import openai
 from langchain.chat_models import AzureChatOpenAI, ChatOpenAI
 from langchain.llms.fake import FakeListLLM
 
@@ -59,17 +60,9 @@ class LLMManager:
             "openai_api_key",
             "openai_api_model",
         ])
-        api_base = self.config.get("openai_api_base", None)
-        api_key = self.config["openai_api_key"]
-        api_model = self.config["openai_api_model"]
-        temperature = self.config.get("temperature", 0)
-        llm = ChatOpenAI(
-            openai_api_base=api_base,
-            openai_api_key=api_key,
-            model_name=api_model,
-            temperature=temperature,
-        )
-        self.llms[self.llm_key] = llm
+        if self.config.get("openai_api_base", None):
+            openai.api_base = self.config.get("openai_api_base", None)
+        openai.api_key = self.config["openai_api_key"]
 
     def _build_azure_openai(self):
         """

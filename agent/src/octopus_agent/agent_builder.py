@@ -24,6 +24,7 @@ from .prompt import OCTOPUS_FUNCTION_SYSTEM, OCTOPUS_CODELLAMA_SYSTEM
 from .gpt_async_callback import AgentAsyncHandler
 from langchain.agents import AgentType
 from .codellama_agent import CodellamaAgent
+from .openai_agent import OpenaiAgent
 from .codellama_client import CodellamaClient
 
 
@@ -35,36 +36,16 @@ def build_codellama_agent(endpoint, key, sdk, grammer_path):
         endpoint, key, OCTOPUS_CODELLAMA_SYSTEM, "Octopus", "User", grammar
     )
     """build openai function call agent"""
-    # TODO a data dir per user
-    api = OctopusAPIMarkdownOutput(sdk)
     # init the agent
-    return CodellamaAgent(client, api)
+    return CodellamaAgent(client, sdk)
 
 
-def build_openai_agent(llm, sdk, max_iterations, verbose):
+def build_openai_agent(sdk, model_name):
     """build openai function call agent"""
     # TODO a data dir per user
-    api = OctopusAPIMarkdownOutput(sdk)
     # init the agent
-    tools = [
-        ExecutePythonCodeTool(octopus_api=api),
-    ]
-    prefix = (
-        """%sBegin!
-Question: {input}
-{agent_scratchpad}"""
-        % OCTOPUS_FUNCTION_SYSTEM
-    )
-    system_message = SystemMessage(content=prefix)
-    agent = initialize_agent(
-        tools,
-        llm,
-        agent=AgentType.OPENAI_FUNCTIONS,
-        agent_kwargs={"system_message": system_message},
-        verbose=verbose,
-        max_iterations=max_iterations,
-        handle_parsing_errors="Invalid function calling. Check the arguments passed to the function!",
-    )
+
+    agent = OpenaiAgent(model_name, sdk, OCTOPUS_FUNCTION_SYSTEM)
     return agent
 
 

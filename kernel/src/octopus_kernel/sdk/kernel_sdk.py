@@ -81,8 +81,8 @@ class KernelSDK:
         Execute the python code
         """
         request = kernel_server_pb2.ExecuteRequest(code=code, kernel_name=kernel_name)
-        response = await self.stub.execute(request, metadata=self.metadata)
-        return response
+        async for respond in self.stub.execute(request, metadata=self.metadata):
+            yield respond
 
     async def close(self):
         if self.channel:
