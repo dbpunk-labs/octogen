@@ -18,29 +18,28 @@
 
 import json
 import aiohttp
-
 import logging
+from .base_stream_client import BaseStreamClient
 
 logger = logging.getLogger(__name__)
 
 
-class CodellamaClient:
+class CodellamaClient(BaseStreamClient):
 
     def __init__(self, endpoint, key, prefix, ai_name, user_name, grammar):
-        self.endpoint = endpoint + "/completion"
-        self.key = key
+        super().__init__(endpoint + "/completion", key)
         self.ai_name = ai_name
         self.user_name = user_name
         self.grammar = grammar
         self.prefix = prefix
 
-    async def run(self, user_input, temperature=0, chat_history=""):
+    async def prompt(self, user_input, temperature=0, chat_history=""):
         prompt = f"""{self.prefix}
 {chat_history}
 {self.user_name}: {user_input}
 {self.ai_name}:"""
         logging.info(f"{prompt}")
-        data = json.dumps({
+        data = {
             "n_predict": 500,
             "grammar": self.grammar,
             "prompt": prompt,
@@ -54,13 +53,6 @@ class CodellamaClient:
                 "%s:" % self.ai_name,
                 "%s:" % self.user_name,
             ],
-        })
-        logger.debug(f"request data {data}")
-        headers = {"Authorization": self.key}
-        async with aiohttp.ClientSession(
-            headers=headers, raise_for_status=True
-        ) as session:
-            async with session.post(self.endpoint, data=data) as r:
-                async for line in r.content:
-                    if line:
-                        yield line
+        }
+        async for line in self.arun(data):
+            yield line

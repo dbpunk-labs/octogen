@@ -43,6 +43,12 @@ message TaskRespond {
   int32 token_usage = 1;
   int32 iteration = 2;
   string model_name = 3;
+  enum RespondType {
+    OnAgentActionType = 0;
+    OnAgentActionEndType = 1;
+    OnFinalAnswerType = 2;
+  }
+  RespondType respond_type = 4;
   oneof body {
     OnAgentAction on_agent_action = 5;
     OnAgentActionEnd on_agent_action_end = 6;

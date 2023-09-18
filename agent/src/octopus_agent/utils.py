@@ -47,6 +47,24 @@ def parse_link(text):
         return None, None
 
 
+def parse_image_filename(string):
+    """Parses the image filename from a string.
+
+    Args:
+      string: A string containing the image filename.
+
+    Returns:
+      The image filename, or None if the filename is not valid.
+    """
+
+    pattern = r"octopus_\w+\.(jpg|png|gif)"
+    match = re.search(pattern, string)
+    if match:
+        return match.group()
+    else:
+        return None
+
+
 def random_str(n):
     # using random.choices()
     # generating random strings

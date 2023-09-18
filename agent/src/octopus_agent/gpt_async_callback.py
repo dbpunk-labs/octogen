@@ -25,7 +25,7 @@ from langchain.callbacks.base import AsyncCallbackHandler, BaseCallbackHandler
 from octopus_proto.agent_server_pb2 import OnAgentAction, TaskRespond, OnAgentActionEnd
 from langchain.schema.agent import AgentAction, AgentFinish
 from langchain.schema import LLMResult
-from .utils import parse_link
+from .utils import parse_image_filename
 
 logger = logging.getLogger(__name__)
 
@@ -57,11 +57,12 @@ class AgentAsyncHandler(AsyncCallbackHandler):
         logger.debug(f"on_tool_end {output}")
         self.stack.append("on_tool_end")
         output_files = []
-        name, link = parse_link(output)
-        if name and link:
-            output_files.append(link)
+        filename = parse_image_filename(output)
+        if filename:
+            output_files.append(filename)
         respond = TaskRespond(
             token_usage=self.token_usage,
+            respond_type=TaskRespond.OnAgentActionEndType,
             on_agent_action_end=OnAgentActionEnd(
                 output=output, output_files=output_files
             ),
@@ -81,6 +82,7 @@ class AgentAsyncHandler(AsyncCallbackHandler):
         self.stack.append("on_agent_action")
         respond = TaskRespond(
             token_usage=self.token_usage,
+            respond_type=TaskRespond.OnAgentActionType,
             on_agent_action=OnAgentAction(
                 input=json.dumps(action.tool_input), tool=action.tool
             ),

@@ -1,4 +1,3 @@
-# .github/workflows/ci-cd.yml
 on: workflow_dispatch
 jobs:
   pypi-publish:
@@ -14,23 +13,19 @@ jobs:
           submodules: recursive
       - name: Install dependencies
         run: pip install -r requirements.txt
-
       - name: build packages
         run: |
           TAG=${GITHUB_REF/refs\/tags\//}
           VERSION=${TAG#*v}
           bash build_package.sh ${VERSION}
-
       - name: Publish Proto
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: proto/dist
-
       - name: Publish Kernel
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: kernel/dist
-
       - name: Publish Agent
         uses: pypa/gh-action-pypi-publish@release/v1
         with:

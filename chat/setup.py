@@ -19,7 +19,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="octopus_chat",
-    version="0.2.3",
+    version="0.3.6",
     description="the chat client for open source code interpreter octopus",
     author="imotai",
     author_email="wangtaize@dbpunk.com",

@@ -1,5 +1,5 @@
-FROM octopus_base
+FROM imotai/octopus_base:0.3.3
 WORKDIR /kernel
 VOLUME /kernel
-ADD start_kernel.sh /kernel/
-CMD ["bash", "/kernel/start_kernel.sh"]
+ADD start_kernel.sh /bin/
+CMD ["bash", "/bin/start_kernel.sh"]

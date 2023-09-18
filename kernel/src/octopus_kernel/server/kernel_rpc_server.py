@@ -237,7 +237,7 @@ class KernelRpcServer(KernelServerNodeServicer):
     def _build_payload(self, msg, workspace):
         if msg["msg_type"] == "display_data":
             if "image/png" in msg["content"]["data"]:
-                filename = "%s.png" % uuid.uuid4().hex
+                filename = "octopus_%s.png" % uuid.uuid4().hex
                 fullpath = "%s/%s" % (workspace, filename)
                 with open(fullpath, "wb+") as fd:
                     data = msg["content"]["data"]["image/png"].encode("ascii")
@@ -251,7 +251,7 @@ class KernelRpcServer(KernelServerNodeServicer):
                     },
                 )
             elif "image/gif" in msg["content"]["data"]:
-                filename = "%s.png" % uuid.uuid4().hex
+                filename = "octopus_%s.gif" % uuid.uuid4().hex
                 fullpath = "%s/%s" % (workspace, filename)
                 with open(fullpath, "wb+") as fd:
                     data = msg["content"]["data"]["image/gif"].encode("ascii")
@@ -265,10 +265,18 @@ class KernelRpcServer(KernelServerNodeServicer):
                     },
                 )
             else:
-                keys = ",".join(msg["content"]["data"].keys())
-                raise Exception(
-                    f"unsupported display data type {keys} for the result {msg}"
+                logger.warning(f" unsupported display_data {msg}")
+                return (
+                    "result",
+                    {
+                        "data": msg["content"]["data"],
+                        "msg_type": msg["msg_type"],
+                    },
                 )
+                # keys = ",".join(msg["content"]["data"].keys())
+                # raise Exception(
+                #    f"unsupported display data type {keys} for the result {msg}"
+                # )
 
         if msg["msg_type"] == "execute_result":
             logger.debug("result data %s", msg["content"]["data"]["text/plain"])
