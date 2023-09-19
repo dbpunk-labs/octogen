@@ -225,9 +225,11 @@ class KernelRpcServer(KernelServerNodeServicer):
             "stderr": None,
             "traceback": None,
         }
-        async for msg in self.kcs[kernel_name].read_response(5):
+        async for msg in self.kcs[kernel_name].read_response(10):
             if not msg:
                 break
+            if msg["parent_header"]["msg_id"] != msg_id:
+                continue
             if msg["msg_type"] in ["status", "execute_input"]:
                 continue
             respond = self._build_payload(msg, config["workspace"])
@@ -256,6 +258,13 @@ class KernelRpcServer(KernelServerNodeServicer):
                 return kernel_server_pb2.ExecuteResponse(
                     output_type=kernel_server_pb2.ExecuteResponse.ResultType,
                     output=json.dumps({"image/gif": filename}),
+                )
+            elif "text/plain" in msg["content"]["data"]:
+                return kernel_server_pb2.ExecuteResponse(
+                    output_type=kernel_server_pb2.ExecuteResponse.ResultType,
+                    output=json.dumps(
+                        {"text/plain": msg["content"]["data"]["text/plain"]}
+                    ),
                 )
             else:
                 logger.warning(f" unsupported display_data {msg}")

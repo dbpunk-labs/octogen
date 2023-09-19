@@ -85,4 +85,3 @@ async def test_sdk_result_test(kernel_sdk):
     assert responds[1].output_type == ExecuteResponse.ResultType
     assert json.loads(responds[0].output)["text"] == "hello world!\n"
     assert json.loads(responds[1].output)["text/plain"] == "5"
-

@@ -11,6 +11,7 @@ import json
 import asyncio
 import click
 import glob
+import random
 from datetime import datetime
 from rich.console import Console
 from rich.markdown import Markdown
@@ -22,8 +23,9 @@ from rich.progress import Progress
 from rich.rule import Rule
 from rich.live import Live
 from rich.spinner import Spinner
-from rich.emoji import Emoji
+from rich.emoji import EMOJI
 from rich import box
+from rich.style import Style
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.shortcuts import CompleteStyle, clear
 from prompt_toolkit.history import FileHistory
@@ -43,6 +45,8 @@ Markdown.elements["fence"] = CodeBlock
 Markdown.elements["code_block"] = CodeBlock
 OCTOPUS_TITLE = "🐙[bold red]Octopus"
 OCTOPUS_APP_TITLE = "🐙[bold red]App"
+
+EMOJI_KEYS = list(EMOJI.keys())
 
 
 def show_welcome(console):
@@ -75,6 +79,11 @@ def show_help(console):
 """
     mk = Markdown(help, justify="left")
     console.print(mk)
+
+
+def gen_a_random_emoji():
+    index = random.randint(0, len(EMOJI_KEYS))
+    return EMOJI[EMOJI_KEYS[index]]
 
 
 def parse_numbers(text):
@@ -210,6 +219,43 @@ def handle_action_end(segments, respond, images, values):
     segments.append((len(values) - 1, spinner, ""))
 
 
+def handle_typing(segments, respond, values):
+    if respond.respond_type not in [agent_server_pb2.TaskRespond.OnAgentTextTyping,
+            agent_server_pb2.TaskRespond.OnAgentCodeTyping]:
+        return
+    value = values.pop()
+    segment = segments.pop()
+    if respond.respond_type == agent_server_pb2.TaskRespond.OnAgentTextTyping:
+        new_value = value[1] + respond.typing_content
+        values.append(("text", new_value, []))
+        markdown = Markdown( "\n"+ new_value+ "█")
+        segments.append((len(values) - 1, segment[1], markdown))
+    else:
+        # Start write the code
+        if value[0] == "text":
+            values.append(value)
+            markdown = Markdown( "\n"+ value[1])
+            new_segment = (segment[0], "🧠", markdown)
+            segments.append(new_segment)
+            new_value = respond.typing_content
+            values.append(("python", new_value, []))
+            syntax = Syntax(
+                new_value,
+                "python",
+                line_numbers=True,  # background_color="default"
+            )
+            segments.append((len(values) - 1, "📖", syntax))
+        else:
+            # continue
+            new_value = value[1] + respond.typing_content
+            values.append(("python", new_value, []))
+            syntax = Syntax(
+                new_value + "█",
+                "python",
+                line_numbers=True,  # background_color="default"
+            )
+            segments.append((len(values) - 1, "📖", syntax))
+
 def handle_action_start(segments, respond, images, values):
     """Run on agent action."""
     if respond.respond_type != agent_server_pb2.TaskRespond.OnAgentActionType:
@@ -219,23 +265,24 @@ def handle_action_start(segments, respond, images, values):
         return
     arguments = json.loads(action.input)
     if action.tool == "execute_python_code" and action.input:
-        values.pop()
-        segments.pop()
-        explanation = arguments["explanation"]
-        if explanation:
-            markdown = Markdown("\n" + explanation + "\n")
-            values.append(("text", explanation, []))
-            segments.append((len(values) - 1, "🧠", markdown))
-        syntax = Syntax(
-            arguments["code"],
-            "python",
-            line_numbers=True,  # background_color="default"
-        )
-        values.append(
-            ("python", arguments["code"], arguments.get("saved_filenames", []))
-        )
-        segments.append((len(values) - 1, "📖", syntax))
         images.extend(arguments.get("saved_filenames", []))
+        value = values.pop()
+        segment = segments.pop()
+        if value[0] == "text":
+            values.append(value)
+            markdown = Markdown( "\n"+ value[1])
+            new_segment = (segment[0], segment[1], markdown)
+            segments.append(new_segment)
+        elif value[0] == "python":
+            values.append(value)
+            syntax = Syntax(
+                value[1],
+                "python",
+                line_numbers=True,  # background_color="default"
+            )
+            new_segment = (segment[0], segment[1], syntax)
+            segments.append(new_segment)
+        #Add spinner for console
         spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
         values.append(("text", ("", ""), []))
         syntax = Syntax(
@@ -244,7 +291,6 @@ def handle_action_start(segments, respond, images, values):
             line_numbers=True,  # background_color="default"
         )
         segments.append((len(values) - 1, spinner, syntax))
-
 
 def find_code(content, segments, values):
     start_index = 0
@@ -261,7 +307,7 @@ def find_code(content, segments, values):
                 clean_code_content = clean_code(code_content)
                 # TODO parse language
                 values.append(("python", clean_code_content))
-                segments.append((len(values) - 1, "", Markdown(code_content)))
+                segments.append((len(values) - 1, "📖", Markdown(code_content)))
                 start_index = second_pos + 3
         else:
             break
@@ -278,7 +324,6 @@ def handle_final_answer(segments, respond, values):
     values.pop()
     segments.pop()
     find_code(answer, segments, values)
-
 
 def render_image(images, sdk, image_dir, console):
     image_set = set(images)
@@ -315,6 +360,7 @@ def run_chat(
             token_usage = respond.token_usage
             iteration = respond.iteration
             model_name = respond.model_name
+            handle_typing(segments, respond, values)
             handle_action_start(segments, respond, images, values)
             handle_action_output(segments, respond, values)
             handle_action_end(segments, respond, images, values)
@@ -342,49 +388,48 @@ def run_app(name, sdk, session, console, values, filedir=None):
     images = []
     with Live(Group(*segments), console=console) as live:
         spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
-        refresh(live, segments, spinner, title=OCTOPUS_APP_TITLE + f":{name}")
+        values.append(("text", "", []))
+        segments.append((len(values) - 1, spinner, ""))
+        refresh(live, segments, title=OCTOPUS_APP_TITLE + f":{name}")
         for respond in sdk.run(name):
             if not respond:
                 break
             handle_action_start(segments, respond, images, values)
-            handle_action_output(segments, respond, images, values)
-            refresh(live, segments, spinner, title=OCTOPUS_APP_TITLE + f":{name}")
-        refresh(live, segments, None, title=OCTOPUS_APP_TITLE + f":{name}")
+            handle_action_output(segments, respond, values)
+            handle_action_end(segments, respond, images, values)
+            refresh(live, segments, title=OCTOPUS_APP_TITLE + f":{name}")
+        values.pop()
+        segments.pop()
+        refresh(live, segments, title=OCTOPUS_APP_TITLE + f":{name}")
     # display the images
     render_image(images, sdk, filedir, console)
 
 
+def gen_app_panel(app):
+    desc = app.desc if app.desc else ""
+    date_str = datetime.fromtimestamp(app.ctime).strftime("%m/%d/%Y")
+    markdonw = f"""### {app.desc}{app.name}
+created at {date_str} with {app.language}"""
+    style = Style(bgcolor="#2e2e2e")
+    return Panel(Markdown(markdonw), box=box.SIMPLE, title_align="left", style=style)
+
+
 def query_apps(sdk, console):
-    app_table = Table(
-        show_edge=False,
-        show_header=True,
-        expand=False,
-        row_styles=["none", "dim"],
-        box=box.SIMPLE,
-    )
-    app_table.add_column(
-        "[magenta]#",
-        style="magenta",
-        justify="right",
-        no_wrap=True,
-    )
-    app_table.add_column("[bold yellow]App", style="green", no_wrap=True)
-    app_table.add_column("[blue]Language", style="blue")
-    app_table.add_column(
-        "[cyan]Time",
-        style="cyan",
-        justify="right",
-        no_wrap=True,
-    )
+    table = Table.grid(padding=1, pad_edge=True)
+    table.add_column("col1", no_wrap=True, justify="center")
+    table.add_column("col2", no_wrap=True, justify="center")
+    table.add_column("col3", no_wrap=True, justify="center")
+    table.add_column("col3", no_wrap=True, justify="center")
+
     apps = sdk.query_apps()
-    for index, app in enumerate(apps.apps):
-        app_table.add_row(
-            str(index + 1),
-            app.name,
-            app.language,
-            datetime.fromtimestamp(app.ctime).strftime("%m/%d/%Y"),
+    for index in range(0, len(apps.apps), 4):
+        table.add_row(
+            gen_app_panel(apps.apps[index]) if index < len(apps.apps) else "",
+            gen_app_panel(apps.apps[index + 1]) if index + 1 < len(apps.apps) else "",
+            gen_app_panel(apps.apps[index + 2]) if index + 2 < len(apps.apps) else "",
+            gen_app_panel(apps.apps[index + 3]) if index + 3 < len(apps.apps) else "",
         )
-    console.print(Panel(app_table, title=OCTOPUS_APP_TITLE, title_align="left"))
+    console.print(Panel(table, title=OCTOPUS_APP_TITLE, title_align="left"))
 
 
 def assemble_app(sdk, name, numbers, values):
@@ -403,14 +448,14 @@ def assemble_app(sdk, name, numbers, values):
             name,
             "\n".join(code),
             language,
-            desc="",
+            desc=gen_a_random_emoji(),
             saved_filenames=list(set(saved_filenames)),
         )
         if response.code == 0:
-            return True
-        return False
-    except:
-        return False
+            return True, response.msg
+        return False, response.msg
+    except Exception as ex:
+        return False, str(ex)
 
 
 @click.command()
@@ -476,13 +521,14 @@ def app(octopus_dir):
             try:
                 name = parts[1]
                 numbers = [int(number) for number in parts[2:]]
-                if assemble_app(sdk, name, numbers, values):
+                (status, msg) = assemble_app(sdk, name, numbers, values)
+                if status:
                     console.print(
                         f"👍 the app {name} has been assembled! use /run {name} to run this app."
                     )
                     continue
                 else:
-                    console.print(f"❌ fail to assemble the app {name}")
+                    console.print(f"❌ fail to assemble the app {name} for error {msg}")
                     continue
             except Exception as ex:
                 console.print(f"❌ invalid numbers {ex}")

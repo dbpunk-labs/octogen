@@ -79,6 +79,7 @@ class LLMManager:
         openai.api_version = self.config["openai_api_version"]
         openai.api_type = self.config["openai_api_type"]
         openai.api_key = self.config["openai_api_key"]
+        self.config["openai_api_model"] = self.config["openai_api_deployment"]
 
     def _build_mock_llm(self):
         """

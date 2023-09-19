@@ -49,6 +49,8 @@ message TaskRespond {
     OnAgentActionStderr = 2;
     OnAgentActionEndType = 3;
     OnFinalAnswerType = 4;
+    OnAgentTextTyping = 5;
+    OnAgentCodeTyping = 6;
   }
   RespondType respond_type = 4;
   oneof body {
@@ -57,6 +59,7 @@ message TaskRespond {
     FinalRespond final_respond = 7;
     string console_stdout = 8;
     string console_stderr = 9;
+    string typing_content = 10;
   }
 }
 
@@ -92,6 +95,7 @@ message AppInfo {
   string language = 2;
   // second
   int32 ctime = 3;
+  string desc = 4;
 }
 
 message QueryAppsRequest {}

@@ -45,7 +45,7 @@ def build_openai_agent(sdk, model_name):
     # TODO a data dir per user
     # init the agent
 
-    agent = OpenaiAgent(model_name, sdk, OCTOPUS_FUNCTION_SYSTEM)
+    agent = OpenaiAgent(model_name, OCTOPUS_FUNCTION_SYSTEM, sdk)
     return agent
 
 

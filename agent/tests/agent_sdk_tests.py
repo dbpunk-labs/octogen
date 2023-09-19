@@ -46,12 +46,12 @@ async def test_upload_smoke_test(agent_sdk):
     await sdk.upload_file(path, "agent_sdk_tests.py")
     try:
         responds = []
-        async for respond in sdk.prompt("write a hello world in python"):
+        async for respond in sdk.prompt("print a hello world in python"):
             responds.append(respond)
+        logger.debug(f"{responds}")
         assert len(responds) > 0, "no responds for the prompt"
     except Exception as ex:
         assert 0, str(ex)
-
 
 @pytest.mark.asyncio
 async def test_assemble_test(agent_sdk):
@@ -109,6 +109,7 @@ ax.legend()
 
 # Step 7: Show the chart
 plt.show()"""
+
 
 @pytest.mark.asyncio
 async def test_assemble_image_test(agent_sdk):

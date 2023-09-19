@@ -167,6 +167,7 @@ class AgentRpcServer(AgentServerServicer):
         async for (result, respond) in agent.call_function(lite_app.code):
             function_result = result
             if respond:
+                logger.debug(f"the respond {respond}")
                 yield respond
         output_files = (
             function_result.saved_filenames
@@ -201,6 +202,7 @@ class AgentRpcServer(AgentServerServicer):
                 name=lite_app.name,
                 language=lite_app.language,
                 ctime=int(lite_app.time.timestamp()),
+                desc=lite_app.desc,
             )
             for lite_app in lite_apps
         ]
@@ -217,23 +219,22 @@ class AgentRpcServer(AgentServerServicer):
             return agent_server_pb2.AddKernelResponse(code=0, msg="ok")
         # init the sdk
         sdk = KernelSDK(request.endpoint, request.key)
-        sdk.connect()
         try:
+            sdk.connect()
             await sdk.is_alive()
         except Exception as ex:
             await context.abort(10, f"Connecting to kernel {request.endpoint} failed")
-        tool = OctopusAPIMarkdownOutput(sdk)
         if config["llm_key"] == "azure_openai" or config["llm_key"] == "openai":
             logger.info(f"create a openai agent {request.endpoint}")
             agent = build_openai_agent(
                 sdk,
                 config["openai_api_model"],
             )
-            self.agents[request.key] = {"sdk": sdk, "agent": agent, "tool": tool}
+            self.agents[request.key] = {"sdk": sdk, "agent": agent}
         elif config["llm_key"] == "mock":
             logger.info(f"create a mock agent to kernel {request.endpoint}")
             agent = build_mock_agent(self.llm)
-            self.agents[request.key] = {"sdk": sdk, "agent": agent, "tool": tool}
+            self.agents[request.key] = {"sdk": sdk, "agent": agent}
         elif config["llm_key"] == "codellama":
             logger.info(f"create a codellama agent {request.endpoint}")
             grammer_path = os.path.join(
@@ -242,7 +243,7 @@ class AgentRpcServer(AgentServerServicer):
             agent = build_codellama_agent(
                 config["llama_api_base"], config["llama_api_key"], sdk, grammer_path
             )
-            self.agents[request.key] = {"sdk": sdk, "agent": agent, "tool": tool}
+            self.agents[request.key] = {"sdk": sdk, "agent": agent}
         return agent_server_pb2.AddKernelResponse(code=0, msg="ok")
 
     async def send_task(

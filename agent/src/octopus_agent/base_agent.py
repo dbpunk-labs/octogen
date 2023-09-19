@@ -50,6 +50,9 @@ class BaseAgent:
         console_stderr = ""
         has_result = False
         has_error = False
+        is_alive = await self.kernel_sdk.is_alive()
+        if not is_alive:
+            await self.kernel_sdk.start(kernel_name="python3")
         async for kernel_respond in self.kernel_sdk.execute(code=code):
             # process the stdout
             if kernel_respond.output_type == ExecuteResponse.StdoutType:
@@ -108,6 +111,11 @@ class BaseAgent:
                     console_stdout = result["image/png"]
                 elif "text/plain" in result:
                     console_stdout = result["text/plain"]
+                    console_stdout = bytes(console_stdout, "utf-8").decode(
+                        "unicode_escape"
+                    )
+                    if console_stdout.startswith("'") and console_stdout.endswith("'"):
+                        console_stdout = console_stdout[1 : len(console_stdout) - 1]
                 yield (
                     None,
                     TaskRespond(
