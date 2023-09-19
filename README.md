@@ -4,7 +4,7 @@
 ![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/dbpunk-labs/octopus/ci.yml?branch=main&style=flat-square)
 [![Discord](https://badgen.net/badge/icon/discord?icon=discord&label)](https://discord.gg/UjSHsjaz66)
 
-Octopus is an open-source code interpreter. you can deploy it to your remote server or your PC and access it with octopus client
+Octopus is an open-source code interpreter with a client-server architecture.
 
 <p align="center">
 <img width="800px" src="https://github.com/dbpunk-labs/octopus/assets/8623385/709f84f6-3b7f-49cf-b83f-e26d2d802015" align="center"/>

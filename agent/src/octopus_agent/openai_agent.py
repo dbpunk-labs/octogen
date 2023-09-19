@@ -52,7 +52,7 @@ OCTOPUS_FUNCTIONS = [
     },
     {
         "name": "python",
-        "description": "Safely execute arbitrary Python code and return the result, stdout, and stderr.",
+        "description": "this function must not be used",
         "parameters": {
             "type": "object",
             "properties": {
@@ -87,6 +87,9 @@ class OpenaiAgent(BaseAgent):
 
     def _merge_delta_for_function_call(self, message, delta):
         if not delta:
+            return
+        if "function_call" not in message:
+            message["function_call"] = delta["function_call"]
             return
         old_arguments = message["function_call"].get("arguments", "")
         if delta["function_call"]["arguments"]:
@@ -145,6 +148,7 @@ class OpenaiAgent(BaseAgent):
             if not chunk["choices"]:
                 continue
             delta = chunk["choices"][0]["delta"]
+            logger.debug(f"{delta}")
             if not message:
                 message = delta
             else:

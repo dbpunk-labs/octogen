@@ -422,6 +422,7 @@ def tokenize(stream):
             advance, state = process_char(c)
         except Exception as e:
             yield (state, token)
+            break
         if completed:
             completed = False
             token = []
