@@ -220,21 +220,23 @@ def handle_action_end(segments, respond, images, values):
 
 
 def handle_typing(segments, respond, values):
-    if respond.respond_type not in [agent_server_pb2.TaskRespond.OnAgentTextTyping,
-            agent_server_pb2.TaskRespond.OnAgentCodeTyping]:
+    if respond.respond_type not in [
+        agent_server_pb2.TaskRespond.OnAgentTextTyping,
+        agent_server_pb2.TaskRespond.OnAgentCodeTyping,
+    ]:
         return
     value = values.pop()
     segment = segments.pop()
     if respond.respond_type == agent_server_pb2.TaskRespond.OnAgentTextTyping:
         new_value = value[1] + respond.typing_content
         values.append(("text", new_value, []))
-        markdown = Markdown( "\n"+ new_value+ "█")
+        markdown = Markdown("\n" + new_value + "█")
         segments.append((len(values) - 1, segment[1], markdown))
     else:
         # Start write the code
         if value[0] == "text":
             values.append(value)
-            markdown = Markdown( "\n"+ value[1])
+            markdown = Markdown("\n" + value[1])
             new_segment = (segment[0], "🧠", markdown)
             segments.append(new_segment)
             new_value = respond.typing_content
@@ -256,6 +258,7 @@ def handle_typing(segments, respond, values):
             )
             segments.append((len(values) - 1, "📖", syntax))
 
+
 def handle_action_start(segments, respond, images, values):
     """Run on agent action."""
     if respond.respond_type != agent_server_pb2.TaskRespond.OnAgentActionType:
@@ -270,7 +273,7 @@ def handle_action_start(segments, respond, images, values):
         segment = segments.pop()
         if value[0] == "text":
             values.append(value)
-            markdown = Markdown( "\n"+ value[1])
+            markdown = Markdown("\n" + value[1])
             new_segment = (segment[0], segment[1], markdown)
             segments.append(new_segment)
         elif value[0] == "python":
@@ -282,7 +285,7 @@ def handle_action_start(segments, respond, images, values):
             )
             new_segment = (segment[0], segment[1], syntax)
             segments.append(new_segment)
-        #Add spinner for console
+        # Add spinner for console
         spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
         values.append(("text", ("", ""), []))
         syntax = Syntax(
@@ -291,6 +294,7 @@ def handle_action_start(segments, respond, images, values):
             line_numbers=True,  # background_color="default"
         )
         segments.append((len(values) - 1, spinner, syntax))
+
 
 def find_code(content, segments, values):
     start_index = 0
@@ -324,6 +328,7 @@ def handle_final_answer(segments, respond, values):
     values.pop()
     segments.pop()
     find_code(answer, segments, values)
+
 
 def render_image(images, sdk, image_dir, console):
     image_set = set(images)

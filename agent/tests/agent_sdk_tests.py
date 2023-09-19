@@ -53,6 +53,7 @@ async def test_upload_smoke_test(agent_sdk):
     except Exception as ex:
         assert 0, str(ex)
 
+
 @pytest.mark.asyncio
 async def test_assemble_test(agent_sdk):
     sdk = agent_sdk

@@ -18,12 +18,11 @@
 import openai
 import io
 import json
-import json_stream
 import logging
 from pydantic import BaseModel, Field
 from octopus_proto.agent_server_pb2 import OnAgentAction, TaskRespond, OnAgentActionEnd, FinalRespond
-from .base_agent import BaseAgent
-from .tokenizer import tokenize, UnCompletedException
+from .base_agent import BaseAgent, TypingState
+from .tokenizer import tokenize
 
 logger = logging.getLogger(__name__)
 
@@ -73,13 +72,9 @@ OCTOPUS_FUNCTIONS = [
             },
             "required": ["explanation", "code"],
         },
-    }
+    },
 ]
 
-class TypingState:
-    START = 0
-    EXPLANATION = 1
-    CODE = 2
 
 class OpenaiAgent(BaseAgent):
 
@@ -92,24 +87,26 @@ class OpenaiAgent(BaseAgent):
 
     def _merge_delta_for_function_call(self, message, delta):
         if not delta:
-            return 
-        old_arguments = message['function_call'].get('arguments', "")
-        if delta['function_call']['arguments']:
-            message['function_call']['arguments'] = old_arguments + delta['function_call']['arguments']
+            return
+        old_arguments = message["function_call"].get("arguments", "")
+        if delta["function_call"]["arguments"]:
+            message["function_call"]["arguments"] = (
+                old_arguments + delta["function_call"]["arguments"]
+            )
 
     def _merge_delta_for_content(self, message, delta):
         if not delta:
             return
-        content = message.get('content', "")
-        if delta.get('content'):
-            message['content'] = content + delta['content']
+        content = message.get("content", "")
+        if delta.get("content"):
+            message["content"] = content + delta["content"]
 
     def _get_function_call_argument_new_typing(self, message):
-        arguments = message['function_call'].get('arguments', "")
+        arguments = message["function_call"].get("arguments", "")
         state = TypingState.START
         explanation_str = ""
         code_str = ""
-        for (token_state, token) in tokenize(io.StringIO(arguments)):
+        for token_state, token in tokenize(io.StringIO(arguments)):
             if token_state == None:
                 if state == TypingState.EXPLANATION and token[0] == 1:
                     explanation_str = token[1]
@@ -117,9 +114,9 @@ class OpenaiAgent(BaseAgent):
                 if state == TypingState.CODE and token[0] == 1:
                     code_str = token[1]
                     state = TypingState.START
-                if token[1] == 'explanation':
+                if token[1] == "explanation":
                     state = TypingState.EXPLANATION
-                if token[1] == 'code':
+                if token[1] == "code":
                     state = TypingState.CODE
             else:
                 # String
@@ -128,6 +125,7 @@ class OpenaiAgent(BaseAgent):
                 elif token_state == 9 and state == TypingState.CODE:
                     code_str = "".join(token)
         return (state, explanation_str, code_str)
+
     async def call_openai(self, messages, queue):
         """
         call the openai api
@@ -137,25 +135,29 @@ class OpenaiAgent(BaseAgent):
             messages=messages,
             temperature=0,
             functions=OCTOPUS_FUNCTIONS,
-            function_call='auto',
+            function_call="auto",
             stream=True,
         )
         message = None
         text_content = ""
         code_content = ""
         async for chunk in response:
-            if not chunk['choices']:
+            if not chunk["choices"]:
                 continue
-            delta = chunk['choices'][0]['delta']
+            delta = chunk["choices"][0]["delta"]
             if not message:
                 message = delta
             else:
-                if 'function_call' in delta:
+                if "function_call" in delta:
                     self._merge_delta_for_function_call(message, delta)
-                    arguments = message['function_call'].get('arguments', "")
-                    (state, explanation_str, code_str) = self._get_function_call_argument_new_typing(message)
+                    arguments = message["function_call"].get("arguments", "")
+                    (
+                        state,
+                        explanation_str,
+                        code_str,
+                    ) = self._get_function_call_argument_new_typing(message)
                     if explanation_str and text_content != explanation_str:
-                        typed_chars = explanation_str[len(text_content):]
+                        typed_chars = explanation_str[len(text_content) :]
                         text_content = explanation_str
                         await queue.put(
                             TaskRespond(
@@ -163,11 +165,11 @@ class OpenaiAgent(BaseAgent):
                                 iteration=0,
                                 respond_type=TaskRespond.OnAgentTextTyping,
                                 model_name="",
-                                typing_content = typed_chars
+                                typing_content=typed_chars,
                             )
                         )
                     if code_str and code_content != code_str:
-                        typed_chars = code_str[len(code_content):]
+                        typed_chars = code_str[len(code_content) :]
                         code_content = code_str
                         await queue.put(
                             TaskRespond(
@@ -175,23 +177,26 @@ class OpenaiAgent(BaseAgent):
                                 iteration=0,
                                 respond_type=TaskRespond.OnAgentCodeTyping,
                                 model_name="",
-                                typing_content = typed_chars
+                                typing_content=typed_chars,
                             )
                         )
-                    logger.debug(f"argument explanation:{explanation_str} code:{code_str}")
+                    logger.debug(
+                        f"argument explanation:{explanation_str} code:{code_str}"
+                    )
                 else:
                     self._merge_delta_for_content(message, delta)
-                    if delta.get('content') != None:
+                    if delta.get("content") != None:
                         await queue.put(
                             TaskRespond(
                                 token_usage=0,
                                 iteration=0,
                                 respond_type=TaskRespond.OnAgentTextTyping,
                                 model_name="",
-                                typing_content = delta['content']
+                                typing_content=delta["content"],
                             )
                         )
         return message
+
     async def handle_function(
         self, message, queue, token_usage=0, iteration=0, model_name=""
     ):
@@ -247,8 +252,8 @@ class OpenaiAgent(BaseAgent):
                 iterations += 1
                 logger.debug(f" the input messages {messages}")
                 chat_message = await self.call_openai(messages, queue)
-                #model_name = response.get()"model"]
-                #token_usage += response["usage"]["total_tokens"]
+                # model_name = response.get()"model"]
+                # token_usage += response["usage"]["total_tokens"]
                 logger.debug(f"the response {chat_message}")
                 if "function_call" in chat_message:
                     chat_message["content"] = None

@@ -37,6 +37,12 @@ class FunctionResult(BaseModel):
     has_error: bool = False
 
 
+class TypingState:
+    START = 0
+    EXPLANATION = 1
+    CODE = 2
+
+
 class BaseAgent:
 
     def __init__(self, sdk):

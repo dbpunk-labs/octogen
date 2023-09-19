@@ -24,7 +24,7 @@ Copyright (c) 2019 Daniel Yule
 import io
 import unicodedata
 
-SURROGATE = 'Cs'
+SURROGATE = "Cs"
 
 
 class TokenType:
@@ -72,10 +72,13 @@ class SpecialChar:
     # char membership checking, which we have no reason to do anyway.
     EOF = "EOF"
 
+
 class UnCompletedException(Exception):
+
     def __init_(self, token):
         super().__init__("")
         self.token = token
+
 
 def _guess_encoding(stream):
     # if it looks like a urllib response, get the charset from the headers (if any)
@@ -86,7 +89,7 @@ def _guess_encoding(stream):
     if encoding is None:
         # JSON is supposed to be UTF-8
         # https://tools.ietf.org/id/draft-ietf-json-rfc4627bis-09.html#:~:text=The%20default%20encoding%20is%20UTF,16%20and%20UTF%2D32).
-        encoding = 'utf-8'
+        encoding = "utf-8"
     return encoding
 
 
@@ -133,7 +136,7 @@ def tokenize(stream):
             elif char == ":":
                 completed = True
                 now_token = (TokenType.OPERATOR, ":")
-            elif char == "\"":
+            elif char == '"':
                 next_state = State.STRING
             elif char in "123456789":
                 next_state = State.INTEGER
@@ -158,7 +161,7 @@ def tokenize(stream):
             elif char == ".":
                 next_state = State.FLOATING_POINT_0
                 add_char = True
-            elif char == "e" or char == 'E':
+            elif char == "e" or char == "E":
                 next_state = State.INTEGER_EXP_0
                 add_char = True
             elif is_delimiter(char):
@@ -167,12 +170,14 @@ def tokenize(stream):
                 now_token = (TokenType.NUMBER, int("".join(token)))
                 advance = False
             else:
-                raise ValueError("A number must contain only digits.  Got '{}'".format(char))
+                raise ValueError(
+                    "A number must contain only digits.  Got '{}'".format(char)
+                )
         elif state == State.INTEGER_0:
             if char == ".":
                 next_state = State.FLOATING_POINT_0
                 add_char = True
-            elif char == "e" or char == 'E':
+            elif char == "e" or char == "E":
                 next_state = State.INTEGER_EXP_0
                 add_char = True
             elif is_delimiter(char):
@@ -181,7 +186,9 @@ def tokenize(stream):
                 now_token = (TokenType.NUMBER, 0)
                 advance = False
             else:
-                raise ValueError("A 0 must be followed by a '.' or a 'e'.  Got '{0}'".format(char))
+                raise ValueError(
+                    "A 0 must be followed by a '.' or a 'e'.  Got '{0}'".format(char)
+                )
         elif state == State.INTEGER_SIGN:
             if char == "0":
                 next_state = State.INTEGER_0
@@ -190,13 +197,19 @@ def tokenize(stream):
                 next_state = State.INTEGER
                 add_char = True
             else:
-                raise ValueError("A - must be followed by a digit.  Got '{0}'".format(char))
+                raise ValueError(
+                    "A - must be followed by a digit.  Got '{0}'".format(char)
+                )
         elif state == State.INTEGER_EXP_0:
             if char == "+" or char == "-" or char in "0123456789":
                 next_state = State.INTEGER_EXP
                 add_char = True
             else:
-                raise ValueError("An e in a number must be followed by a '+', '-' or digit.  Got '{0}'".format(char))
+                raise ValueError(
+                    "An e in a number must be followed by a '+', '-' or digit.  Got '{0}'".format(
+                        char
+                    )
+                )
         elif state == State.INTEGER_EXP:
             if char in "0123456789":
                 add_char = True
@@ -206,7 +219,11 @@ def tokenize(stream):
                 next_state = State.WHITESPACE
                 advance = False
             else:
-                raise ValueError("A number exponent must consist only of digits.  Got '{}'".format(char))
+                raise ValueError(
+                    "A number exponent must consist only of digits.  Got '{}'".format(
+                        char
+                    )
+                )
         elif state == State.FLOATING_POINT:
             if char in "0123456789":
                 add_char = True
@@ -225,7 +242,9 @@ def tokenize(stream):
                 next_state = State.FLOATING_POINT
                 add_char = True
             else:
-                raise ValueError("A number with a decimal point must be followed by a fractional part")
+                raise ValueError(
+                    "A number with a decimal point must be followed by a fractional part"
+                )
         elif state == State.FALSE_1:
             if char == "a":
                 next_state = State.FALSE_2
@@ -283,7 +302,7 @@ def tokenize(stream):
             else:
                 raise ValueError("Invalid JSON character: '{0}'".format(char))
         elif state == State.STRING:
-            if char == "\"":
+            if char == '"':
                 completed = True
                 now_token = (TokenType.STRING, "".join(token))
                 next_state = State.STRING_END
@@ -298,10 +317,14 @@ def tokenize(stream):
                 advance = False
                 next_state = State.WHITESPACE
             else:
-                raise ValueError("Expected whitespace or an operator after string.  Got '{}'".format(char))
+                raise ValueError(
+                    "Expected whitespace or an operator after string.  Got '{}'".format(
+                        char
+                    )
+                )
         elif state == State.STRING_ESCAPE:
             next_state = State.STRING
-            if char == "\\" or char == "\"":
+            if char == "\\" or char == '"':
                 add_char = True
             elif char == "b":
                 char = "\b"
@@ -328,7 +351,7 @@ def tokenize(stream):
                 raise ValueError("Invalid string escape: {}".format(char))
         elif state == State.UNICODE:
             if char == SpecialChar.EOF:
-                raise ValueError('Unterminated unicode literal at end of file')
+                raise ValueError("Unterminated unicode literal at end of file")
             unicode_buffer += char
             if len(unicode_buffer) == 4:
                 try:
@@ -359,20 +382,26 @@ def tokenize(stream):
 
         elif state == State.UNICODE_SURROGATE:
             if char == SpecialChar.EOF:
-                raise ValueError('Unterminated unicode literal at end of file')
+                raise ValueError("Unterminated unicode literal at end of file")
             unicode_buffer += char
             if len(unicode_buffer) == 8:
                 code_point_1 = int(unicode_buffer[:4], 16)
                 try:
                     code_point_2 = int(unicode_buffer[4:], 16)
                 except ValueError:
-                    raise ValueError(f"Invalid unicode literal: \\u{unicode_buffer[4:]}")
+                    raise ValueError(
+                        f"Invalid unicode literal: \\u{unicode_buffer[4:]}"
+                    )
                 char = chr(code_point_2)
                 if unicodedata.category(char) != SURROGATE:
-                    raise ValueError(f"Second half of UTF-16 surrogate pair is not a surrogate!")
+                    raise ValueError(
+                        f"Second half of UTF-16 surrogate pair is not a surrogate!"
+                    )
                 try:
-                    pair = int.to_bytes(code_point_1, 2, 'little') + int.to_bytes(code_point_2, 2, 'little')
-                    char = pair.decode('utf-16-le')
+                    pair = int.to_bytes(code_point_1, 2, "little") + int.to_bytes(
+                        code_point_2, 2, "little"
+                    )
+                    char = pair.decode("utf-16-le")
                 except ValueError:
                     raise ValueError(
                         f"Error decoding UTF-16 surrogate pair \\u{unicode_buffer[:4]}\\u{unicode_buffer[4:]}"
@@ -384,6 +413,7 @@ def tokenize(stream):
             token.append(char)
 
         return advance, next_state
+
     state = State.WHITESPACE
     c = stream.read(1)
     index = 0

@@ -18,9 +18,11 @@
 
 import json
 import logging
+import io
 from .codellama_client import CodellamaClient
 from octopus_proto.agent_server_pb2 import OnAgentAction, TaskRespond, OnAgentActionEnd, FinalRespond
-from .base_agent import BaseAgent
+from .base_agent import BaseAgent, TypingState
+from .tokenizer import tokenize
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +91,75 @@ class CodellamaAgent(BaseAgent):
                 await queue.put(respond)
         return function_result
 
+    def _get_argument_new_typing(self, message):
+        state = TypingState.START
+        explanation_str = ""
+        action_input_str = ""
+        for token_state, token in tokenize(io.StringIO(message)):
+            if token_state == None:
+                if state == TypingState.EXPLANATION and token[0] == 1:
+                    explanation_str = token[1]
+                    state = TypingState.START
+                if state == TypingState.CODE and token[0] == 1:
+                    action_input_str = token[1]
+                    state = TypingState.START
+                if token[1] == "explanation":
+                    state = TypingState.EXPLANATION
+                if token[1] == "action_input":
+                    state = TypingState.CODE
+            else:
+                # String
+                if token_state == 9 and state == TypingState.EXPLANATION:
+                    explanation_str = "".join(token)
+                elif token_state == 9 and state == TypingState.CODE:
+                    action_input_str = "".join(token)
+        return (state, explanation_str, action_input_str)
+
+    async def call_codellama(self, question, chat_history, queue):
+        state = None
+        message = ""
+        text_content = ""
+        code_content = ""
+        async for line in self.client.prompt(question, chat_history=chat_history):
+            if len(line) < 6:
+                continue
+            respond = json.loads(line[6:])
+            message += respond["content"]
+            logger.debug(f" message {message}")
+            (
+                state,
+                explanation_str,
+                action_input_str,
+            ) = self._get_argument_new_typing(message)
+            if explanation_str and text_content != explanation_str:
+                typed_chars = explanation_str[len(text_content) :]
+                text_content = explanation_str
+                await queue.put(
+                    TaskRespond(
+                        token_usage=0,
+                        iteration=0,
+                        respond_type=TaskRespond.OnAgentTextTyping,
+                        model_name="",
+                        typing_content=typed_chars,
+                    )
+                )
+            if action_input_str and code_content != action_input_str:
+                typed_chars = action_input_str[len(code_content) :]
+                code_content = action_input_str
+                await queue.put(
+                    TaskRespond(
+                        token_usage=0,
+                        iteration=0,
+                        respond_type=TaskRespond.OnAgentCodeTyping,
+                        model_name="",
+                        typing_content=typed_chars,
+                    )
+                )
+            logger.debug(f"argument explanation:{explanation_str} code:{action_input_str}")
+            if respond["stop"]:
+                state = respond
+        return (message, state)
+
     async def arun(self, question, queue, max_iteration=5):
         """
         run the agent
@@ -96,7 +167,6 @@ class CodellamaAgent(BaseAgent):
         history = []
         current_question = question
         # TODO Streaming and reason action
-        state = None
         iteration = 0
         token_usage = 0
         model_name = ""
@@ -104,22 +174,11 @@ class CodellamaAgent(BaseAgent):
             while iteration < max_iteration:
                 iteration += 1
                 response = []
-                async for line in self.client.prompt(
-                    current_question, chat_history="\n".join(history)
-                ):
-                    if len(line) < 6:
-                        continue
-                    respond = json.loads(line[6:])
-                    response.append(respond["content"])
-                    if respond["stop"]:
-                        state = respond
-                token_usage += (
-                    state["tokens_cached"]
-                    + state["tokens_evaluated"]
-                    + state["tokens_predicted"]
+                chat_history = "\n".join(history)
+                (message, state) = await self.call_codellama(
+                    current_question, chat_history, queue
                 )
-                model_name = state["generation_settings"]["model"]
-                json_response = json.loads("".join(response))
+                json_response = json.loads(message)
                 logger.debug(f" codellama response {json_response}")
                 if (
                     json_response["action"] == "execute_python_code"
