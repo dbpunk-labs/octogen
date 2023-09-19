@@ -149,7 +149,7 @@ class AgentRpcServer(AgentServerServicer):
         ).first()
         if not lite_app:
             await context.abort(10, f"no application with name {request.name}")
-        tool = self.agents[metadata["api_key"]]["tool"]
+        agent = self.agents[metadata["api_key"]]["agent"]
         tool_input = json.dumps({
             "code": lite_app.code,
             "explanation": "",
@@ -163,15 +163,20 @@ class AgentRpcServer(AgentServerServicer):
                 input=tool_input, tool="execute_python_code"
             ),
         )
-        output = await tool.arun(lite_app.code)
-        output_files = []
-        filename = parse_image_filename(output)
-        if filename:
-            output_files.append(filename)
+        function_result = None
+        async for (result, respond) in agent.call_function(lite_app.code):
+            function_result = result
+            if respond:
+                yield respond
+        output_files = (
+            function_result.saved_filenames
+            if function_result and function_result.saved_filenames
+            else []
+        )
         yield agent_server_pb2.TaskRespond(
             respond_type=agent_server_pb2.TaskRespond.OnAgentActionEndType,
             on_agent_action_end=agent_server_pb2.OnAgentActionEnd(
-                output=output, output_files=output_files
+                output="", output_files=output_files
             ),
         )
 

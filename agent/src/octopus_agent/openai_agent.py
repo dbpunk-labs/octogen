@@ -94,13 +94,16 @@ class OpenaiAgent(BaseAgent):
                     ),
                 )
             )
-            return await self.call_function(
+            function_result = None
+            async for (result, respond) in self.call_function(
                 code,
-                queue,
                 iteration=iteration,
                 token_usage=token_usage,
                 model_name=model_name,
-            )
+            ):
+                function_result = result
+                if respond:
+                    await queue.put(respond)
         else:
             raise Exception("bad message, function message expected")
 

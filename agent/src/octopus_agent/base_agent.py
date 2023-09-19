@@ -42,9 +42,7 @@ class BaseAgent:
     def __init__(self, sdk):
         self.kernel_sdk = sdk
 
-    async def call_function(
-        self, code, queue, iteration=1, token_usage=0, model_name=""
-    ) -> FunctionResult:
+    async def call_function(self, code, iteration=1, token_usage=0, model_name=""):
         """
         run code with kernel
         """
@@ -58,68 +56,79 @@ class BaseAgent:
                 kernel_output = json.loads(kernel_respond.output)["text"]
                 console_stdout += kernel_output
                 console_stdout = process_char_stream(console_stdout)
-                await queue.put(
+                logger.debug(f"the new stdout {console_stdout}")
+                yield (
+                    None,
                     TaskRespond(
                         token_usage=token_usage,
                         iteration=iteration,
                         respond_type=TaskRespond.OnAgentActionStdout,
                         model_name=model_name,
                         console_stdout=kernel_output,
-                    )
+                    ),
                 )
             # process the stderr
             elif kernel_respond.output_type == ExecuteResponse.StderrType:
                 kernel_err = json.loads(kernel_respond.output)["text"]
                 console_stderr += kernel_err
                 console_stderr = process_char_stream(console_stderr)
-                await queue.put(
+                logger.debug(f"the new stderr {console_stderr}")
+                yield (
+                    None,
                     TaskRespond(
                         token_usage=token_usage,
                         iteration=iteration,
                         respond_type=TaskRespond.OnAgentActionStderr,
                         model_name=model_name,
                         console_stderr=kernel_err,
-                    )
+                    ),
                 )
             elif kernel_respond.output_type == ExecuteResponse.TracebackType:
                 traceback = json.loads(kernel_respond.output)["traceback"]
                 console_stderr += traceback
+                logger.debug(f"the new traceback {console_stderr}")
                 has_error = True
-                await queue.put(
+                yield (
+                    None,
                     TaskRespond(
                         token_usage=token_usage,
                         iteration=iteration,
                         respond_type=TaskRespond.OnAgentActionStderr,
                         model_name=model_name,
                         console_stderr=traceback,
-                    )
+                    ),
                 )
             else:
                 has_result = True
                 result = json.loads(kernel_respond.output)
+                logger.debug(f"the result {result}")
                 if "image/gif" in result:
                     console_stdout = result["image/gif"]
                 elif "image/png" in result:
                     console_stdout = result["image/png"]
                 elif "text/plain" in result:
                     console_stdout = result["text/plain"]
-                await queue.put(
+                yield (
+                    None,
                     TaskRespond(
                         token_usage=token_usage,
                         iteration=iteration,
                         respond_type=TaskRespond.OnAgentActionStdout,
                         model_name=model_name,
                         console_stdout=console_stdout,
-                    )
+                    ),
                 )
         output_files = []
         filename = parse_image_filename(console_stdout)
         if filename:
             output_files.append(filename)
-        return FunctionResult(
-            console_stderr=console_stderr,
-            console_stdout=console_stdout,
-            saved_filenames=output_files,
-            has_error=has_error,
-            has_result=has_result,
+        yield (
+            FunctionResult(
+                console_stderr=console_stderr,
+                console_stdout=console_stdout,
+                saved_filenames=output_files,
+                has_error=has_error,
+                has_result=has_result,
+            ),
+            None,
         )

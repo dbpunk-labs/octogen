@@ -77,13 +77,17 @@ class CodellamaAgent(BaseAgent):
                 ),
             )
         )
-        return await self.call_function(
+        function_result = None
+        async for (result, respond) in self.call_function(
             code,
-            queue,
             iteration=iteration,
             token_usage=token_usage,
             model_name=model_name,
-        )
+        ):
+            function_result = result
+            if respond:
+                await queue.put(respond)
+        return function_result
 
     async def arun(self, question, queue, max_iteration=5):
         """
@@ -116,7 +120,7 @@ class CodellamaAgent(BaseAgent):
                 )
                 model_name = state["generation_settings"]["model"]
                 json_response = json.loads("".join(response))
-                logger.debug(f" codellama {json_response}")
+                logger.debug(f" codellama response {json_response}")
                 if (
                     json_response["action"] == "execute_python_code"
                     and json_response["action_input"]
@@ -124,6 +128,7 @@ class CodellamaAgent(BaseAgent):
                     function_result = await self.handle_function(
                         json_response, queue, token_usage, iteration, model_name
                     )
+                    logger.debug(f"the function result {function_result}")
                     await queue.put(
                         TaskRespond(
                             token_usage=token_usage,
@@ -137,28 +142,24 @@ class CodellamaAgent(BaseAgent):
                     )
                     history.append("User:%s" % current_question)
                     history.append("Octopus:%s\n" % ("".join(response)))
+                    ins = "Check if the following output meets the goal. If it does, explain it. Otherwise, try a new solution."
                     # TODO limit the output size
                     if function_result.has_result:
-                        current_question = (
-                            "the output of execute_python_code is \n%s"
-                            % function_result.console_stdout
-                        )
+                        current_question = f"{ins} \n {function_result.console_stdout}"
                         logger.debug(
                             "continue to iterate with codellama with question %s"
                             % function_result.console_stdout
                         )
                     elif function_result.has_error:
-                        current_question = (
-                            "the output of execute_python_code is \n%s"
-                            % function_result.console_stderr
-                        )
+                        current_question = f"{ins} \n {function_result.console_stderr}"
                         logger.debug(
                             "continue to iterate with codellama with question %s"
                             % function_result.console_stderr
                         )
                     else:
-                        current_question = (
-                            "the output of execute_python_code is \n %s"
+                        current_question = f"{ins} \n {function_result.console_stdout}"
+                        logger.debug(
+                            "continue to iterate with codellama with question %s"
                             % function_result.console_stdout
                         )
                 else:

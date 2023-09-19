@@ -23,6 +23,7 @@ import logging
 import json
 from octopus_agent.agent_sdk import AgentSDK
 from octopus_agent.utils import random_str
+from octopus_proto.agent_server_pb2 import TaskRespond
 
 logger = logging.getLogger(__name__)
 api_base = "127.0.0.1:9528"
@@ -67,11 +68,14 @@ async def test_assemble_test(agent_sdk):
         responds = []
         async for respond in sdk.run(name):
             responds.append(respond)
-        assert len(responds) == 2, "bad responds for run application"
+        assert len(responds) == 3, "bad responds for run application"
+        assert responds[0].respond_type == TaskRespond.OnAgentActionType
+        assert responds[1].respond_type == TaskRespond.OnAgentActionStdout
+        assert responds[2].respond_type == TaskRespond.OnAgentActionEndType
         assert (
             json.loads(responds[0].on_agent_action.input)["code"] == code
         ), "remote code !eq the local code"
-        assert responds[1].on_agent_action_end.output.find("hello") >= 0, "bad output"
+        assert responds[1].console_stdout.find("hello") >= 0, "bad output"
     except Exception as ex:
         assert 0, str(ex)
 
@@ -106,7 +110,6 @@ ax.legend()
 # Step 7: Show the chart
 plt.show()"""
 
-
 @pytest.mark.asyncio
 async def test_assemble_image_test(agent_sdk):
     sdk = agent_sdk
@@ -121,13 +124,18 @@ async def test_assemble_image_test(agent_sdk):
         responds = []
         async for respond in sdk.run(name):
             responds.append(respond)
-        assert len(responds) == 2, "bad responds for run application"
+        assert len(responds) == 3, "bad responds for run application"
+        assert responds[0].respond_type == TaskRespond.OnAgentActionType
+        assert responds[1].respond_type == TaskRespond.OnAgentActionStdout
+        assert responds[2].respond_type == TaskRespond.OnAgentActionEndType
         assert (
             json.loads(responds[0].on_agent_action.input)["code"]
             == display_image_test_code
         )
+        assert responds[1].console_stdout.find("png") > 0, "should output the files"
         assert (
-            len(responds[1].on_agent_action_end.output_files) == 1
+            len(responds[2].on_agent_action_end.output_files) == 1
         ), "should output the files"
+
     except Exception as ex:
         assert 0, str(ex)

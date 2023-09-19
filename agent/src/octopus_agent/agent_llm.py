@@ -75,23 +75,10 @@ class LLMManager:
             "openai_api_type",
             "openai_api_deployment",
         ])
-        api_base = self.config["openai_api_base"]
-        api_version = self.config["openai_api_version"]
-        api_type = self.config["openai_api_type"]
-        api_key = self.config["openai_api_key"]
-        api_deployment = self.config["openai_api_deployment"]
-        temperature = self.config.get("temperature", 0)
-        verbose = self.config.get("verbose", False)
-        llm = AzureChatOpenAI(
-            openai_api_base=api_base,
-            openai_api_version=api_version,
-            openai_api_key=api_key,
-            openai_api_type=api_type,
-            deployment_name=api_deployment,
-            temperature=temperature,
-            verbose=verbose,
-        )
-        self.llms[self.llm_key] = llm
+        openai.api_base = self.config["openai_api_base"]
+        openai.api_version = self.config["openai_api_version"]
+        openai.api_type = self.config["openai_api_type"]
+        openai.api_key = self.config["openai_api_key"]
 
     def _build_mock_llm(self):
         """
