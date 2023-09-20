@@ -16,6 +16,8 @@ Octopus is an open-source code interpreter for terminal users
 
 ## How It works
 
+![octopus_simple](https://github.com/dbpunk-labs/octopus/assets/8623385/e5bfb3fb-74a5-4c60-8842-a81ee54fcb9d)
+
 Core components
 
 * Kernel: The code execution engine, based on notebook kernels.
@@ -23,7 +25,7 @@ Core components
 * Chat: Accepts user requests, sends them to the Agent, and renders rich results. Currently supports Discord, iTerm2, and Kitty terminals.
 
 For security, it is recommended to run the kernel and agent as Docker containers.
-![octopus_simple](https://github.com/dbpunk-labs/octopus/assets/8623385/588e0381-f0b7-4ca6-a2c5-6c801c0e481f)
+
 
 
 
