@@ -7,7 +7,7 @@
 Octopus is an open-source code interpreter for terminal users
 
 <p align="center">
-<img width="800px" src="https://github.com/dbpunk-labs/octopus/assets/8623385/19fb009b-c94e-42ce-b387-82f8a5abce85" align="center"/>
+<img width="800px" src="https://github.com/dbpunk-labs/octopus/assets/8623385/5609a3d7-b82e-494f-817f-37ff88544320" align="center"/>
 
 
 ## Getting Started
@@ -22,8 +22,6 @@ Core components
 
 For security, it is recommended to run the kernel and agent as Docker containers.
 
-<p align="center">
-<img width="800px" src="https://github.com/dbpunk-labs/octopus/assets/8623385/aabfea13-0c2a-40ab-a4a3-53af33023c4f" align="center"/>
 
 ## Demo
 
