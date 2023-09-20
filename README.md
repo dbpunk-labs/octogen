@@ -8,7 +8,7 @@
 Octopus is an open-source code interpreter for terminal users
 
 <p align="center">
-<img width="1000px" src="https://github.com/dbpunk-labs/octopus/assets/8623385/31e9ec1e-a377-4ad8-b104-a29c33bae160" align="center"/>
+<img width="1000px" src="https://github.com/dbpunk-labs/octopus/assets/8623385/bc6ed982-9d5c-473d-8efe-dbe6961b200d" align="center"/>
 
 
 
