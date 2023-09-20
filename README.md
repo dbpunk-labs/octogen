@@ -5,39 +5,32 @@
 [![Discord](https://badgen.net/badge/icon/discord?icon=discord&label)](https://discord.gg/UjSHsjaz66)
 [![Twitter Follow](https://img.shields.io/twitter/follow/OCopilot7817?style=flat-square)](https://twitter.com/OCopilot7817)
 
-Octopus is an open-source code interpreter for terminal users
+> ## Octopus
+> an open-source code interpreter for terminal users
 
 <p align="center">
 <img width="1000px" src="https://github.com/dbpunk-labs/octopus/assets/8623385/bc6ed982-9d5c-473d-8efe-dbe6961b200d" align="center"/>
 
-
-
 ## Getting Started
+
+### Install
+
+there two ways to install octopus
+
 
 ## How It works
 
 ![octopus_simple](https://github.com/dbpunk-labs/octopus/assets/8623385/e5bfb3fb-74a5-4c60-8842-a81ee54fcb9d)
 
-Core components
-
-* Kernel: The code execution engine, based on notebook kernels.
-* Agent: Manages client requests, uses ReAct to process complex tasks, and stores user-assembled applications.
-* Chat: Accepts user requests, sends them to the Agent, and renders rich results. Currently supports Discord, iTerm2, and Kitty terminals.
+* Octopus Kernel: The code execution engine, based on notebook kernels.
+* Octopus Agent: Manages client requests, uses ReAct to process complex tasks, and stores user-assembled applications.
+* Octopus Terminal Cli: Accepts user requests, sends them to the Agent, and renders rich results. Currently supports Discord, iTerm2, and Kitty terminals.
 
 For security, it is recommended to run the kernel and agent as Docker containers.
 
-
-
-
 ## Demo
 
-
-
 [video](https://github.com/dbpunk-labs/octopus/assets/8623385/bea76119-a705-4ae1-907d-cb4e0a0c18a5)
-
-
-
-
 
 
 ### API Service Supported
@@ -47,6 +40,14 @@ For security, it is recommended to run the kernel and agent as Docker containers
 |[Openai GPT 3.5/4](https://openai.com/product#made-for-developers) | ✅ fully supported|the detail installation steps|
 |[Azure Openai GPT 3.5/4](https://azure.microsoft.com/en-us/products/ai-services/openai-service) |  ✅ fully supported|the detail install steps|
 |[LLama.cpp Server](https://github.com/ggerganov/llama.cpp/tree/master/examples/server) | ✅ fully supported| You must provide the model|
+
+### Tested Platform
+
+|name|status| note|
+|----|----------------|---|
+|ubuntu 22.04 | ✅ fully supported|the detail installation steps|
+|macos |  ✅ fully supported|the detail install steps|
+
 
 ### Deployment
 
