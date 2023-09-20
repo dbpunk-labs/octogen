@@ -10,7 +10,6 @@ pytest-asyncio==0.21.0
 grpc-google-iam-v1==0.12.6
 matplotlib==3.7.2
 pydantic==2.3.0
-langchain==0.0.277
 aiosqlite==0.19.0
 rich==13.5.2
 prompt_toolkit==3.0.39

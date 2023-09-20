@@ -36,7 +36,6 @@ from .gpt_async_callback import AgentAsyncHandler
 from .agent_llm import LLMManager
 from .agent_builder import build_mock_agent, build_openai_agent, build_codellama_agent
 from .tools import OctopusAPIMarkdownOutput
-import langchain
 import databases
 import orm
 from datetime import datetime
@@ -46,14 +45,16 @@ config = dotenv_values(".env")
 LOG_LEVEL = (
     logging.DEBUG if config.get("log_level", "info") == "debug" else logging.INFO
 )
+
 logging.basicConfig(
     level=LOG_LEVEL,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[logging.StreamHandler(sys.stdout)],
 )
+
 logger = logging.getLogger(__name__)
 
-langchain.verbose = config.get("verbose", False)
+# the database instance for agent
 database = databases.Database("sqlite:///%s" % config["db_path"])
 models = orm.ModelRegistry(database=database)
 
@@ -233,7 +234,7 @@ class AgentRpcServer(AgentServerServicer):
             self.agents[request.key] = {"sdk": sdk, "agent": agent}
         elif config["llm_key"] == "mock":
             logger.info(f"create a mock agent to kernel {request.endpoint}")
-            agent = build_mock_agent(self.llm)
+            agent = build_mock_agent(sdk, config["cases_path"])
             self.agents[request.key] = {"sdk": sdk, "agent": agent}
         elif config["llm_key"] == "codellama":
             logger.info(f"create a codellama agent {request.endpoint}")
@@ -249,6 +250,9 @@ class AgentRpcServer(AgentServerServicer):
     async def send_task(
         self, request: agent_server_pb2.SendTaskRequest, context: ServicerContext
     ) -> AsyncIterable[agent_server_pb2.TaskRespond]:
+        """
+        process the task from the client
+        """
         logger.debug("receive the task %s ", request.task)
         metadata = dict(context.invocation_metadata())
         if (
@@ -260,104 +264,48 @@ class AgentRpcServer(AgentServerServicer):
             await context.abort(10, "invalid api key")
         agent = self.agents[metadata["api_key"]]["agent"]
         queue = asyncio.Queue()
-        if (
-            config["llm_key"] == "codellama"
-            or config["llm_key"] == "azure_openai"
-            or config["llm_key"] == "openai"
-        ):
 
-            async def worker(task, agent, queue):
-                try:
-                    return await agent.arun(task, queue)
-                except Exception as ex:
-                    logger.exception("fail to run agent")
-                    result = str(ex)
-                    return result
-
-            logger.debug("create the agent task")
+        async def worker(task, agent, queue):
             try:
-                task = asyncio.create_task(worker(request.task, agent, queue))
-                while True:
-                    try:
-                        logger.debug("start wait the queue message")
-                        # TODO add timeout
-                        respond = await queue.get()
-                        if not respond:
-                            logger.debug("exit the queue")
-                            break
-                        logger.debug(f"respond {respond}")
-                        queue.task_done()
-                        yield respond
-                    except Exception as ex:
-                        logger.error(f"fail to get respond for {ex}")
-                        break
-                await task
+                return await agent.arun(task, queue)
             except Exception as ex:
-                respond = agent_server_pb2.TaskRespond(
-                    token_usage=0,
-                    model_name="",
-                    iteration=1,
-                    respond_type=agent_server_pb2.TaskRespond.OnFinalAnswerType,
-                    final_respond=agent_server_pb2.FinalRespond(answer=str(ex)),
-                )
-                yield respond
+                logger.exception("fail to run agent")
+                result = str(ex)
+                return result
 
-        else:
-            # just for the mock
-            handler = AgentAsyncHandler(queue)
-
-            async def worker(task, agent, handler):
+        logger.debug("create the agent task")
+        try:
+            task = asyncio.create_task(worker(request.task, agent, queue))
+            while True:
                 try:
-                    return await agent.arun(task, callbacks=[handler])
-                except Exception as ex:
-                    logger.error("fail to run agent for %s", ex)
-                    result = str(ex)
-                    await handler.exit_the_queue()
-                    return result
-
-            logger.debug("create the agent task")
-            try:
-                task = asyncio.create_task(worker(request.task, agent, handler))
-                token_usage = 0
-                while True:
-                    try:
-                        logger.debug("start wait the queue message")
-                        # TODO add timeout
-                        respond = await queue.get()
-                        if not respond:
-                            logger.debug("exit the queue")
-                            break
-                        logger.debug(f"respond {respond}")
-                        queue.task_done()
-                        yield respond
-                    except Exception as ex:
-                        logger.error(f"fail to get respond for {ex}")
+                    logger.debug("start wait the queue message")
+                    # TODO add timeout
+                    respond = await queue.get()
+                    if not respond:
+                        logger.debug("exit the queue")
                         break
-                await task
-                respond = agent_server_pb2.TaskRespond(
-                    token_usage=handler.token_usage,
-                    model_name=handler.model_name,
-                    iteration=handler.iteration,
-                    respond_type=agent_server_pb2.TaskRespond.OnFinalAnswerType,
-                    final_respond=agent_server_pb2.FinalRespond(answer=task.result()),
-                )
-                logger.debug(f"respond {respond}")
-                yield respond
-            except Exception as ex:
-                respond = agent_server_pb2.TaskRespond(
-                    token_usage=0,
-                    model_name="",
-                    iteration=1,
-                    respond_type=agent_server_pb2.TaskRespond.OnFinalAnswerType,
-                    final_respond=agent_server_pb2.FinalRespond(answer=str(ex)),
-                )
-                yield respond
+                    logger.debug(f"respond {respond}")
+                    queue.task_done()
+                    yield respond
+                except Exception as ex:
+                    logger.error(f"fail to get respond for {ex}")
+                    break
+            await task
+        except Exception as ex:
+            respond = agent_server_pb2.TaskRespond(
+                token_usage=0,
+                model_name="",
+                iteration=1,
+                respond_type=agent_server_pb2.TaskRespond.OnFinalAnswerType,
+                final_respond=agent_server_pb2.FinalRespond(answer=str(ex)),
+            )
+            yield respond
 
     async def download(
         self, request: common_pb2.DownloadRequest, context: ServicerContext
     ) -> AsyncIterable[common_pb2.FileChunk]:
         """
-        download file
+        download file from kernel and send it to client
         """
         metadata = dict(context.invocation_metadata())
         if (
@@ -376,7 +324,7 @@ class AgentRpcServer(AgentServerServicer):
         context: ServicerContext,
     ) -> common_pb2.FileUploaded:
         """
-        upload file
+        upload file to the kernel workspace
         """
         metadata = dict(context.invocation_metadata())
         if (

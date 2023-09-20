@@ -27,15 +27,12 @@ setup(
     packages=[
         "octopus_agent",
     ],
-
     package_dir={
         "octopus_agent": "src/octopus_agent",
     },
-
     install_requires=[
         "octopus_proto",
         "octopus_kernel",
-        "langchain>=0.0.286",
         "grpcio-tools>=1.57.0",
         "grpc-google-iam-v1>=0.12.6",
         "aiofiles",
@@ -43,9 +40,8 @@ setup(
         "python-dotenv",
         "openai",
         "aiohttp>=3.8.5",
-        "replicate"
+        "replicate",
     ],
-
     package_data={"octopus_agent": ["*.bnf"]},
     entry_points={
         "console_scripts": [

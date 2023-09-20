@@ -15,27 +15,27 @@
 # limitations under the License.
 
 """ """
-from langchain.agents import initialize_agent
-from langchain.schema.messages import SystemMessage
-from .tools import OctopusAPIMarkdownOutput
+import json
 from .gpt_tools import ExecutePythonCodeTool
-from .mock_tools import PrintFinalAnswerTool as MockPrintFinalAnswerTool
 from .prompt import OCTOPUS_FUNCTION_SYSTEM, OCTOPUS_CODELLAMA_SYSTEM
 from .gpt_async_callback import AgentAsyncHandler
-from langchain.agents import AgentType
 from .codellama_agent import CodellamaAgent
 from .openai_agent import OpenaiAgent
 from .codellama_client import CodellamaClient
+from .mock_agent import MockAgent
 
 
 def build_codellama_agent(endpoint, key, sdk, grammer_path):
+    """
+    build codellama agent
+    """
     with open(grammer_path, "r") as fd:
         grammar = fd.read()
 
     client = CodellamaClient(
         endpoint, key, OCTOPUS_CODELLAMA_SYSTEM, "Octopus", "User", grammar
     )
-    """build openai function call agent"""
+
     # init the agent
     return CodellamaAgent(client, sdk)
 
@@ -49,9 +49,11 @@ def build_openai_agent(sdk, model_name):
     return agent
 
 
-def build_mock_agent(llm):
-    tools = [
-        MockPrintFinalAnswerTool(),
-    ]
-    agent = initialize_agent(tools, llm, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION)
+def build_mock_agent(sdk, cases_path):
+    """
+    build the mock agent for testing
+    """
+    with open(cases_path, "r") as fd:
+        messages = json.load(fd)
+    agent = MockAgent(messages, sdk)
     return agent

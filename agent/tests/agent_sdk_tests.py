@@ -46,10 +46,11 @@ async def test_upload_smoke_test(agent_sdk):
     await sdk.upload_file(path, "agent_sdk_tests.py")
     try:
         responds = []
-        async for respond in sdk.prompt("print a hello world in python"):
+        async for respond in sdk.prompt("hello"):
             responds.append(respond)
         logger.debug(f"{responds}")
         assert len(responds) > 0, "no responds for the prompt"
+        assert responds[len(responds) - 1].respond_type == TaskRespond.OnFinalAnswerType
     except Exception as ex:
         assert 0, str(ex)
 
