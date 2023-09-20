@@ -23,9 +23,9 @@ jobs:
           WS_DIR=`pwd`
           bash start_sandbox.sh
           cd ${WS_DIR}/kernel
-          pytest tests/*
+          pytest tests/*.py
           cd ${WS_DIR}/agent
-          pytest tests/*
+          pytest tests/*.py
       - uses: actions/upload-artifact@v3
         if: failure()
         with:
