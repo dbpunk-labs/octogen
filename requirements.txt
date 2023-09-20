@@ -4,7 +4,7 @@ numpy==1.24.2
 opencv_python==4.8.0.76
 pytest==7.3.1
 python-dotenv==1.0.0
-setuptools==65.5.1
+setuptools==68.2.2
 grpcio-tools==1.57.0
 pytest-asyncio==0.21.0
 grpc-google-iam-v1==0.12.6
