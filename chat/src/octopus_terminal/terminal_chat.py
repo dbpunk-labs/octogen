@@ -52,7 +52,7 @@ EMOJI_KEYS = list(EMOJI.keys())
 def show_welcome(console):
     welcome = """
 Welcome to use octopus❤️ . To ask a programming question, simply type your question and press [bold yellow]esc + enter[/]
-You can use [bold yellow]/help[/] to look for help
+Use [bold yellow]/help[/] for help
 """
     console.print(welcome)
 

@@ -225,7 +225,7 @@ class KernelRpcServer(KernelServerNodeServicer):
             "stderr": None,
             "traceback": None,
         }
-        async for msg in self.kcs[kernel_name].read_response(10):
+        async for msg in self.kcs[kernel_name].read_response(5):
             if not msg:
                 break
             if msg["parent_header"]["msg_id"] != msg_id:

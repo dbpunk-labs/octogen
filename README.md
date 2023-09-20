@@ -4,7 +4,7 @@
 ![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/dbpunk-labs/octopus/ci.yml?branch=main&style=flat-square)
 [![Discord](https://badgen.net/badge/icon/discord?icon=discord&label)](https://discord.gg/UjSHsjaz66)
 
-Octopus is an open-source code interpreter with a client-server architecture.
+Octopus is an open-source code interpreter for terminal users
 
 <p align="center">
 <img width="800px" src="https://github.com/dbpunk-labs/octopus/assets/8623385/709f84f6-3b7f-49cf-b83f-e26d2d802015" align="center"/>
@@ -28,12 +28,13 @@ For security, it is recommended to run the kernel and agent as Docker containers
 
 [video](https://github.com/dbpunk-labs/octopus/assets/8623385/1b7a47e5-8ac9-4d42-9eb2-848b47b8db84)
 
-### LLM
+### API Service Supported
 
-|name|type|supported status|
-|----|----|----------------|
-|GPT 3.5/4 | LLM | ✅ fully supported|
-|Codellama | LLM | ✅ fully supported|
+|name|status| note|
+|----|----------------|---|
+|Openai GPT 3.5/4 | ✅ fully supported|the detail installation steps|
+|Azure Openai GPT 3.5/4 |  ✅ fully supported|the detail install steps|
+|[LLama.cpp Server](https://github.com/ggerganov/llama.cpp/tree/master/examples/server) | ✅ fully supported| You must provide the model|
 
 ### Deployment
 

@@ -20,16 +20,18 @@ from setuptools import setup, find_packages
 setup(
     name="octopus_agent",
     version="0.3.6",
-    description="Open source code interpreter agent for LLM",
+    description="Open source code interpreter agent",
     author="imotai",
     author_email="wangtaize@dbpunk.com",
     url="https://github.com/dbpunk-labs/octopus",
     packages=[
         "octopus_agent",
     ],
+
     package_dir={
         "octopus_agent": "src/octopus_agent",
     },
+
     install_requires=[
         "octopus_proto",
         "octopus_kernel",
@@ -40,9 +42,10 @@ setup(
         "orm[sqlite]",
         "python-dotenv",
         "openai",
-        "json-stream",
         "aiohttp>=3.8.5",
+        "replicate"
     ],
+
     package_data={"octopus_agent": ["*.bnf"]},
     entry_points={
         "console_scripts": [
