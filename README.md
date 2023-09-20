@@ -13,10 +13,53 @@
 
 ## Getting Started
 
-### Install
+### Install From Source
 
-there two ways to install octopus
+```
+git clone https://github.com/dbpunk-labs/octopus.git
+cd octopus 
 
+```
+> [!NOTE]
+> You must install the following tools
+> * python3 >= 3.10
+> * python-pip
+> * git
+
+
+### Install From Release
+
+the first step is install to octopus tool
+the octopus up is used to install octopus and upgrade octopus
+
+```
+curl --proto '=https' --tlsv1.2 -sSf https://up.dbpunk.xyz/db3up_init.sh | sh
+```
+
+> [!NOTE]
+> You must install the following tools
+> * python3 >= 3.10
+> * python-pip
+
+install octopus without docker
+
+> [!NOTE]
+> this way is just for testing or development
+
+
+install octopus with docker
+
+> [!NOTE]
+> agent, kernel and cli will be installed, you must provide your openai key
+> if you want use codellama, you can must provide the codellama model
+
+install octopus cli only
+
+> [!NOTE]
+> you need to apply the agent key from https://dbpunk.xyz
+
+
+## Features
 
 ## How It works
 
@@ -27,6 +70,8 @@ there two ways to install octopus
 * Octopus Terminal Cli: Accepts user requests, sends them to the Agent, and renders rich results. Currently supports Discord, iTerm2, and Kitty terminals.
 
 For security, it is recommended to run the kernel and agent as Docker containers.
+
+## Roadmap
 
 ## Demo
 
@@ -41,7 +86,7 @@ For security, it is recommended to run the kernel and agent as Docker containers
 |[Azure Openai GPT 3.5/4](https://azure.microsoft.com/en-us/products/ai-services/openai-service) |  ✅ fully supported|the detail install steps|
 |[LLama.cpp Server](https://github.com/ggerganov/llama.cpp/tree/master/examples/server) | ✅ fully supported| You must provide the model|
 
-### Tested Platform
+### Platforms Supported
 
 |name|status| note|
 |----|----------------|---|

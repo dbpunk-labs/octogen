@@ -22,6 +22,7 @@ import pathlib
 import hashlib
 import grpc
 import json
+from grpc.aio import AioRpcError
 from octopus_proto.agent_server_pb2_grpc import AgentServerServicer
 from octopus_proto.agent_server_pb2_grpc import add_AgentServerServicer_to_server
 from octopus_proto import agent_server_pb2
@@ -261,19 +262,28 @@ class AgentRpcServer(AgentServerServicer):
             logger.debug("invalid api key")
             await context.abort(10, "invalid api key")
         agent = self.agents[metadata["api_key"]]["agent"]
+        sdk = self.agents[metadata["api_key"]]["sdk"]
         queue = asyncio.Queue()
 
-        async def worker(task, agent, queue):
+        async def worker(task, agent, queue, sdk):
             try:
                 return await agent.arun(task, queue)
+            except AioRpcError as rpc_ex:
+                logger.exception("cancel the request worker")
+                try:
+                    await sdk.stop()
+                except Exception as ex:
+                    pass
+                result = str(rpc_ex)
+                return result
             except Exception as ex:
                 logger.exception("fail to run agent")
                 result = str(ex)
                 return result
 
         logger.debug("create the agent task")
+        task = asyncio.create_task(worker(request.task, agent, queue, sdk))
         try:
-            task = asyncio.create_task(worker(request.task, agent, queue))
             while True:
                 try:
                     logger.debug("start wait the queue message")
@@ -289,6 +299,10 @@ class AgentRpcServer(AgentServerServicer):
                     logger.error(f"fail to get respond for {ex}")
                     break
             await task
+        except AioRpcError as rpc_ex:
+            logger.exception("cancel the request")
+            task.cancel()
+            pass
         except Exception as ex:
             respond = agent_server_pb2.TaskRespond(
                 token_usage=0,
