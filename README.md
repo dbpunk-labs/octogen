@@ -30,7 +30,10 @@ For security, it is recommended to run the kernel and agent as Docker containers
 ## Demo
 
 
-[video](https://github.com/dbpunk-labs/octopus/assets/8623385/570b822e-918f-4066-9d8e-20baf96e1dd8)
+
+[video](https://github.com/dbpunk-labs/octopus/assets/8623385/bea76119-a705-4ae1-907d-cb4e0a0c18a5)
+
+
 
 
 
