@@ -28,7 +28,10 @@ For security, it is recommended to run the kernel and agent as Docker containers
 
 ## Demo
 
-[octopus_demo.webm](https://github.com/dbpunk-labs/octopus/assets/8623385/41f31972-5655-43d3-9d5d-d55e926cb6f8)
+
+[video](https://github.com/dbpunk-labs/octopus/assets/8623385/570b822e-918f-4066-9d8e-20baf96e1dd8)
+
+
 
 
 ### API Service Supported
