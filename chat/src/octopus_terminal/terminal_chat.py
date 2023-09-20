@@ -11,6 +11,7 @@ import json
 import asyncio
 import click
 import glob
+import random
 from datetime import datetime
 from rich.console import Console
 from rich.markdown import Markdown
@@ -22,13 +23,15 @@ from rich.progress import Progress
 from rich.rule import Rule
 from rich.live import Live
 from rich.spinner import Spinner
-from rich.emoji import Emoji
+from rich.emoji import EMOJI
 from rich import box
+from rich.style import Style
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.shortcuts import CompleteStyle, clear
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit import PromptSession
 from octopus_agent.agent_sdk import AgentSyncSDK
+from octopus_agent.utils import process_char_stream
 from octopus_proto import agent_server_pb2
 from dotenv import dotenv_values
 from prompt_toolkit.completion import Completer, Completion
@@ -43,11 +46,13 @@ Markdown.elements["code_block"] = CodeBlock
 OCTOPUS_TITLE = "🐙[bold red]Octopus"
 OCTOPUS_APP_TITLE = "🐙[bold red]App"
 
+EMOJI_KEYS = list(EMOJI.keys())
+
 
 def show_welcome(console):
     welcome = """
 Welcome to use octopus❤️ . To ask a programming question, simply type your question and press [bold yellow]esc + enter[/]
-You can use [bold yellow]/help[/] to look for help
+Use [bold yellow]/help[/] for help
 """
     console.print(welcome)
 
@@ -74,6 +79,11 @@ def show_help(console):
 """
     mk = Markdown(help, justify="left")
     console.print(mk)
+
+
+def gen_a_random_emoji():
+    index = random.randint(0, len(EMOJI_KEYS))
+    return EMOJI[EMOJI_KEYS[index]]
 
 
 def parse_numbers(text):
@@ -134,7 +144,6 @@ def clean_code(code: str):
 def refresh(
     live,
     segments,
-    spinner,
     token_usage="0",
     iteration="0",
     model_name="",
@@ -146,41 +155,53 @@ def refresh(
     table.add_column("Content")
     for index, status, segment in segments:
         table.add_row(f"{index}", status, segment)
-    if spinner:
-        if not segments:
-            table.add_row("", spinner)
-        live.update(
-            Panel(
-                table,
-                title=title,
-                title_align="left",
-                subtitle=f"[bold yellow]token:{token_usage} interation:{iteration} model:{model_name}"
-                if model_name
-                else "",
-                subtitle_align="right",
-            )
+    live.update(
+        Panel(
+            table,
+            title=title,
+            title_align="left",
+            subtitle=f"[bold yellow]token:{token_usage} interation:{iteration} model:{model_name}"
+            if model_name
+            else "",
+            subtitle_align="right",
         )
-    else:
-        live.update(
-            Panel(
-                table,
-                title=title,
-                title_align="left",
-                subtitle=f"[bold yellow]token:{token_usage} interation:{iteration} model:{model_name}"
-                if model_name
-                else "",
-                subtitle_align="right",
-            )
-        )
+    )
     live.refresh()
 
 
-def handle_action_output(segments, respond, images, values):
+def handle_action_output(segments, respond, values):
+    if respond.respond_type not in [
+        agent_server_pb2.TaskRespond.OnAgentActionStdout,
+        agent_server_pb2.TaskRespond.OnAgentActionStderr,
+    ]:
+        return
+
+    value = values.pop()
+    new_stdout = value[1][0]
+    new_stderr = value[1][1]
+    segment = segments.pop()
+    if respond.respond_type == agent_server_pb2.TaskRespond.OnAgentActionStdout:
+        new_stdout += respond.console_stdout
+        new_stdout = process_char_stream(new_stdout)
+    elif respond.respond_type == agent_server_pb2.TaskRespond.OnAgentActionStderr:
+        new_stderr += respond.console_stderr
+        new_stderr = process_char_stream(new_stderr)
+    values.append(("text", (new_stdout, new_stderr), []))
+    syntax = Syntax(
+        f"{new_stdout}\n{new_stderr}",
+        "text",
+        line_numbers=True,  # background_color="default"
+    )
+    segments.append((len(values) - 1, segment[1], syntax))
+
+
+def handle_action_end(segments, respond, images, values):
     if respond.respond_type != agent_server_pb2.TaskRespond.OnAgentActionEndType:
         return
     output = respond.on_agent_action_end.output
-    mk = output
     has_error = "✅"
+    segment = segments.pop()
+    mk = segment[2].code
     # simple to handle error
     if mk.find("Traceback") >= 0:
         has_error = "❌"
@@ -191,11 +212,51 @@ def handle_action_output(segments, respond, images, values):
     )
     if not images:
         images.extend(respond.on_agent_action_end.output_files)
+    segments.append((len(values) - 1, has_error, syntax))
+    # add the next steps loading
+    spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
+    values.append(("text", "", []))
+    segments.append((len(values) - 1, spinner, ""))
+
+
+def handle_typing(segments, respond, values):
+    if respond.respond_type not in [
+        agent_server_pb2.TaskRespond.OnAgentTextTyping,
+        agent_server_pb2.TaskRespond.OnAgentCodeTyping,
+    ]:
+        return
+    value = values.pop()
     segment = segments.pop()
-    segments.append((segment[0], has_error, segment[2]))
-    if output:
-        values.append(("text", mk, []))
-        segments.append((len(values) - 1, "💻", syntax))
+    if respond.respond_type == agent_server_pb2.TaskRespond.OnAgentTextTyping:
+        new_value = value[1] + respond.typing_content
+        values.append(("text", new_value, []))
+        markdown = Markdown("\n" + new_value + "█")
+        segments.append((len(values) - 1, segment[1], markdown))
+    else:
+        # Start write the code
+        if value[0] == "text":
+            values.append(value)
+            markdown = Markdown("\n" + value[1])
+            new_segment = (segment[0], "🧠", markdown)
+            segments.append(new_segment)
+            new_value = respond.typing_content
+            values.append(("python", new_value, []))
+            syntax = Syntax(
+                new_value,
+                "python",
+                line_numbers=True,  # background_color="default"
+            )
+            segments.append((len(values) - 1, "📖", syntax))
+        else:
+            # continue
+            new_value = value[1] + respond.typing_content
+            values.append(("python", new_value, []))
+            syntax = Syntax(
+                new_value + "█",
+                "python",
+                line_numbers=True,  # background_color="default"
+            )
+            segments.append((len(values) - 1, "📖", syntax))
 
 
 def handle_action_start(segments, respond, images, values):
@@ -207,22 +268,32 @@ def handle_action_start(segments, respond, images, values):
         return
     arguments = json.loads(action.input)
     if action.tool == "execute_python_code" and action.input:
-        explanation = arguments["explanation"]
-        if explanation:
-            markdown = Markdown("\n" + explanation + "\n")
-            values.append(("text", explanation, []))
-            segments.append((len(values) - 1, "🧠", markdown))
+        images.extend(arguments.get("saved_filenames", []))
+        value = values.pop()
+        segment = segments.pop()
+        if value[0] == "text":
+            values.append(value)
+            markdown = Markdown("\n" + value[1])
+            new_segment = (segment[0], segment[1], markdown)
+            segments.append(new_segment)
+        elif value[0] == "python":
+            values.append(value)
+            syntax = Syntax(
+                value[1],
+                "python",
+                line_numbers=True,  # background_color="default"
+            )
+            new_segment = (segment[0], segment[1], syntax)
+            segments.append(new_segment)
+        # Add spinner for console
+        spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
+        values.append(("text", ("", ""), []))
         syntax = Syntax(
-            arguments["code"],
-            "python",
+            "",
+            "text",
             line_numbers=True,  # background_color="default"
         )
-        values.append(
-            ("python", arguments["code"], arguments.get("saved_filenames", []))
-        )
-        spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
         segments.append((len(values) - 1, spinner, syntax))
-        images.extend(arguments.get("saved_filenames", []))
 
 
 def find_code(content, segments, values):
@@ -240,7 +311,7 @@ def find_code(content, segments, values):
                 clean_code_content = clean_code(code_content)
                 # TODO parse language
                 values.append(("python", clean_code_content))
-                segments.append((len(values) - 1, "", Markdown(code_content)))
+                segments.append((len(values) - 1, "📖", Markdown(code_content)))
                 start_index = second_pos + 3
         else:
             break
@@ -254,6 +325,8 @@ def handle_final_answer(segments, respond, values):
     if respond.respond_type != agent_server_pb2.TaskRespond.OnFinalAnswerType:
         return
     answer = respond.final_respond.answer
+    values.pop()
+    segments.pop()
     find_code(answer, segments, values)
 
 
@@ -264,7 +337,7 @@ def render_image(images, sdk, image_dir, console):
             sdk.download_file(image, image_dir)
             fullpath = "%s/%s" % (image_dir, image)
             pil_image = Image.open(fullpath)
-            auto_image = AutoImage(image=pil_image, width=int(pil_image.size[0] / 20))
+            auto_image = AutoImage(image=pil_image, width=int(pil_image.size[0] / 15))
             print(f"{auto_image:1.1#}")
         except Exception as ex:
             pass
@@ -283,6 +356,8 @@ def run_chat(
     model_name = ""
     with Live(Group(*segments), console=console, vertical_overflow="visible") as live:
         spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
+        values.append(("text", "", []))
+        segments.append((len(values) - 1, spinner, ""))
         refresh(live, segments, spinner)
         for respond in sdk.prompt(prompt):
             if not respond:
@@ -290,13 +365,14 @@ def run_chat(
             token_usage = respond.token_usage
             iteration = respond.iteration
             model_name = respond.model_name
+            handle_typing(segments, respond, values)
             handle_action_start(segments, respond, images, values)
-            handle_action_output(segments, respond, images, values)
+            handle_action_output(segments, respond, values)
+            handle_action_end(segments, respond, images, values)
             handle_final_answer(segments, respond, values)
             refresh(
                 live,
                 segments,
-                spinner,
                 token_usage=token_usage,
                 iteration=iteration,
                 model_name=model_name,
@@ -304,7 +380,6 @@ def run_chat(
         refresh(
             live,
             segments,
-            None,
             token_usage=token_usage,
             iteration=iteration,
             model_name=model_name,
@@ -318,49 +393,48 @@ def run_app(name, sdk, session, console, values, filedir=None):
     images = []
     with Live(Group(*segments), console=console) as live:
         spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
-        refresh(live, segments, spinner, title=OCTOPUS_APP_TITLE + f":{name}")
+        values.append(("text", "", []))
+        segments.append((len(values) - 1, spinner, ""))
+        refresh(live, segments, title=OCTOPUS_APP_TITLE + f":{name}")
         for respond in sdk.run(name):
             if not respond:
                 break
             handle_action_start(segments, respond, images, values)
-            handle_action_output(segments, respond, images, values)
-            refresh(live, segments, spinner, title=OCTOPUS_APP_TITLE + f":{name}")
-        refresh(live, segments, None, title=OCTOPUS_APP_TITLE + f":{name}")
+            handle_action_output(segments, respond, values)
+            handle_action_end(segments, respond, images, values)
+            refresh(live, segments, title=OCTOPUS_APP_TITLE + f":{name}")
+        values.pop()
+        segments.pop()
+        refresh(live, segments, title=OCTOPUS_APP_TITLE + f":{name}")
     # display the images
     render_image(images, sdk, filedir, console)
 
 
+def gen_app_panel(app):
+    desc = app.desc if app.desc else ""
+    date_str = datetime.fromtimestamp(app.ctime).strftime("%m/%d/%Y")
+    markdonw = f"""### {app.desc}{app.name}
+created at {date_str} with {app.language}"""
+    style = Style(bgcolor="#2e2e2e")
+    return Panel(Markdown(markdonw), box=box.SIMPLE, title_align="left", style=style)
+
+
 def query_apps(sdk, console):
-    app_table = Table(
-        show_edge=False,
-        show_header=True,
-        expand=False,
-        row_styles=["none", "dim"],
-        box=box.SIMPLE,
-    )
-    app_table.add_column(
-        "[magenta]#",
-        style="magenta",
-        justify="right",
-        no_wrap=True,
-    )
-    app_table.add_column("[bold yellow]App", style="green", no_wrap=True)
-    app_table.add_column("[blue]Language", style="blue")
-    app_table.add_column(
-        "[cyan]Time",
-        style="cyan",
-        justify="right",
-        no_wrap=True,
-    )
+    table = Table.grid(padding=1, pad_edge=True)
+    table.add_column("col1", no_wrap=True, justify="center")
+    table.add_column("col2", no_wrap=True, justify="center")
+    table.add_column("col3", no_wrap=True, justify="center")
+    table.add_column("col3", no_wrap=True, justify="center")
+
     apps = sdk.query_apps()
-    for index, app in enumerate(apps.apps):
-        app_table.add_row(
-            str(index + 1),
-            app.name,
-            app.language,
-            datetime.fromtimestamp(app.ctime).strftime("%m/%d/%Y"),
+    for index in range(0, len(apps.apps), 4):
+        table.add_row(
+            gen_app_panel(apps.apps[index]) if index < len(apps.apps) else "",
+            gen_app_panel(apps.apps[index + 1]) if index + 1 < len(apps.apps) else "",
+            gen_app_panel(apps.apps[index + 2]) if index + 2 < len(apps.apps) else "",
+            gen_app_panel(apps.apps[index + 3]) if index + 3 < len(apps.apps) else "",
         )
-    console.print(Panel(app_table, title=OCTOPUS_APP_TITLE, title_align="left"))
+    console.print(Panel(table, title=OCTOPUS_APP_TITLE, title_align="left"))
 
 
 def assemble_app(sdk, name, numbers, values):
@@ -379,14 +453,14 @@ def assemble_app(sdk, name, numbers, values):
             name,
             "\n".join(code),
             language,
-            desc="",
+            desc=gen_a_random_emoji(),
             saved_filenames=list(set(saved_filenames)),
         )
         if response.code == 0:
-            return True
-        return False
-    except:
-        return False
+            return True, response.msg
+        return False, response.msg
+    except Exception as ex:
+        return False, str(ex)
 
 
 @click.command()
@@ -452,13 +526,14 @@ def app(octopus_dir):
             try:
                 name = parts[1]
                 numbers = [int(number) for number in parts[2:]]
-                if assemble_app(sdk, name, numbers, values):
+                (status, msg) = assemble_app(sdk, name, numbers, values)
+                if status:
                     console.print(
                         f"👍 the app {name} has been assembled! use /run {name} to run this app."
                     )
                     continue
                 else:
-                    console.print(f"❌ fail to assemble the app {name}")
+                    console.print(f"❌ fail to assemble the app {name} for error {msg}")
                     continue
             except Exception as ex:
                 console.print(f"❌ invalid numbers {ex}")

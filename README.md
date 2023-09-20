@@ -3,37 +3,51 @@
 
 ![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/dbpunk-labs/octopus/ci.yml?branch=main&style=flat-square)
 [![Discord](https://badgen.net/badge/icon/discord?icon=discord&label)](https://discord.gg/UjSHsjaz66)
+[![Twitter Follow](https://img.shields.io/twitter/follow/OCopilot7817?style=flat-square)](https://twitter.com/OCopilot7817)
 
-Octopus is an open-source code interpreter. you can deploy it to your remote server or your PC and access it with octopus client
+> ## Octopus
+> an open-source code interpreter for terminal users
 
 <p align="center">
-<img width="800px" src="https://github.com/dbpunk-labs/octopus/assets/8623385/709f84f6-3b7f-49cf-b83f-e26d2d802015" align="center"/>
+<img width="1000px" src="https://github.com/dbpunk-labs/octopus/assets/8623385/bc6ed982-9d5c-473d-8efe-dbe6961b200d" align="center"/>
 
 ## Getting Started
 
+### Install
+
+there two ways to install octopus
+
+
 ## How It works
 
-Core components
+![octopus_simple](https://github.com/dbpunk-labs/octopus/assets/8623385/e5bfb3fb-74a5-4c60-8842-a81ee54fcb9d)
 
-* Kernel: The code execution engine, based on notebook kernels.
-* Agent: Manages client requests, uses ReAct to process complex tasks, and stores user-assembled applications.
-* Chat: Accepts user requests, sends them to the Agent, and renders rich results. Currently supports Discord, iTerm2, and Kitty terminals.
+* Octopus Kernel: The code execution engine, based on notebook kernels.
+* Octopus Agent: Manages client requests, uses ReAct to process complex tasks, and stores user-assembled applications.
+* Octopus Terminal Cli: Accepts user requests, sends them to the Agent, and renders rich results. Currently supports Discord, iTerm2, and Kitty terminals.
 
 For security, it is recommended to run the kernel and agent as Docker containers.
 
-<p align="center">
-<img width="800px" src="https://github.com/dbpunk-labs/octopus/assets/8623385/b67ce64e-4ca8-41b0-9cb8-3b13610ff970" align="center"/>
-
 ## Demo
 
-[video](https://github.com/dbpunk-labs/octopus/assets/8623385/1b7a47e5-8ac9-4d42-9eb2-848b47b8db84)
+[video](https://github.com/dbpunk-labs/octopus/assets/8623385/bea76119-a705-4ae1-907d-cb4e0a0c18a5)
 
-### LLM
 
-|name|type|supported status|
-|----|----|----------------|
-|GPT 3.5/4 | LLM | ✅ fully supported|
-|Codellama | LLM | ✅ fully supported|
+### API Service Supported
+
+|name|status| note|
+|----|----------------|---|
+|[Openai GPT 3.5/4](https://openai.com/product#made-for-developers) | ✅ fully supported|the detail installation steps|
+|[Azure Openai GPT 3.5/4](https://azure.microsoft.com/en-us/products/ai-services/openai-service) |  ✅ fully supported|the detail install steps|
+|[LLama.cpp Server](https://github.com/ggerganov/llama.cpp/tree/master/examples/server) | ✅ fully supported| You must provide the model|
+
+### Tested Platform
+
+|name|status| note|
+|----|----------------|---|
+|ubuntu 22.04 | ✅ fully supported|the detail installation steps|
+|macos |  ✅ fully supported|the detail install steps|
+
 
 ### Deployment
 

@@ -18,18 +18,20 @@
 
 import json
 import logging
+import io
 from .codellama_client import CodellamaClient
 from octopus_proto.agent_server_pb2 import OnAgentAction, TaskRespond, OnAgentActionEnd, FinalRespond
-from .utils import parse_image_filename
+from .base_agent import BaseAgent, TypingState
+from .tokenizer import tokenize
 
 logger = logging.getLogger(__name__)
 
 
-class CodellamaAgent:
+class CodellamaAgent(BaseAgent):
 
-    def __init__(self, client, tool):
+    def __init__(self, client, kernel_sdk):
+        super().__init__(kernel_sdk)
         self.client = client
-        self.tool = tool
 
     def _format_output(self, json_response):
         """
@@ -55,6 +57,111 @@ class CodellamaAgent:
             )
             return answer_code
 
+    async def handle_function(
+        self, json_response, queue, token_usage=0, iteration=0, model_name=""
+    ):
+        code = json_response["action_input"]
+        explanation = json_response["explanation"]
+        saved_filenames = json_response.get("saved_filenames", [])
+        tool_input = json.dumps({
+            "code": code,
+            "explanation": explanation,
+            "saved_filenames": saved_filenames,
+        })
+        await queue.put(
+            TaskRespond(
+                token_usage=token_usage,
+                iteration=iteration,
+                respond_type=TaskRespond.OnAgentActionType,
+                model_name=model_name,
+                on_agent_action=OnAgentAction(
+                    input=tool_input, tool="execute_python_code"
+                ),
+            )
+        )
+        function_result = None
+        async for (result, respond) in self.call_function(
+            code,
+            iteration=iteration,
+            token_usage=token_usage,
+            model_name=model_name,
+        ):
+            function_result = result
+            if respond:
+                await queue.put(respond)
+        return function_result
+
+    def _get_argument_new_typing(self, message):
+        state = TypingState.START
+        explanation_str = ""
+        action_input_str = ""
+        for token_state, token in tokenize(io.StringIO(message)):
+            if token_state == None:
+                if state == TypingState.EXPLANATION and token[0] == 1:
+                    explanation_str = token[1]
+                    state = TypingState.START
+                if state == TypingState.CODE and token[0] == 1:
+                    action_input_str = token[1]
+                    state = TypingState.START
+                if token[1] == "explanation":
+                    state = TypingState.EXPLANATION
+                if token[1] == "action_input":
+                    state = TypingState.CODE
+            else:
+                # String
+                if token_state == 9 and state == TypingState.EXPLANATION:
+                    explanation_str = "".join(token)
+                elif token_state == 9 and state == TypingState.CODE:
+                    action_input_str = "".join(token)
+        return (state, explanation_str, action_input_str)
+
+    async def call_codellama(self, question, chat_history, queue):
+        state = None
+        message = ""
+        text_content = ""
+        code_content = ""
+        async for line in self.client.prompt(question, chat_history=chat_history):
+            if len(line) < 6:
+                continue
+            respond = json.loads(line[6:])
+            message += respond["content"]
+            logger.debug(f" message {message}")
+            (
+                state,
+                explanation_str,
+                action_input_str,
+            ) = self._get_argument_new_typing(message)
+            if explanation_str and text_content != explanation_str:
+                typed_chars = explanation_str[len(text_content) :]
+                text_content = explanation_str
+                await queue.put(
+                    TaskRespond(
+                        token_usage=0,
+                        iteration=0,
+                        respond_type=TaskRespond.OnAgentTextTyping,
+                        model_name="",
+                        typing_content=typed_chars,
+                    )
+                )
+            if action_input_str and code_content != action_input_str:
+                typed_chars = action_input_str[len(code_content) :]
+                code_content = action_input_str
+                await queue.put(
+                    TaskRespond(
+                        token_usage=0,
+                        iteration=0,
+                        respond_type=TaskRespond.OnAgentCodeTyping,
+                        model_name="",
+                        typing_content=typed_chars,
+                    )
+                )
+            logger.debug(
+                f"argument explanation:{explanation_str} code:{action_input_str}"
+            )
+            if respond["stop"]:
+                state = respond
+        return (message, state)
+
     async def arun(self, question, queue, max_iteration=5):
         """
         run the agent
@@ -62,87 +169,68 @@ class CodellamaAgent:
         history = []
         current_question = question
         # TODO Streaming and reason action
-        state = None
         iteration = 0
+        token_usage = 0
+        model_name = ""
         try:
             while iteration < max_iteration:
                 iteration += 1
                 response = []
-                async for line in self.client.prompt(
-                    current_question, chat_history="\n".join(history)
-                ):
-                    if len(line) < 6:
-                        continue
-                    respond = json.loads(line[6:])
-                    response.append(respond["content"])
-                    if respond["stop"]:
-                        state = respond
-                json_respose = json.loads("".join(response))
-                logger.info(f"{json_respose}")
+                chat_history = "\n".join(history)
+                (message, state) = await self.call_codellama(
+                    current_question, chat_history, queue
+                )
+                json_response = json.loads(message)
+                logger.debug(f" codellama response {json_response}")
                 if (
-                    json_respose["action"] == "execute_python_code"
-                    and json_respose["action_input"]
+                    json_response["action"] == "execute_python_code"
+                    and json_response["action_input"]
                 ):
-                    tool_input = json.dumps({
-                        "code": json_respose["action_input"],
-                        "explanation": json_respose["explanation"],
-                        "saved_filenames": json_respose["saved_filenames"],
-                    })
+                    function_result = await self.handle_function(
+                        json_response, queue, token_usage, iteration, model_name
+                    )
+                    logger.debug(f"the function result {function_result}")
                     await queue.put(
                         TaskRespond(
-                            token_usage=state["tokens_cached"]
-                            + state["tokens_evaluated"]
-                            + state["tokens_predicted"],
+                            token_usage=token_usage,
                             iteration=iteration,
-                            respond_type=TaskRespond.OnAgentActionType,
-                            model_name=state["generation_settings"]["model"],
-                            on_agent_action=OnAgentAction(
-                                input=tool_input, tool="execute_python_code"
+                            respond_type=TaskRespond.OnAgentActionEndType,
+                            model_name=model_name,
+                            on_agent_action_end=OnAgentActionEnd(
+                                output="", output_files=function_result.saved_filenames
                             ),
                         )
                     )
-                    output = await self.tool.arun(code=json_respose["action_input"])
-                    output_files = []
-                    filename = parse_image_filename(output)
-                    if filename:
-                        output_files.append(filename)
-                    execute_result = TaskRespond(
-                        token_usage=state["tokens_cached"]
-                        + state["tokens_evaluated"]
-                        + state["tokens_predicted"],
-                        iteration=iteration,
-                        respond_type=TaskRespond.OnAgentActionEndType,
-                        model_name=state["generation_settings"]["model"],
-                        on_agent_action_end=OnAgentActionEnd(
-                            output=output, output_files=output_files
-                        ),
-                    )
-                    await queue.put(execute_result)
-                    if (
-                        not json_respose["is_final_answer"]
-                        or output.find("Traceback") >= 0
-                    ):
-                        history.append("User:%s" % current_question)
-                        history.append("Octopus:%s\n" % ("".join(response)))
-                        current_question = (
-                            "the output of execute_python_code is \n%s" % output
-                        )
+                    history.append("User:%s" % current_question)
+                    history.append("Octopus:%s\n" % ("".join(response)))
+                    ins = "Check if the following output meets the goal. If it does, explain it and stop respond. Otherwise, try a new solution."
+                    # TODO limit the output size
+                    if function_result.has_result:
+                        current_question = f"{ins} \n {function_result.console_stdout}"
                         logger.debug(
                             "continue to iterate with codellama with question %s"
-                            % output
+                            % function_result.console_stdout
+                        )
+                    elif function_result.has_error:
+                        current_question = f"{ins} \n {function_result.console_stderr}"
+                        logger.debug(
+                            "continue to iterate with codellama with question %s"
+                            % function_result.console_stderr
                         )
                     else:
-                        break
+                        current_question = f"{ins} \n {function_result.console_stdout}"
+                        logger.debug(
+                            "continue to iterate with codellama with question %s"
+                            % function_result.console_stdout
+                        )
                 else:
-                    result = self._format_output(json_respose)
+                    result = self._format_output(json_response)
                     await queue.put(
                         TaskRespond(
-                            token_usage=state["tokens_cached"]
-                            + state["tokens_evaluated"]
-                            + state["tokens_predicted"],
+                            token_usage=token_usage,
                             iteration=iteration,
                             respond_type=TaskRespond.OnFinalAnswerType,
-                            model_name=state["generation_settings"]["model"],
+                            model_name=model_name,
                             final_respond=FinalRespond(answer=result),
                         )
                     )

@@ -45,14 +45,21 @@ message TaskRespond {
   string model_name = 3;
   enum RespondType {
     OnAgentActionType = 0;
-    OnAgentActionEndType = 1;
-    OnFinalAnswerType = 2;
+    OnAgentActionStdout = 1;
+    OnAgentActionStderr = 2;
+    OnAgentActionEndType = 3;
+    OnFinalAnswerType = 4;
+    OnAgentTextTyping = 5;
+    OnAgentCodeTyping = 6;
   }
   RespondType respond_type = 4;
   oneof body {
     OnAgentAction on_agent_action = 5;
     OnAgentActionEnd on_agent_action_end = 6;
     FinalRespond final_respond = 7;
+    string console_stdout = 8;
+    string console_stderr = 9;
+    string typing_content = 10;
   }
 }
 
@@ -88,6 +95,7 @@ message AppInfo {
   string language = 2;
   // second
   int32 ctime = 3;
+  string desc = 4;
 }
 
 message QueryAppsRequest {}

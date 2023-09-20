@@ -32,29 +32,27 @@ from typing import AsyncIterable, Any, Dict, List, Optional, Sequence, Union, Ty
 from tempfile import gettempdir
 from grpc.aio import ServicerContext, server
 from octopus_kernel.sdk.kernel_sdk import KernelSDK
-from .gpt_async_callback import AgentAsyncHandler
 from .agent_llm import LLMManager
-from .langchain_agent_builder import build_mock_agent, build_openai_agent, build_codellama_agent
-from .tools import OctopusAPIMarkdownOutput
-import langchain
+from .agent_builder import build_mock_agent, build_openai_agent, build_codellama_agent
 import databases
 import orm
 from datetime import datetime
 from .utils import parse_image_filename
 
-
 config = dotenv_values(".env")
 LOG_LEVEL = (
     logging.DEBUG if config.get("log_level", "info") == "debug" else logging.INFO
 )
+
 logging.basicConfig(
     level=LOG_LEVEL,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[logging.StreamHandler(sys.stdout)],
 )
+
 logger = logging.getLogger(__name__)
 
-langchain.verbose = config.get("verbose", False)
+# the database instance for agent
 database = databases.Database("sqlite:///%s" % config["db_path"])
 models = orm.ModelRegistry(database=database)
 
@@ -150,7 +148,7 @@ class AgentRpcServer(AgentServerServicer):
         ).first()
         if not lite_app:
             await context.abort(10, f"no application with name {request.name}")
-        tool = self.agents[metadata["api_key"]]["tool"]
+        agent = self.agents[metadata["api_key"]]["agent"]
         tool_input = json.dumps({
             "code": lite_app.code,
             "explanation": "",
@@ -164,15 +162,21 @@ class AgentRpcServer(AgentServerServicer):
                 input=tool_input, tool="execute_python_code"
             ),
         )
-        output = await tool.arun(lite_app.code)
-        output_files = []
-        filename = parse_image_filename(output)
-        if filename:
-            output_files.append(filename)
+        function_result = None
+        async for (result, respond) in agent.call_function(lite_app.code):
+            function_result = result
+            if respond:
+                logger.debug(f"the respond {respond}")
+                yield respond
+        output_files = (
+            function_result.saved_filenames
+            if function_result and function_result.saved_filenames
+            else []
+        )
         yield agent_server_pb2.TaskRespond(
             respond_type=agent_server_pb2.TaskRespond.OnAgentActionEndType,
             on_agent_action_end=agent_server_pb2.OnAgentActionEnd(
-                output=output, output_files=output_files
+                output="", output_files=output_files
             ),
         )
 
@@ -197,6 +201,7 @@ class AgentRpcServer(AgentServerServicer):
                 name=lite_app.name,
                 language=lite_app.language,
                 ctime=int(lite_app.time.timestamp()),
+                desc=lite_app.desc,
             )
             for lite_app in lite_apps
         ]
@@ -213,25 +218,22 @@ class AgentRpcServer(AgentServerServicer):
             return agent_server_pb2.AddKernelResponse(code=0, msg="ok")
         # init the sdk
         sdk = KernelSDK(request.endpoint, request.key)
-        sdk.connect()
         try:
+            sdk.connect()
             await sdk.is_alive()
         except Exception as ex:
             await context.abort(10, f"Connecting to kernel {request.endpoint} failed")
-        tool = OctopusAPIMarkdownOutput(sdk)
         if config["llm_key"] == "azure_openai" or config["llm_key"] == "openai":
             logger.info(f"create a openai agent {request.endpoint}")
             agent = build_openai_agent(
-                self.llm,
                 sdk,
-                config.get("max_iterations", 5),
-                self.verbose,
+                config["openai_api_model"],
             )
-            self.agents[request.key] = {"sdk": sdk, "agent": agent, "tool": tool}
+            self.agents[request.key] = {"sdk": sdk, "agent": agent}
         elif config["llm_key"] == "mock":
             logger.info(f"create a mock agent to kernel {request.endpoint}")
-            agent = build_mock_agent(self.llm)
-            self.agents[request.key] = {"sdk": sdk, "agent": agent, "tool": tool}
+            agent = build_mock_agent(sdk, config["cases_path"])
+            self.agents[request.key] = {"sdk": sdk, "agent": agent}
         elif config["llm_key"] == "codellama":
             logger.info(f"create a codellama agent {request.endpoint}")
             grammer_path = os.path.join(
@@ -240,12 +242,15 @@ class AgentRpcServer(AgentServerServicer):
             agent = build_codellama_agent(
                 config["llama_api_base"], config["llama_api_key"], sdk, grammer_path
             )
-            self.agents[request.key] = {"sdk": sdk, "agent": agent, "tool": tool}
+            self.agents[request.key] = {"sdk": sdk, "agent": agent}
         return agent_server_pb2.AddKernelResponse(code=0, msg="ok")
 
     async def send_task(
         self, request: agent_server_pb2.SendTaskRequest, context: ServicerContext
     ) -> AsyncIterable[agent_server_pb2.TaskRespond]:
+        """
+        process the task from the client
+        """
         logger.debug("receive the task %s ", request.task)
         metadata = dict(context.invocation_metadata())
         if (
@@ -257,98 +262,48 @@ class AgentRpcServer(AgentServerServicer):
             await context.abort(10, "invalid api key")
         agent = self.agents[metadata["api_key"]]["agent"]
         queue = asyncio.Queue()
-        if config["llm_key"] == "codellama":
 
-            async def worker(task, agent, queue):
-                try:
-                    return await agent.arun(task, queue)
-                except Exception as ex:
-                    logger.exception("fail to run agent")
-                    result = str(ex)
-                    return result
-
-            logger.debug("create the agent task")
+        async def worker(task, agent, queue):
             try:
-                task = asyncio.create_task(worker(request.task, agent, queue))
-                while True:
-                    try:
-                        logger.debug("start wait the queue message")
-                        # TODO add timeout
-                        respond = await queue.get()
-                        if not respond:
-                            logger.debug("exit the queue")
-                            break
-                        logger.debug(f"respond {respond}")
-                        queue.task_done()
-                        yield respond
-                    except Exception as ex:
-                        logger.error(f"fail to get respond for {ex}")
-                        break
-                await task
+                return await agent.arun(task, queue)
             except Exception as ex:
-                respond = agent_server_pb2.TaskRespond(
-                    token_usage=0,
-                    model_name="",
-                    iteration=1,
-                    respond_type=agent_server_pb2.TaskRespond.OnFinalAnswerType,
-                    final_respond=agent_server_pb2.FinalRespond(answer=str(ex)),
-                )
-                yield respond
-        else:
-            handler = AgentAsyncHandler(queue)
+                logger.exception("fail to run agent")
+                result = str(ex)
+                return result
 
-            async def worker(task, agent, handler):
+        logger.debug("create the agent task")
+        try:
+            task = asyncio.create_task(worker(request.task, agent, queue))
+            while True:
                 try:
-                    return await agent.arun(task, callbacks=[handler])
-                except Exception as ex:
-                    logger.error("fail to run agent for %s", ex)
-                    result = str(ex)
-                    await handler.exit_the_queue()
-                    return result
-
-            logger.debug("create the agent task")
-            try:
-                task = asyncio.create_task(worker(request.task, agent, handler))
-                token_usage = 0
-                while True:
-                    try:
-                        logger.debug("start wait the queue message")
-                        # TODO add timeout
-                        respond = await queue.get()
-                        if not respond:
-                            logger.debug("exit the queue")
-                            break
-                        logger.debug(f"respond {respond}")
-                        queue.task_done()
-                        yield respond
-                    except Exception as ex:
-                        logger.error(f"fail to get respond for {ex}")
+                    logger.debug("start wait the queue message")
+                    # TODO add timeout
+                    respond = await queue.get()
+                    if not respond:
+                        logger.debug("exit the queue")
                         break
-                await task
-                respond = agent_server_pb2.TaskRespond(
-                    token_usage=handler.token_usage,
-                    model_name=handler.model_name,
-                    iteration=handler.iteration,
-                    respond_type=agent_server_pb2.TaskRespond.OnFinalAnswerType,
-                    final_respond=agent_server_pb2.FinalRespond(answer=task.result()),
-                )
-                logger.debug(f"respond {respond}")
-                yield respond
-            except Exception as ex:
-                respond = agent_server_pb2.TaskRespond(
-                    token_usage=0,
-                    model_name="",
-                    iteration=1,
-                    respond_type=agent_server_pb2.TaskRespond.OnFinalAnswerType,
-                    final_respond=agent_server_pb2.FinalRespond(answer=str(ex)),
-                )
-                yield respond
+                    logger.debug(f"respond {respond}")
+                    queue.task_done()
+                    yield respond
+                except Exception as ex:
+                    logger.error(f"fail to get respond for {ex}")
+                    break
+            await task
+        except Exception as ex:
+            respond = agent_server_pb2.TaskRespond(
+                token_usage=0,
+                model_name="",
+                iteration=1,
+                respond_type=agent_server_pb2.TaskRespond.OnFinalAnswerType,
+                final_respond=agent_server_pb2.FinalRespond(answer=str(ex)),
+            )
+            yield respond
 
     async def download(
         self, request: common_pb2.DownloadRequest, context: ServicerContext
     ) -> AsyncIterable[common_pb2.FileChunk]:
         """
-        download file
+        download file from kernel and send it to client
         """
         metadata = dict(context.invocation_metadata())
         if (
@@ -367,7 +322,7 @@ class AgentRpcServer(AgentServerServicer):
         context: ServicerContext,
     ) -> common_pb2.FileUploaded:
         """
-        upload file
+        upload file to the kernel workspace
         """
         metadata = dict(context.invocation_metadata())
         if (

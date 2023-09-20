@@ -200,7 +200,7 @@ class KernelRpcServer(KernelServerNodeServicer):
 
     async def execute(
         self, request: kernel_server_pb2.ExecuteRequest, context: ServicerContext
-    ) -> kernel_server_pb2.ExecuteResponse:
+    ) -> AsyncIterable[kernel_server_pb2.ExecuteResponse]:
         """
         Execute the python code and return a stream response
         """
@@ -228,13 +228,14 @@ class KernelRpcServer(KernelServerNodeServicer):
         async for msg in self.kcs[kernel_name].read_response(5):
             if not msg:
                 break
-            (key, payload) = self._build_payload(msg, config["workspace"])
-            if not key or not payload:
+            if msg["parent_header"]["msg_id"] != msg_id:
                 continue
-            response_args[key] = json.dumps(payload)
-        return kernel_server_pb2.ExecuteResponse(**response_args)
+            if msg["msg_type"] in ["status", "execute_input"]:
+                continue
+            respond = self._build_payload(msg, config["workspace"])
+            yield respond
 
-    def _build_payload(self, msg, workspace):
+    def _build_payload(self, msg, workspace) -> kernel_server_pb2.ExecuteResponse:
         if msg["msg_type"] == "display_data":
             if "image/png" in msg["content"]["data"]:
                 filename = "octopus_%s.png" % uuid.uuid4().hex
@@ -243,12 +244,9 @@ class KernelRpcServer(KernelServerNodeServicer):
                     data = msg["content"]["data"]["image/png"].encode("ascii")
                     buffer = base64.b64decode(data)
                     fd.write(buffer)
-                return (
-                    "result",
-                    {
-                        "data": {"image/png": filename},
-                        "msg_type": msg["msg_type"],
-                    },
+                return kernel_server_pb2.ExecuteResponse(
+                    output_type=kernel_server_pb2.ExecuteResponse.ResultType,
+                    output=json.dumps({"image/png": filename}),
                 )
             elif "image/gif" in msg["content"]["data"]:
                 filename = "octopus_%s.gif" % uuid.uuid4().hex
@@ -257,21 +255,22 @@ class KernelRpcServer(KernelServerNodeServicer):
                     data = msg["content"]["data"]["image/gif"].encode("ascii")
                     buffer = base64.b64decode(data)
                     fd.write(buffer)
-                return (
-                    "result",
-                    {
-                        "data": {"image/gif": filename},
-                        "msg_type": msg["msg_type"],
-                    },
+                return kernel_server_pb2.ExecuteResponse(
+                    output_type=kernel_server_pb2.ExecuteResponse.ResultType,
+                    output=json.dumps({"image/gif": filename}),
+                )
+            elif "text/plain" in msg["content"]["data"]:
+                return kernel_server_pb2.ExecuteResponse(
+                    output_type=kernel_server_pb2.ExecuteResponse.ResultType,
+                    output=json.dumps(
+                        {"text/plain": msg["content"]["data"]["text/plain"]}
+                    ),
                 )
             else:
                 logger.warning(f" unsupported display_data {msg}")
-                return (
-                    "result",
-                    {
-                        "data": msg["content"]["data"],
-                        "msg_type": msg["msg_type"],
-                    },
+                return kernel_server_pb2.ExecuteResponse(
+                    output_type=kernel_server_pb2.ExecuteResponse.ResultType,
+                    output=json.dumps({}),
                 )
                 # keys = ",".join(msg["content"]["data"].keys())
                 # raise Exception(
@@ -280,38 +279,32 @@ class KernelRpcServer(KernelServerNodeServicer):
 
         if msg["msg_type"] == "execute_result":
             logger.debug("result data %s", msg["content"]["data"]["text/plain"])
-            return (
-                "result",
-                {
-                    "data": msg["content"]["data"],
-                    "msg_type": msg["msg_type"],
-                },
+            return kernel_server_pb2.ExecuteResponse(
+                output_type=kernel_server_pb2.ExecuteResponse.ResultType,
+                output=json.dumps({"text/plain": msg["content"]["data"]["text/plain"]}),
             )
         elif msg["msg_type"] == "stream":
-            lines = msg["content"]["text"].split("\n")
-            return (
-                msg["content"]["name"],
-                {
-                    "data": msg["content"]["text"],
-                    "content_type": msg["content"]["name"],  # stdout or stderr
-                    "msg_type": msg["msg_type"],
-                },
-            )
+            if msg["content"]["name"] == "stdout":
+                return kernel_server_pb2.ExecuteResponse(
+                    output_type=kernel_server_pb2.ExecuteResponse.StdoutType,
+                    output=json.dumps({"text": msg["content"]["text"]}),
+                )
+            else:
+                return kernel_server_pb2.ExecuteResponse(
+                    output_type=kernel_server_pb2.ExecuteResponse.StderrType,
+                    output=json.dumps({"text": msg["content"]["text"]}),
+                )
         elif msg["msg_type"] == "error":
             if len(msg["content"]["traceback"]) > 6:
                 traceback = "\n".join(msg["content"]["traceback"][:3])
                 traceback = traceback + "\n".join(msg["content"]["traceback"][-3:])
             else:
                 traceback = "\n".join(msg["content"]["traceback"])
-            return (
-                "traceback",
-                {
-                    "data": ansi_escape.sub("", traceback),
-                    "content_type": "error",
-                    "msg_type": msg["msg_type"],
-                },
+            return kernel_server_pb2.ExecuteResponse(
+                output_type=kernel_server_pb2.ExecuteResponse.TracebackType,
+                output=json.dumps({"traceback": ansi_escape.sub("", traceback)}),
             )
-        return (None, None)
+        raise Exception(f"unsupported msg type {msg}")
 
 
 async def serve() -> None:

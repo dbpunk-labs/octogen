@@ -20,6 +20,29 @@ import string
 import random
 
 
+def process_char_stream(stream):
+    buffer = []
+    i = 0
+    while i < len(stream):
+        c = stream[i]
+        if c in ["\b", "\r"]:
+            # Handle escape characters
+            escape_dict = {
+                "\b": lambda buf: buf.pop() if buf else None,  # backspace
+                "\r": lambda buf: [
+                    buf.pop() for _ in range(len(buf) - buf[::-1].index("\n") - 1)
+                ]
+                if "\n" in buf
+                else buf.clear(),  # carriage return
+            }
+            escape_dict[c](buffer)
+            i += 1
+        else:
+            buffer.append(c)
+            i += 1
+    return "".join(buffer)
+
+
 def clean_code(code: str):
     start_tag = "```"
     end_tag = "```"
