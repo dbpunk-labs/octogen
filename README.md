@@ -32,8 +32,8 @@ For security, it is recommended to run the kernel and agent as Docker containers
 
 |name|status| note|
 |----|----------------|---|
-|Openai GPT 3.5/4 | ✅ fully supported|the detail installation steps|
-|Azure Openai GPT 3.5/4 |  ✅ fully supported|the detail install steps|
+|[Openai GPT 3.5/4](https://openai.com/product#made-for-developers) | ✅ fully supported|the detail installation steps|
+|[Azure Openai GPT 3.5/4](https://azure.microsoft.com/en-us/products/ai-services/openai-service) |  ✅ fully supported|the detail install steps|
 |[LLama.cpp Server](https://github.com/ggerganov/llama.cpp/tree/master/examples/server) | ✅ fully supported| You must provide the model|
 
 ### Deployment
