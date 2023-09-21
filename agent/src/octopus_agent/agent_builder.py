@@ -22,6 +22,7 @@ from .openai_agent import OpenaiAgent
 from .codellama_client import CodellamaClient
 from .mock_agent import MockAgent
 
+
 def build_codellama_agent(endpoint, key, sdk, grammer_path):
     """
     build codellama agent

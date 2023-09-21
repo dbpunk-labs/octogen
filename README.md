@@ -13,12 +13,42 @@
 
 ## Getting Started
 
-### Install
+Prerequisites
 
-there two ways to install octopus
+* python 3 >= 3.10
+* pip
+* docker (optional for Docker installation)
 
+Firstly. Install Octopus with the octopus_up script, which will guide you through the setup process, including choosing the Model API service, installation directory, and kernel workspace directory.
 
-## How It works
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://up.dbpunk.xyz | sh
+```
+
+To install Octopus with Docker, you must have Docker installed on your local machine. Octopus uses Docker Compose to manage the kernel and agent. The octopus_up script will initialize the Octopus CLI with the generated API key from the agent.
+
+```
+octopus_up docker-local
+```
+
+To install Octopus without Docker, the kernel and agent will be installed directly to your host. This option is less secure and should only be used for testing or development.
+
+```
+octopus_up local
+```
+
+## How to use octopus
+
+Open your terminal and execute the command `octopus`, you will see the following output
+
+```
+Welcome to use octopus❤️ . To ask a programming question, simply type your question and press esc + enter
+You can use /help to look for help
+
+[1]🎧>
+```
+
+## The internal of Octopus
 
 ![octopus_simple](https://github.com/dbpunk-labs/octopus/assets/8623385/e5bfb3fb-74a5-4c60-8842-a81ee54fcb9d)
 
@@ -28,32 +58,55 @@ there two ways to install octopus
 
 For security, it is recommended to run the kernel and agent as Docker containers.
 
+## Features
+
+* Automatically execute AI-generated code in a Docker environment.
+* Experiment feature, render images in iTerm2 and kitty.
+* Upload files with the /up command and you can use the `/up` in your prompt
+* Experiment feature, assemble code blocks into an application and you can run the code directly by `/run` command
+* Support copying output to the clipboard with `/cc` command
+* Support prompt histories stored in the octopus cli
+
+if you have any feature suggestion. please create a discuession to talk about it
+
+## Roadmap
+
+* Improve the stability of octopus and security
+* Support external codellama api service
+* Support memory system
+* Enhence the agent programming capability
+* Enhence the kernel capability
+    * support gpu to accelerate processing of video
+
+if you have any advice for the roadmap. please create a discuession to talk about it
+
 ## Demo
 
 [video](https://github.com/dbpunk-labs/octopus/assets/8623385/bea76119-a705-4ae1-907d-cb4e0a0c18a5)
 
 
-### API Service Supported
+## API Service Supported
 
 |name|status| note|
 |----|----------------|---|
 |[Openai GPT 3.5/4](https://openai.com/product#made-for-developers) | ✅ fully supported|the detail installation steps|
 |[Azure Openai GPT 3.5/4](https://azure.microsoft.com/en-us/products/ai-services/openai-service) |  ✅ fully supported|the detail install steps|
-|[LLama.cpp Server](https://github.com/ggerganov/llama.cpp/tree/master/examples/server) | ✅ fully supported| You must provide the model|
+|[LLama.cpp Server](https://github.com/ggerganov/llama.cpp/tree/master/examples/server) | ✔️  supported| You must start the llama cpp server by yourself|
 
-### Tested Platform
+
+## Platforms Supported
 
 |name|status| note|
 |----|----------------|---|
 |ubuntu 22.04 | ✅ fully supported|the detail installation steps|
 |macos |  ✅ fully supported|the detail install steps|
 
-
-### Deployment
+## Deployment
 
 ## Home Labs Solutions
 
 ## Medias
+
 python & bash: requirements.txt
 typescripts: tslab , tslab install
 

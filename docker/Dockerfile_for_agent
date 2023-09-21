@@ -1,4 +1,4 @@
-FROM imotai/octopus_base:0.3.3
+FROM ghcr.io/dbpunk-labs/octopus_base
 WORKDIR /agent
 VOLUME /agent
 ADD start_agent.sh /bin/
