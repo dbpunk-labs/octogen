@@ -24,6 +24,8 @@ setup(
     author="imotai",
     author_email="wangtaize@dbpunk.com",
     url="https://github.com/dbpunk-labs/octopus",
+    long_description= open('README.md').read(),
+    long_description_content_type='text/markdown',
     packages=[
         "octopus_discord",
         "octopus_terminal",
