@@ -39,7 +39,11 @@ class AgentSyncSDK:
     def connect(self):
         if self.channel:
             return
-        self.channel = grpc.insecure_channel(self.endpoint)
+        if self.endpoint.startswith("https"):
+            channel_credential = grpc.ssl_channel_credentials()
+            self.channel = grpc.secure_channel(self.endpoint.replace("https://", ""), channel_credential)
+        else:
+            self.channel = grpc.insecure_channel(self.endpoint)
         self.stub = AgentServerStub(self.channel)
 
     def assemble(self, name, code, language, desc="", saved_filenames=[]):
@@ -129,6 +133,7 @@ class AgentSDK:
         """
         if self.channel:
             return
+
         channel = aio.insecure_channel(self.endpoint)
         self.channel = channel
         self.stub = AgentServerStub(channel)

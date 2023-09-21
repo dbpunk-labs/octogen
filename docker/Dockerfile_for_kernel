@@ -1,5 +1,0 @@
-FROM ghcr.io/dbpunk-labs/octopus_base
-WORKDIR /kernel
-VOLUME /kernel
-ADD start_kernel.sh /bin/
-CMD ["bash", "/bin/start_kernel.sh"]
