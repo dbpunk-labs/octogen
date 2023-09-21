@@ -1,0 +1,11 @@
+rpc_host=127.0.0.1
+rpc_port=9528
+admin_key=test_key
+max_file_size=10240000
+verbose=True
+db_path=/tmp/octopus.db
+llm_key=openai
+openai_api_model=model_nama
+openai_api_key=api_key
+max_iterations=10
+log_level=debug
