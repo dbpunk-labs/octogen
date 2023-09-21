@@ -1,5 +1,4 @@
 #! /bin/bash
-
 mkdir -p ~/.octopus/bin
 mkdir -p ~/.octopus/setup
 VERSION=`curl -s https://api.github.com/repos/dbpunk-labs/octopus/releases/latest | python3  -c 'import sys, json; print(json.load(sys.stdin)["name"])'`
@@ -23,6 +22,3 @@ else
     echo "please add PATH=~/.octopus/bin:\$PATH to your enviroment manually"
 fi
 echo "install octopus_up successfully"
-export PATH=~/.octopus/bin:$PATH
-echo "start to install octopus"
-octopus_up
