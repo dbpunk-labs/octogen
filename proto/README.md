@@ -1,12 +1,11 @@
-# The protobuf for octopus
 
-## Build
+the protobuf module of octopus
 
-install the grpc tools
+build the proto module
 ```
 pip install -r requirements.txt
 ```
-generate the python stubs
+generate the python stubs and  replace the module path
 ```
 make
 ```

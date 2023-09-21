@@ -24,6 +24,8 @@ setup(
     author="imotai",
     author_email="wangtaize@dbpunk.com",
     url="https://github.com/dbpunk-labs/octopus",
+    long_description= open('README.md').read(),
+    long_description_content_type='text/markdown',
 
     packages=[
         "octopus_proto",
@@ -39,6 +41,8 @@ setup(
         "grpc-google-iam-v1>=0.12.6",
         "grpcio-tools>=1.57.0",
     ],
+
     entry_points={
     },
+
 )
