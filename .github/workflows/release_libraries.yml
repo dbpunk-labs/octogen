@@ -50,23 +50,19 @@ jobs:
             RELEASE_NAME=octopus_setup-${TAG}.tar.gz
             # package the setup scripts
             tar -zcvf ${RELEASE_NAME} setup
-      - name: Releasing assets
-        uses: softprops/action-gh-release@v1
-        with:
-            files: |
-                octopus_setup-*.tar.gz
 
       - name: Build Docker image
         run: |
           ROOT_DIR=`pwd`
           RELEASE_NAME=${GITHUB_REF/refs\/tags\//}
-          cd ${ROOT_DIR}/docker && docker build -f Dockerfile --no-cache -t ghcr.io/dbpunk-labs/octopus_base:${RELEASE_NAME} .
-          NEW_BASE_IMAGE="FROM ghcr.io\/dbpunk-labs\/octopus_base:${RELEASE_NAME}"
-          sed -i "s/FROM ghcr.io\/dbpunk-labs\/octopus_base/${NEW_BASE_IMAGE}/g" Dockerfile_for_agent
-          sed -i "s/FROM ghcr.io\/dbpunk-labs\/octopus_base/${NEW_BASE_IMAGE}/g" Dockerfile_for_kernel
-          docker build -f Dockerfile_for_agent --no-cache -t ghcr.io/dbpunk-labs/octopus_agent:${RELEASE_NAME} .
-          docker build -f Dockerfile_for_kernel --no-cache -t ghcr.io/dbpunk-labs/octopus_kernel:${RELEASE_NAME} .
-          docker push ghcr.io/dbpunk-labs/octopus_base:${RELEASE_NAME}
-          docker push ghcr.io/dbpunk-labs/octopus_agent:${RELEASE_NAME}
-          docker push ghcr.io/dbpunk-labs/octopus_kernel:${RELEASE_NAME}
+          cd ${ROOT_DIR}/docker && docker build -f Dockerfile --no-cache -t ghcr.io/dbpunk-labs/octopus:${RELEASE_NAME} .
+          docker push ghcr.io/dbpunk-labs/octopus:${RELEASE_NAME}
+          docker save ghcr.io/dbpunk-labs/octopus:${RELEASE_NAME} | gzip > octopus_image_${RELEASE_NAME}.tar.gz
           echo "the new images version $RELEASE_NAME"
+
+      - name: Releasing assets
+        uses: softprops/action-gh-release@v1
+        with:
+            files: |
+                octopus_setup-*.tar.gz
+                docker/octopus_image_*.tar.gz
