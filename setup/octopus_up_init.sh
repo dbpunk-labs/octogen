@@ -1,6 +1,5 @@
 #! /bin/bash
 mkdir -p ~/.octopus/bin
-mkdir -p ~/.octopus/setup
 VERSION=`curl -s https://api.github.com/repos/dbpunk-labs/octopus/releases/latest | python3  -c 'import sys, json; print(json.load(sys.stdin)["name"])'`
 curl -L --max-redirs 10 https://github.com/dbpunk-labs/octopus/releases/download/${VERSION}/octopus_setup-${VERSION}.tar.gz -o /tmp/octopus_setup.tar.gz
 mkdir -p /tmp/octopus_setup

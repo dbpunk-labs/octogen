@@ -24,8 +24,8 @@ setup(
     author="imotai",
     author_email="wangtaize@dbpunk.com",
     url="https://github.com/dbpunk-labs/octopus",
-    long_description= open('README.md').read(),
-    long_description_content_type='text/markdown',
+    long_description=open("README.md").read(),
+    long_description_content_type="text/markdown",
     packages=[
         "octopus_agent",
     ],
@@ -42,6 +42,7 @@ setup(
         "python-dotenv",
         "openai",
         "aiohttp>=3.8.5",
+        "pydantic",
     ],
     package_data={"octopus_agent": ["*.bnf"]},
     entry_points={

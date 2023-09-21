@@ -163,11 +163,11 @@ function generate_common_env() {
 }
 
 function install_octopus_package() {
-    pip3 install octopus_agent octopus_kernel hapless octopus_chat
+    pip3 install -U octopus_agent octopus_kernel hapless octopus_chat
 }
 
 function install_octopus_cli_package() {
-    pip3 install octopus_chat octopus_agent
+    pip3 install -U octopus_chat octopus_agent
 }
 
 function install_unsafe_local_openai() {
@@ -206,7 +206,6 @@ function start_unsafe_local() {
         echo "❌ Create octopus app dir failed"
         exit 1
     fi
-    install_octopus_package
     PS3='Please enter your LLM choice number: '
     options=("OpenAI" "Azure OpenAI" "Codellama" "Quit")
     select opt in "${options[@]}"; do
@@ -214,12 +213,14 @@ function start_unsafe_local() {
         "OpenAI")
             install_unsafe_local_openai ${ROOT_DIR}
             echo "db_path=${ROOT_DIR}/agent/octopus.db" >>${ROOT_DIR}/agent/.env
+            install_octopus_package
             start_unsafe_local_instance ${ROOT_DIR}
             exit 0
             ;;
         "Azure OpenAI")
             install_unsafe_local_azure_openai ${ROOT_DIR}
             echo "db_path=${ROOT_DIR}/agent/octopus.db" >>${ROOT_DIR}/agent/.env
+            install_octopus_package
             start_unsafe_local_instance ${ROOT_DIR}
             exit 0
             ;;
@@ -257,29 +258,31 @@ function start_docker_local() {
         echo "❌ Create octopus app dir failed"
         exit 1
     fi
-    install_octopus_cli_package
     PS3='Please enter your LLM choice number: '
-    options=("OpenAI" "Azure OpenAI" "Codellama" "Quit")
+    #options=("OpenAI" "Azure OpenAI" "Codellama" "Quit")
+    options=("OpenAI" "Azure OpenAI" "Quit")
     select opt in "${options[@]}"; do
         case $opt in
         "OpenAI")
             install_unsafe_local_openai ${ROOT_DIR}
             echo "db_path=/agent/octopus.db" >>${ROOT_DIR}/agent/.env
+            install_octopus_cli_package
             start_docker_local_instance ${ROOT_DIR}
             exit 0
             ;;
         "Azure OpenAI")
             install_unsafe_local_azure_openai ${ROOT_DIR}
             echo "db_path=/agent/octopus.db" >>${ROOT_DIR}/agent/.env
+            install_octopus_cli_package
             start_docker_local_instance ${ROOT_DIR}
             exit 0
             ;;
-        "Codellama")
-            install_unsafe_local_codellama ${ROOT_DIR}
-            echo "db_path=/agent/octopus.db" >>${ROOT_DIR}/agent/.env
-            start_docker_local_instance ${ROOT_DIR}
-            exit 0
-            ;;
+        #"Codellama")
+        #    install_unsafe_local_codellama ${ROOT_DIR}
+        #    echo "db_path=/agent/octopus.db" >>${ROOT_DIR}/agent/.env
+        #    start_docker_local_instance ${ROOT_DIR}
+        #    exit 0
+        #    ;;
         "Quit")
             exit 0
             ;;
@@ -321,12 +324,12 @@ function get_opts() {
     fi
     shift
     case "${_subcommand}" in
-    cli)
-        install_cli
-        ;;
-    local)
-        start_unsafe_local
-        ;;
+    #cli)
+    #    install_cli
+    #    ;;
+    ##local)
+    #    start_unsafe_local
+    #    ;;
     docker-local)
         start_docker_local
         ;;

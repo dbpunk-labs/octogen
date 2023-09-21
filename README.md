@@ -18,28 +18,21 @@ Prerequisites
 * python 3 >= 3.10
 * pip
 * docker (optional for Docker installation)
+* openai api key
 
-Firstly. Install Octopus with the octopus_up script, which will guide you through the setup process, including choosing the Model API service, installation directory, and kernel workspace directory.
+Firstly, Install Octopus up script, which will guide you through the setup process, including choosing the Model API service, installation directory, and kernel workspace directory.
 
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://up.dbpunk.xyz | sh
 ```
 
-To install Octopus with Docker, you must have Docker installed on your local machine. Octopus uses Docker Compose to manage the kernel and agent. The octopus_up script will initialize the Octopus CLI with the generated API key from the agent.
+Secondly, Install Octopus, you must have Docker installed on your local machine. Octopus uses Docker Compose to manage the kernel and agent. The octopus_up script will initialize the Octopus CLI with the generated API key from the agent.
 
 ```
 octopus_up docker-local
 ```
 
-To install Octopus without Docker, the kernel and agent will be installed directly to your host. This option is less secure and should only be used for testing or development.
-
-```
-octopus_up local
-```
-
-## How to use octopus
-
-Open your terminal and execute the command `octopus`, you will see the following output
+Thirdly, Open your terminal and execute the command `octopus`, you will see the following output
 
 ```
 Welcome to use octopus❤️ . To ask a programming question, simply type your question and press esc + enter
@@ -69,7 +62,7 @@ For security, it is recommended to run the kernel and agent as Docker containers
 
 if you have any feature suggestion. please create a discuession to talk about it
 
-## Roadmap
+## Plan
 
 * Improve the stability of octopus and security
 * Support external codellama api service
@@ -100,15 +93,6 @@ if you have any advice for the roadmap. please create a discuession to talk abou
 |----|----------------|---|
 |ubuntu 22.04 | ✅ fully supported|the detail installation steps|
 |macos |  ✅ fully supported|the detail install steps|
-
-## Deployment
-
-## Home Labs Solutions
-
-## Medias
-
-python & bash: requirements.txt
-typescripts: tslab , tslab install
 
 ## Thanks
 

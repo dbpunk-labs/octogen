@@ -1,12 +1,12 @@
 services:
   kernel:
-    image: imotai/octopus_kernel:0.3.5
+    image: ghcr.io/dbpunk-labs/octopus_kernel:v0.4.4
     ports:
       - '9527:9527'
     volumes:
       - ./kernel:/kernel
   agent:
-    image: imotai/octopus_agent:0.3.5
+    image: ghcr.io/dbpunk-labs/octopus_agent:v0.4.4
     ports:
       - '9528:9528'
     volumes:
