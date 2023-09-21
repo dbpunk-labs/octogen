@@ -1,5 +1,5 @@
 ipykernel==6.25.1
-jupyter_client==8.3.0
+jupyter_client==8.3.1
 numpy==1.24.2
 opencv_python==4.8.0.76
 pytest==7.3.1
