@@ -13,53 +13,41 @@
 
 ## Getting Started
 
-### Install From Source
+Prerequisites
 
-```
-git clone https://github.com/dbpunk-labs/octopus.git
-cd octopus 
+* python 3 >= 3.10
+* pip
+* docker (optional for Docker installation)
 
-```
-> [!NOTE]
-> You must install the following tools
-> * python3 >= 3.10
-> * python-pip
-> * git
+Firstly. Install Octopus with the octopus_up script, which will guide you through the setup process, including choosing the Model API service, installation directory, and kernel workspace directory.
 
-
-### Install From Release
-
-the first step is install to octopus tool
-the octopus up is used to install octopus and upgrade octopus
-
-```
-curl --proto '=https' --tlsv1.2 -sSf https://up.dbpunk.xyz/db3up_init.sh | sh
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://up.dbpunk.xyz | sh
 ```
 
-> [!NOTE]
-> You must install the following tools
-> * python3 >= 3.10
-> * python-pip
+To install Octopus with Docker, you must have Docker installed on your local machine. Octopus uses Docker Compose to manage the kernel and agent. The octopus_up script will initialize the Octopus CLI with the generated API key from the agent.
 
-install octopus without docker
+```
+octopus_up docker-local
+```
 
-> [!NOTE]
-> this way is just for testing or development
+To install Octopus without Docker, the kernel and agent will be installed directly to your host. This option is less secure and should only be used for testing or development.
 
+```
+octopus_up local
+```
 
-install octopus with docker
+## How to use
 
-> [!NOTE]
-> agent, kernel and cli will be installed, you must provide your openai key
-> if you want use codellama, you can must provide the codellama model
+Open your terminal and execute the command `octopus`, you will see the following output
 
-install octopus cli only
+```text
+Welcome to use octopus❤️ . To ask a programming question, simply type your question and press esc + enter
+You can use /help to look for help
 
-> [!NOTE]
-> you need to apply the agent key from https://dbpunk.xyz
+[1]🎧>
+```
 
-
-## Features
 
 ## How It works
 
@@ -70,6 +58,15 @@ install octopus cli only
 * Octopus Terminal Cli: Accepts user requests, sends them to the Agent, and renders rich results. Currently supports Discord, iTerm2, and Kitty terminals.
 
 For security, it is recommended to run the kernel and agent as Docker containers.
+
+## Features
+
+* Automatically execute AI-generated code in a Docker environment.
+* Experiment feature, render images in iTerm2 and kitty.
+* Upload files with the /up command and you can use the `/up` in your prompt
+* Experiment feature, assemble code blocks into an application and you can run the code directly by `/run` command
+* Supports copying output to the clipboard with `/cc` command
+* Supports prompt histories stored in the octopus cli
 
 ## Roadmap
 
@@ -84,7 +81,8 @@ For security, it is recommended to run the kernel and agent as Docker containers
 |----|----------------|---|
 |[Openai GPT 3.5/4](https://openai.com/product#made-for-developers) | ✅ fully supported|the detail installation steps|
 |[Azure Openai GPT 3.5/4](https://azure.microsoft.com/en-us/products/ai-services/openai-service) |  ✅ fully supported|the detail install steps|
-|[LLama.cpp Server](https://github.com/ggerganov/llama.cpp/tree/master/examples/server) | ✅ fully supported| You must provide the model|
+|[LLama.cpp Server](https://github.com/ggerganov/llama.cpp/tree/master/examples/server) | ✔️  supported| You must start the llama cpp server by yourself|
+
 
 ### Platforms Supported
 
@@ -92,7 +90,6 @@ For security, it is recommended to run the kernel and agent as Docker containers
 |----|----------------|---|
 |ubuntu 22.04 | ✅ fully supported|the detail installation steps|
 |macos |  ✅ fully supported|the detail install steps|
-
 
 ### Deployment
 

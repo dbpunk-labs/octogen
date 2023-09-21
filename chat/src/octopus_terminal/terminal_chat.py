@@ -354,7 +354,7 @@ def run_chat(
     token_usage = 0
     iteration = 0
     model_name = ""
-    with Live(Group(*segments), console=console, vertical_overflow="visible") as live:
+    with Live(Group(*segments), console=console) as live:
         spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
         values.append(("text", "", []))
         segments.append((len(values) - 1, spinner, ""))

@@ -1,8 +1,11 @@
 #! /bin/bash
 
 mkdir -p ~/.octopus/bin
+mkdir -p ~/.octopus/setup
 VERSION=`curl -s https://api.github.com/repos/dbpunk-labs/octopus/releases/latest | python3  -c 'import sys, json; print(json.load(sys.stdin)["name"])'`
-curl -L --max-redirs 10 https://github.com/dbpunk-labs/octopus/releases/download/${VERSION}/octopus_up -o ~/.octopus/bin/octopus_up
+curl -L --max-redirs 10 https://github.com/dbpunk-labs/octopus/releases/download/${VERSION}/octopus_setup-${VERSION}.tar.gz -o /tmp/octopus_setup.tar.gz
+mkdir -p /tmp/octopus_setup
+cd /tmp/octopus_setup && tar -zxf ../octopus_setup.tar.gz && cp -rf setup ~/.octopus/ && mv setup/octopus_up.sh ~/.octopus/bin/octopus_up
 chmod +x ~/.octopus/bin/octopus_up
 if [ -f ~/.zshrc ]; then
     read -p "Add ~/.octopus/bin to your PATH(y/n)? " yn

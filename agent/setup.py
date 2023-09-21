@@ -40,7 +40,6 @@ setup(
         "python-dotenv",
         "openai",
         "aiohttp>=3.8.5",
-        "replicate",
     ],
     package_data={"octopus_agent": ["*.bnf"]},
     entry_points={
