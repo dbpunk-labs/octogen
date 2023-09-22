@@ -17,7 +17,7 @@
 """
 
 """
-
+import os
 import click
 from huggingface_hub import hf_hub_download
 
@@ -27,5 +27,16 @@ from huggingface_hub import hf_hub_download
 @click.option('--cache_dir', default="~/.octopus/app/cache", help='the cache_dir of huggingface')
 @click.option('--local_dir', default="~/.octopus/app/model", help='the local dir of huggingface')
 def download(repo, filename, cache_dir, local_dir):
-    hf_hub_download(repo_id=repo, filename=filename, cache_dir=cache_dir, local_dir=local_dir)
+    if local_dir.find("~") == 0:
+        real_local_dir = local_dir.replace("~", os.path.expanduser("~"))
+    else:
+        real_local_dir = local_dir
+    if cache_dir.find("~") == 0:
+        real_cache_dir = cache_dir.replace("~", os.path.expanduser("~"))
+    else:
+        real_cache_dir = cache_dir
+
+    os.makedirs(real_cache_dir, exist_ok=True)
+    os.makedirs(real_local_dir, exist_ok=True)
+    hf_hub_download(repo_id=repo, filename=filename, cache_dir=real_cache_dir, local_dir=real_local_dir)
 

@@ -141,6 +141,8 @@ def clean_code(code: str):
     return code
 
 
+
+
 def refresh(
     live,
     segments,
@@ -471,14 +473,12 @@ def app(octopus_dir):
         real_octopus_dir = octopus_dir.replace("~", os.path.expanduser("~"))
     else:
         real_octopus_dir = octopus_dir
-    if not os.path.exists(real_octopus_dir):
-        os.mkdir(real_octopus_dir)
+    os.makedirs(real_octopus_dir, exist_ok=True)
     octopus_config = dotenv_values(real_octopus_dir + "/config")
     if not check_parameter(octopus_config, console):
         return
     filedir = real_octopus_dir + "/data"
-    if not os.path.exists(filedir):
-        os.mkdir(filedir)
+    os.makedirs(filedir, exist_ok=True)
     sdk = AgentSyncSDK(octopus_config["endpoint"], octopus_config["api_key"])
     sdk.connect()
     history = FileHistory(real_octopus_dir + "/history")

@@ -43,6 +43,11 @@ from octopus_agent.utils import process_char_stream
 OCTOPUS_TITLE = "🐙[bold red]Octopus Up"
 USE_SHELL = sys.platform.startswith( "win" )
 OCTOPUS_GITHUB_REPOS="dbpunk-labs/octopus"
+def random_str(n):
+    # using random.choices()
+    # generating random strings
+    res = "".join(random.choices(string.ascii_uppercase + string.digits, k=n))
+    return str(res)
 def run_with_realtime_print(command,
                             universal_newlines = True,
                             useshell = USE_SHELL,
@@ -54,11 +59,12 @@ def run_with_realtime_print(command,
                               stderr = subprocess.STDOUT,
                               shell = useshell,
                               env = env )
-        if print_output:
-            text_fd = io.TextIOWrapper(p.stdout, newline=os.linesep)
-            while True:
-                chunk = text_fd.read(20)
-                yield 0, chunk
+        text_fd = io.TextIOWrapper(p.stdout, newline=os.linesep)
+        while True:
+            chunk = text_fd.read(20)
+            if not chunk:
+                break
+            yield 0, chunk
         p.wait()
         yield p.returncode, ""
     except Exception as ex:
@@ -91,12 +97,13 @@ def get_latest_release_version(repo_name, live, segments):
     r = requests.get(f'https://api.github.com/repos/{repo_name}/releases/latest')
     old_segment = segments.pop()
     version = r.json()['name']
-    segments.append(("✅", f"Octopus Version:{version}", old_segment[2]))
+    segments.append(("✅", "Get octopus version", version))
     refresh(live, segments)
     return version
 
 def download_model(live, segments, repo="TheBloke/CodeLlama-7B-Instruct-GGUF",
                                    filename="codellama-7b-instruct.Q4_K_M.gguf"):
+
     spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
     step ="Download CodeLlama"
     output = ""
@@ -109,7 +116,7 @@ def download_model(live, segments, repo="TheBloke/CodeLlama-7B-Instruct-GGUF",
         segments.append((old_segment[0], old_segment[1], output))
         refresh(live, segments)
     old_segment = segments.pop()
-    segments.append(("✅", step,""))
+    segments.append(("✅", step, filename))
     refresh(live, segments)
 
 def load_docker_image(version,
@@ -122,10 +129,14 @@ def load_docker_image(version,
     download the image file and load it into docker
     """
     full_name = f"{image_name}:{version}"
-    try:
-        return docker_client.get(full_name)
-    except Exception as ex:
-        pass
+    output = ""
+    for code, chunk in run_with_realtime_print(command=['docker', 'images',
+        f'{image_name}:{version}']):
+        output += chunk
+    if output.find(image_name) >= 0:
+        segments.append(("✅", "Load Octopus Image", f"{image_name}:{version}"))
+        refresh(live, segments)
+        return
     tmp_filename = Path(gettempdir()) / "".join(
         random.choices(string.ascii_lowercase, k=16)
     )
@@ -145,14 +156,17 @@ def load_docker_image(version,
             content_bar.update(downloaded_data)
             refresh(live, segments)
     old_segment = segments.pop()
-    segments.append(("✅", old_segment[1], old_segment[2]))
+    segments.append(("✅", old_segment[1], f"{total/1024/1024}M"))
     refresh(live, segments)
     spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
     step ="Load Octopus Image"
     segments.append((spinner, step, ""))
     refresh(live, segments)
-    code,msg = run_with_realtime_print(command=['docker', 'load', '-i', tmp_filename], print_output=False)
-    if code == 0:
+    return_code = 0
+    for code, msg in run_with_realtime_print(command=['docker', 'load', '-i', tmp_filename],
+            print_output=False):
+        return_code = code
+    if return_code  == 0:
         old_segment = segments.pop()
         segments.append(("✅", old_segment[1], old_segment[2]))
     else:
@@ -167,23 +181,123 @@ def choose_api_service(console):
 """
     console.print(Markdown(mk))
     choice = Prompt.ask("Choices", choices=["1", "2"], default="1:Codellama-7B")
-    return choice
+    if choice == "2":
+        key = Prompt.ask("Enter OpenAI Key")
+        model = Prompt.ask("Enter OpenAI Model", default="gpt-3.5-turbo-16k-0613")
+        return choice, key, model
+    return choice, "", ""
+
+
+def generate_agent_common(fd, rpc_key):
+    fd.write("rpc_host=0.0.0.0\n")
+    fd.write("rpc_port=9528\n")
+    fd.write(f"admin_key={rpc_key}\n")
+    fd.write("max_file_size=202400000\n")
+    fd.write("max_iterations=8\n")
+    fd.write("db_path=/app/agent/octopus.db\n")
+
+def generate_agent_openai(live, segments, install_dir, admin_key,
+        openai_key, openai_model):
+    agent_dir = f"{install_dir}/agent"
+    os.makedirs(agent_dir, exist_ok=True)
+    with open(f"{agent_dir}/.env", "w+") as fd:
+        generate_agent_common(fd, admin_key)
+        fd.write("llm_key=openai\n")
+        fd.write(f"openai_api_key={openai_key}\n")
+        fd.write(f"openai_api_model={openai_model}\n")
+        fd.write("max_file_size=202400000\n")
+        fd.write("max_iterations=8\n")
+        fd.write("log_level=debug\n")
+    segments.append(("✅", "Generate Agent Config", f"{agent_dir}/.env"))
+    refresh(live, segments)
+
+def generate_agent_codellama(live, segments, install_dir, admin_key):
+    agent_dir = f"{install_dir}/agent"
+    os.makedirs(agent_dir, exist_ok=True)
+    with open(f"{agent_dir}/.env", "w+") as fd:
+        generate_agent_common(fd, admin_key)
+        fd.write("llm_key=codellama\n")
+        fd.write("llama_api_base=http://127.0.0.1:8080\n")
+        fd.write("llama_api_key=xxx\n")
+        fd.write("max_file_size=202400000\n")
+        fd.write("max_iterations=8\n")
+        fd.write("log_level=debug\n")
+
+    segments.append(("✅", "Generate Agent Config", f"{agent_dir}/.env"))
+    refresh(live, segments)
+
+def generate_kernel_env(live, segments, install_dir, rpc_key):
+    kernel_dir = f"{install_dir}/kernel"
+    kernel_ws_dir = f"{install_dir}/kernel/ws"
+    kernel_config_dir = f"{install_dir}/kernel/config"
+    os.makedirs(kernel_dir, exist_ok=True)
+    os.makedirs(kernel_ws_dir, exist_ok=True)
+    os.makedirs(kernel_config_dir, exist_ok=True)
+    with open(f"{kernel_dir}/.env", "w+") as fd:
+        fd.write("config_root_path=/app/kernel/config\n")
+        fd.write("workspace=/app/kernel/ws\n")
+        fd.write("rpc_host=127.0.0.1\n")
+        fd.write("rpc_port=9527\n")
+        fd.write(f"rpc_key={rpc_key}\n")
+    segments.append(("✅", "Generate Kernel Config", f"{kernel_dir}/.env"))
+    refresh(live, segments)
+
+def start_service(live, segments, install_dir, image_name, version, is_codellama="1"):
+    full_name = f"{image_name}:{version}"
+    command = ["docker", "run","-p", "127.0.0.1:9528:9528", "-v", f"{install_dir}:/app", "-dt", f"{full_name}", "bash",
+            "/bin/start_all.sh","/app", is_codellama]
+    result_code = 0
+    output = ""
+    for code, chunk in run_with_realtime_print(command=command):
+        result_code = code
+        output += chunk
+        pass
+
+    if result_code == 0:
+        segments.append(("✅", "Start octopus service", ""))
+    else:
+        segments.append(("❌", "Start octopus service", output))
+    refresh(live, segments)
+    return result_code
+
+def update_cli_config(live, segments, api_key, cli_dir):
+    config_path = f"{cli_dir}/config"
+    with open(config_path, "w+") as fd:
+        fd.write("endpoint=127.0.0.1:9528\n")
+        fd.write(f"api_key={api_key}\n")
+    segments.append(("✅", "Update cli config", ""))
+    refresh(live, segments)
 
 @click.command("init")
 @click.option('--image_name', default="ghcr.io/dbpunk-labs/octopus", help='the octopus image name')
 @click.option('--repo_name', default=OCTOPUS_GITHUB_REPOS, help='the github repo of octopus')
 @click.option('--install_dir', default="~/.octopus/app", help='the install dir of octopus')
-def init_octopus(image_name, repo_name, install_dir):
+@click.option('--cli_dir', default="~/.octopus/", help='the cli dir of octopus')
+def init_octopus(image_name, repo_name, install_dir, cli_dir):
+    if cli_dir.find("~") == 0:
+        real_cli_dir = cli_dir.replace("~", os.path.expanduser("~"))
+    else:
+        real_cli_dir = cli_dir
     if install_dir.find("~") == 0:
         real_install_dir = install_dir.replace("~", os.path.expanduser("~"))
     else:
         real_install_dir = install_dir
-    if not os.path.exists(real_install_dir):
-        os.mkdir(real_install_dir)
+    os.makedirs(real_install_dir, exist_ok=True)
     console = Console()
-    choose_api_service(console)
+    choice, key, model = choose_api_service(console)
     segments = []
     with Live(Group(*segments), console=console) as live:
         version = get_latest_release_version(repo_name, live, segments)
-        #load_docker_image(version, image_name, repo_name, live, segments)
+        load_docker_image(version, image_name, repo_name, live, segments)
         download_model(live, segments)
+        kernel_key = random_str(32)
+        admin_key = random_str(32)
+        generate_kernel_env(live, segments, real_install_dir, kernel_key)
+        if choice == "1":
+            generate_agent_codellama(live, segments, real_install_dir, admin_key)
+            start_service(live, segments, real_install_dir, image_name, version)
+            update_cli_config(live, segments, kernel_key, real_cli_dir)
+        else:
+            generate_agent_openai(live, segments, real_install_dir, admin_key, key, model)
+            start_service(live, segments, real_install_dir, image_name, version, is_codellama="0")
+            update_cli_config(live, segments, kernel_key, real_cli_dir)
