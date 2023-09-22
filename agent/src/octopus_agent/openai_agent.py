@@ -78,12 +78,13 @@ OCTOPUS_FUNCTIONS = [
 
 class OpenaiAgent(BaseAgent):
 
-    def __init__(self, model, system_prompt, sdk):
+    def __init__(self, model, system_prompt, sdk, is_azure=True):
         super().__init__(sdk)
         self.model = model
         self.system_prompt = system_prompt
         logger.info(f"use openai model {model}")
         logger.info(f"use openai with system prompt {system_prompt}")
+        self.is_azure = True
 
     def _merge_delta_for_function_call(self, message, delta):
         if not delta:
@@ -133,14 +134,24 @@ class OpenaiAgent(BaseAgent):
         """
         call the openai api
         """
-        response = await openai.ChatCompletion.acreate(
-            engine=self.model,
-            messages=messages,
-            temperature=0,
-            functions=OCTOPUS_FUNCTIONS,
-            function_call="auto",
-            stream=True,
-        )
+        if self.is_azure:
+            response = await openai.ChatCompletion.acreate(
+                engine=self.model,
+                messages=messages,
+                temperature=0,
+                functions=OCTOPUS_FUNCTIONS,
+                function_call="auto",
+                stream=True,
+            )
+        else:
+            response = await openai.ChatCompletion.acreate(
+                model=self.model,
+                messages=messages,
+                temperature=0,
+                functions=OCTOPUS_FUNCTIONS,
+                function_call="auto",
+                stream=True,
+            )
         message = None
         text_content = ""
         code_content = ""

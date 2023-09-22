@@ -229,6 +229,7 @@ class AgentRpcServer(AgentServerServicer):
             agent = build_openai_agent(
                 sdk,
                 config["openai_api_model"],
+                is_azure=True if config["llm_key"] == "azure_openai" else False,
             )
             self.agents[request.key] = {"sdk": sdk, "agent": agent}
         elif config["llm_key"] == "mock":
