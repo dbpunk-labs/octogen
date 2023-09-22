@@ -36,6 +36,13 @@ jobs:
         with:
           packages-dir: chat/dist
           password: ${{ secrets.PYPI_TOKEN }}
+
+      - name: Publish Up
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: up/dist
+          password: ${{ secrets.PYPI_TOKEN }}
+
       - name: docker login
         uses: docker/login-action@v1
         with:
@@ -63,6 +70,6 @@ jobs:
       - name: Releasing assets
         uses: softprops/action-gh-release@v1
         with:
-            files: |
-                octopus_setup-*.tar.gz
-                docker/octopus_image_*.tar.gz
+          files: |
+              octopus_setup-*.tar.gz
+              docker/octopus_image_*.tar.gz
