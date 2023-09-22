@@ -55,9 +55,9 @@ def run_with_realtime_print(command,
                               shell = useshell,
                               env = env )
         if print_output:
-            text_fd = io.TextIOWrapper(p.stdout)
+            text_fd = io.TextIOWrapper(p.stdout, newline=os.linesep)
             while True:
-                chunk = text_fd.read(10)
+                chunk = text_fd.read(20)
                 yield 0, chunk
         p.wait()
         yield p.returncode, ""
@@ -96,7 +96,7 @@ def get_latest_release_version(repo_name, live, segments):
     return version
 
 def download_model(live, segments, repo="TheBloke/CodeLlama-7B-Instruct-GGUF",
-        filename="codellama-7b-instruct.Q4_K_M.gguf"):
+                                   filename="codellama-7b-instruct.Q4_K_M.gguf"):
     spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
     step ="Download CodeLlama"
     output = ""
@@ -111,7 +111,6 @@ def download_model(live, segments, repo="TheBloke/CodeLlama-7B-Instruct-GGUF",
     old_segment = segments.pop()
     segments.append(("✅", step,""))
     refresh(live, segments)
-
 
 def load_docker_image(version,
                       image_name,
