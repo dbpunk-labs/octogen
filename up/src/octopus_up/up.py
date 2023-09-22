@@ -295,9 +295,12 @@ def init_octopus(image_name, repo_name, install_dir, cli_dir):
         generate_kernel_env(live, segments, real_install_dir, kernel_key)
         if choice == "1":
             generate_agent_codellama(live, segments, real_install_dir, admin_key)
-            start_service(live, segments, real_install_dir, image_name, version)
-            update_cli_config(live, segments, kernel_key, real_cli_dir)
+            if start_service(live, segments, real_install_dir, image_name, version) == 0:
+                update_cli_config(live, segments, kernel_key, real_cli_dir)
+                console.log(f"👍 install octopus service done!")
         else:
             generate_agent_openai(live, segments, real_install_dir, admin_key, key, model)
-            start_service(live, segments, real_install_dir, image_name, version, is_codellama="0")
-            update_cli_config(live, segments, kernel_key, real_cli_dir)
+            if start_service(live, segments, real_install_dir, image_name, version,
+                    is_codellama="0") == 0:
+                update_cli_config(live, segments, kernel_key, real_cli_dir)
+                console.log(f"👍 install octopus service done!")

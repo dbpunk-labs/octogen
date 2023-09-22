@@ -21,13 +21,19 @@ Prerequisites
 * pip
 * docker
 
-Firstly, Install octopus_up
+First, install octopus_up and octopus_chat
 
 ```bash
-pip install octopus_up
+pip install octopus_up octopus_chat
 ```
 
-Secondly, Open your terminal and execute the command `octopus`, you will see the following output
+Second, set up the Octopus service using the OpenAI API key or the embedding model Codellama-7b.
+
+```
+octopus_up
+```
+
+Third, open your terminal and execute the command `octopus`, you will see the following output
 
 ```
 Welcome to use octopus❤️ . To ask a programming question, simply type your question and press esc + enter
