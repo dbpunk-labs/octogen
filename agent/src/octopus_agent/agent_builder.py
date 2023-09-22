@@ -38,12 +38,12 @@ def build_codellama_agent(endpoint, key, sdk, grammer_path):
     return CodellamaAgent(client, sdk)
 
 
-def build_openai_agent(sdk, model_name):
+def build_openai_agent(sdk, model_name, is_azure=True):
     """build openai function call agent"""
     # TODO a data dir per user
     # init the agent
 
-    agent = OpenaiAgent(model_name, OCTOPUS_FUNCTION_SYSTEM, sdk)
+    agent = OpenaiAgent(model_name, OCTOPUS_FUNCTION_SYSTEM, sdk, is_azure=is_azure)
     return agent
 
 

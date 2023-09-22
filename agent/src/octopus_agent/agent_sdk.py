@@ -41,7 +41,9 @@ class AgentSyncSDK:
             return
         if self.endpoint.startswith("https"):
             channel_credential = grpc.ssl_channel_credentials()
-            self.channel = grpc.secure_channel(self.endpoint.replace("https://", ""), channel_credential)
+            self.channel = grpc.secure_channel(
+                self.endpoint.replace("https://", ""), channel_credential
+            )
         else:
             self.channel = grpc.insecure_channel(self.endpoint)
         self.stub = AgentServerStub(self.channel)

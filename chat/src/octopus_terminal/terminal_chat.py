@@ -141,8 +141,6 @@ def clean_code(code: str):
     return code
 
 
-
-
 def refresh(
     live,
     segments,
