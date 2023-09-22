@@ -50,14 +50,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Packaging Static files
-        shell: bash
-        run: |
-            TAG=${GITHUB_REF/refs\/tags\//}
-            RELEASE_NAME=octopus_setup-${TAG}.tar.gz
-            # package the setup scripts
-            tar -zcvf ${RELEASE_NAME} setup
-
       - name: Build Docker image
         run: |
           ROOT_DIR=`pwd`
@@ -71,5 +63,4 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-              octopus_setup-*.tar.gz
               docker/octopus_image_*.tar.gz
