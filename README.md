@@ -13,26 +13,21 @@
 
 ## Getting Started
 
+Install the octopus with codellama-7B in your local computer
+
 Prerequisites
 
 * python 3 >= 3.10
 * pip
-* docker (optional for Docker installation)
-* openai api key
+* docker
 
-Firstly, Install Octopus up script, which will guide you through the setup process, including choosing the Model API service, installation directory, and kernel workspace directory.
+Firstly, Install octopus_up
 
 ```bash
-curl --proto '=https' --tlsv1.2 -sSf https://up.dbpunk.xyz | sh
+pip install octopus_up
 ```
 
-Secondly, Install Octopus, you must have Docker installed on your local machine. Octopus uses Docker Compose to manage the kernel and agent. The octopus_up script will initialize the Octopus CLI with the generated API key from the agent.
-
-```
-octopus_up docker-local
-```
-
-Thirdly, Open your terminal and execute the command `octopus`, you will see the following output
+Secondly, Open your terminal and execute the command `octopus`, you will see the following output
 
 ```
 Welcome to use octopus❤️ . To ask a programming question, simply type your question and press esc + enter
@@ -85,7 +80,6 @@ if you have any advice for the roadmap. please create a discuession to talk abou
 |[Openai GPT 3.5/4](https://openai.com/product#made-for-developers) | ✅ fully supported|the detail installation steps|
 |[Azure Openai GPT 3.5/4](https://azure.microsoft.com/en-us/products/ai-services/openai-service) |  ✅ fully supported|the detail install steps|
 |[LLama.cpp Server](https://github.com/ggerganov/llama.cpp/tree/master/examples/server) | ✔️  supported| You must start the llama cpp server by yourself|
-
 
 ## Platforms Supported
 
