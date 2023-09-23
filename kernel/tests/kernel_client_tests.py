@@ -28,8 +28,10 @@ logger = logging.getLogger(__name__)
 
 
 class MockContext:
-
-    def cancelled():
+    """
+    Mock the grpc request context
+    """
+    def cancelled(self):
         return False
 
 
