@@ -268,7 +268,7 @@ class AgentRpcServer(AgentServerServicer):
         sdk = self.agents[metadata["api_key"]]["sdk"]
         queue = asyncio.Queue()
 
-        async def worker(task, agent, queue, sdk):
+        async def worker(task, agent, queue, context):
             try:
                 return await agent.arun(task, queue)
             except Exception as ex:
@@ -277,7 +277,7 @@ class AgentRpcServer(AgentServerServicer):
                 return result
 
         logger.debug("create the agent task")
-        task = asyncio.create_task(worker(request.task, agent, queue, sdk))
+        task = asyncio.create_task(worker(request.task, agent, queue, context))
         try:
             while True:
                 try:
