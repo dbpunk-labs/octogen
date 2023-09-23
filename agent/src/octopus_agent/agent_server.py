@@ -165,6 +165,8 @@ class AgentRpcServer(AgentServerServicer):
         )
         function_result = None
         async for (result, respond) in agent.call_function(lite_app.code):
+            if context.cancelled():
+                break
             function_result = result
             if respond:
                 logger.debug(f"the respond {respond}")
@@ -269,14 +271,6 @@ class AgentRpcServer(AgentServerServicer):
         async def worker(task, agent, queue, sdk):
             try:
                 return await agent.arun(task, queue)
-            except AioRpcError as rpc_ex:
-                logger.exception("cancel the request worker")
-                try:
-                    await sdk.stop()
-                except Exception as ex:
-                    pass
-                result = str(rpc_ex)
-                return result
             except Exception as ex:
                 logger.exception("fail to run agent")
                 result = str(ex)
@@ -300,10 +294,6 @@ class AgentRpcServer(AgentServerServicer):
                     logger.error(f"fail to get respond for {ex}")
                     break
             await task
-        except AioRpcError as rpc_ex:
-            logger.exception("cancel the request")
-            task.cancel()
-            pass
         except Exception as ex:
             respond = agent_server_pb2.TaskRespond(
                 token_usage=0,
@@ -313,6 +303,13 @@ class AgentRpcServer(AgentServerServicer):
                 final_respond=agent_server_pb2.FinalRespond(answer=str(ex)),
             )
             yield respond
+        finally:
+            if context.cancelled():
+                try:
+                    logger.warning("cancel the request by stop kernel")
+                    await sdk.stop()
+                except Exception as ex:
+                    pass
 
     async def download(
         self, request: common_pb2.DownloadRequest, context: ServicerContext

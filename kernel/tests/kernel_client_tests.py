@@ -27,6 +27,14 @@ from octopus_kernel.kernel.kernel_client import KernelClient
 logger = logging.getLogger(__name__)
 
 
+class MockContext:
+    """
+    Mock the grpc request context
+    """
+    def cancelled(self):
+        return False
+
+
 @pytest.fixture
 def kernel_manager():
     config_path = os.path.join("/tmp", str(random.randint(1, 100000)))
@@ -77,7 +85,8 @@ async def test_result_occurs(kernel_manager):
 """
     kernel_client.execute(code)
     messages = []
-    async for msg in kernel_client.read_response():
+    context = MockContext()
+    async for msg in kernel_client.read_response(context):
         if not msg:
             break
         messages.append(msg)
@@ -101,7 +110,9 @@ print('Hello world', file=sys.stderr)
 """
     kernel_client.execute(code)
     messages = []
-    async for msg in kernel_client.read_response():
+
+    context = MockContext()
+    async for msg in kernel_client.read_response(context):
         if not msg:
             break
         messages.append(msg)
@@ -124,7 +135,9 @@ print("hello world!")
 """
     kernel_client.execute(code)
     messages = []
-    async for msg in kernel_client.read_response():
+
+    context = MockContext()
+    async for msg in kernel_client.read_response(context):
         if not msg:
             break
         messages.append(msg)
@@ -150,7 +163,9 @@ if (a < b)
 """
     kernel_client.execute(code)
     messages = []
-    async for msg in kernel_client.read_response():
+
+    context = MockContext()
+    async for msg in kernel_client.read_response(context):
         if not msg:
             break
         messages.append(msg)
@@ -181,7 +196,9 @@ plt.show()
 """
     kernel_client.execute(code)
     messages = []
-    async for msg in kernel_client.read_response():
+
+    context = MockContext()
+    async for msg in kernel_client.read_response(context):
         if msg:
             logger.debug(f"{msg}")
             messages.append(msg)

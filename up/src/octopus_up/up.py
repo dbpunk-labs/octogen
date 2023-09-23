@@ -273,7 +273,8 @@ def update_cli_config(live, segments, api_key, cli_dir):
 @click.option('--repo_name', default=OCTOPUS_GITHUB_REPOS, help='the github repo of octopus')
 @click.option('--install_dir', default="~/.octopus/app", help='the install dir of octopus')
 @click.option('--cli_dir', default="~/.octopus/", help='the cli dir of octopus')
-def init_octopus(image_name, repo_name, install_dir, cli_dir):
+@click.option('--octopus_version', default="", help='the version of octopus')
+def init_octopus(image_name, repo_name, install_dir, cli_dir, octopus_version):
     if cli_dir.find("~") == 0:
         real_cli_dir = cli_dir.replace("~", os.path.expanduser("~"))
     else:
@@ -287,13 +288,16 @@ def init_octopus(image_name, repo_name, install_dir, cli_dir):
     choice, key, model = choose_api_service(console)
     segments = []
     with Live(Group(*segments), console=console) as live:
-        version = get_latest_release_version(repo_name, live, segments)
+        if octopus_version:
+            version = octopus_version
+        else:
+            version = get_latest_release_version(repo_name, live, segments)
         load_docker_image(version, image_name, repo_name, live, segments)
-        download_model(live, segments)
         kernel_key = random_str(32)
         admin_key = random_str(32)
         generate_kernel_env(live, segments, real_install_dir, kernel_key)
         if choice == "1":
+            download_model(live, segments)
             generate_agent_codellama(live, segments, real_install_dir, admin_key)
             if start_service(live, segments, real_install_dir, image_name, version) == 0:
                 update_cli_config(live, segments, kernel_key, real_cli_dir)

@@ -58,7 +58,7 @@ class CodellamaAgent(BaseAgent):
             return answer_code
 
     async def handle_function(
-        self, json_response, queue, token_usage=0, iteration=0, model_name=""
+        self, json_response, queue, context, token_usage=0, iteration=0, model_name=""
     ):
         code = json_response["action_input"]
         explanation = json_response["explanation"]
@@ -86,6 +86,8 @@ class CodellamaAgent(BaseAgent):
             token_usage=token_usage,
             model_name=model_name,
         ):
+            if not context.cancelled():
+                break
             function_result = result
             if respond:
                 await queue.put(respond)
@@ -115,7 +117,7 @@ class CodellamaAgent(BaseAgent):
                     action_input_str = "".join(token)
         return (state, explanation_str, action_input_str)
 
-    async def call_codellama(self, question, chat_history, queue):
+    async def call_codellama(self, question, chat_history, queue, context):
         state = None
         message = ""
         text_content = ""
@@ -123,6 +125,8 @@ class CodellamaAgent(BaseAgent):
         async for line in self.client.prompt(question, chat_history=chat_history):
             if len(line) < 6:
                 continue
+            if context.cancelled():
+                break
             respond = json.loads(line[6:])
             message += respond["content"]
             logger.debug(f" message {message}")
@@ -162,7 +166,7 @@ class CodellamaAgent(BaseAgent):
                 state = respond
         return (message, state)
 
-    async def arun(self, question, queue, max_iteration=5):
+    async def arun(self, question, queue, context, max_iteration=5):
         """
         run the agent
         """
@@ -173,12 +177,12 @@ class CodellamaAgent(BaseAgent):
         token_usage = 0
         model_name = ""
         try:
-            while iteration < max_iteration:
+            while iteration < max_iteration and not context.cancelled():
                 iteration += 1
                 response = []
                 chat_history = "\n".join(history)
                 (message, state) = await self.call_codellama(
-                    current_question, chat_history, queue
+                    current_question, chat_history, queue, context
                 )
                 json_response = json.loads(message)
                 logger.debug(f" codellama response {json_response}")
@@ -187,7 +191,12 @@ class CodellamaAgent(BaseAgent):
                     and json_response["action_input"]
                 ):
                     function_result = await self.handle_function(
-                        json_response, queue, token_usage, iteration, model_name
+                        json_response,
+                        queue,
+                        context,
+                        token_usage,
+                        iteration,
+                        model_name,
                     )
                     logger.debug(f"the function result {function_result}")
                     await queue.put(

@@ -130,7 +130,7 @@ class OpenaiAgent(BaseAgent):
                     code_str = "".join(token)
         return (state, explanation_str, code_str)
 
-    async def call_openai(self, messages, queue):
+    async def call_openai(self, messages, queue, context):
         """
         call the openai api
         """
@@ -156,6 +156,8 @@ class OpenaiAgent(BaseAgent):
         text_content = ""
         code_content = ""
         async for chunk in response:
+            if context.cancelled():
+                break
             if not chunk["choices"]:
                 continue
             delta = chunk["choices"][0]["delta"]
@@ -213,9 +215,9 @@ class OpenaiAgent(BaseAgent):
         return message
 
     async def handle_function(
-        self, message, queue, token_usage=0, iteration=0, model_name=""
+        self, message, queue, context, token_usage=0, iteration=0, model_name=""
     ):
-        if "function_call" in message:
+        if "function_call" in message and not context.cancelled():
             function_name = message["function_call"]["name"]
             arguments = json.loads(message["function_call"]["arguments"])
             logger.debug(f"call function {function_name} with args {arguments}")
@@ -246,6 +248,8 @@ class OpenaiAgent(BaseAgent):
                 token_usage=token_usage,
                 model_name=model_name,
             ):
+                if context.cancelled():
+                    break
                 function_result = result
                 if respond:
                     await queue.put(respond)
@@ -253,7 +257,7 @@ class OpenaiAgent(BaseAgent):
         else:
             raise Exception("bad message, function message expected")
 
-    async def arun(self, task, queue, max_iteration=5):
+    async def arun(self, task, queue, context, max_iteration=5):
         """ """
         messages = [
             {"role": "system", "content": self.system_prompt},
@@ -263,10 +267,10 @@ class OpenaiAgent(BaseAgent):
         token_usage = 0
         model_name = ""
         try:
-            while iterations < max_iteration:
+            while iterations < max_iteration and not context.cancelled():
                 iterations += 1
                 logger.debug(f" the input messages {messages}")
-                chat_message = await self.call_openai(messages, queue)
+                chat_message = await self.call_openai(messages, queue, context)
                 # model_name = response.get()"model"]
                 # token_usage += response["usage"]["total_tokens"]
                 logger.debug(f"the response {chat_message}")
@@ -283,7 +287,12 @@ class OpenaiAgent(BaseAgent):
                         continue
                     # call function
                     function_result = await self.handle_function(
-                        chat_message, queue, token_usage, iterations, model_name
+                        chat_message,
+                        queue,
+                        context,
+                        token_usage,
+                        iterations,
+                        model_name,
                     )
                     await queue.put(
                         TaskRespond(
