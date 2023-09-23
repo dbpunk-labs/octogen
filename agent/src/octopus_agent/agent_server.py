@@ -72,6 +72,7 @@ class LiteApp(orm.Model):
         "saved_filenames": orm.String(max_length=512, allow_null=True),
     }
 
+
 class AgentRpcServer(AgentServerServicer):
 
     def __init__(self):
@@ -274,6 +275,7 @@ class AgentRpcServer(AgentServerServicer):
                 logger.exception("fail to run agent")
                 result = str(ex)
                 return result
+
         logger.debug("create the agent task")
         task = asyncio.create_task(worker(request.task, agent, queue, sdk))
         try:
@@ -308,6 +310,7 @@ class AgentRpcServer(AgentServerServicer):
                     await sdk.stop()
                 except Exception as ex:
                     pass
+
     async def download(
         self, request: common_pb2.DownloadRequest, context: ServicerContext
     ) -> AsyncIterable[common_pb2.FileChunk]:

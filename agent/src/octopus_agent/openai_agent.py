@@ -215,7 +215,7 @@ class OpenaiAgent(BaseAgent):
         return message
 
     async def handle_function(
-        self, message, queue, context,  token_usage=0, iteration=0, model_name=""
+        self, message, queue, context, token_usage=0, iteration=0, model_name=""
     ):
         if "function_call" in message and not context.cancelled():
             function_name = message["function_call"]["name"]
@@ -257,7 +257,7 @@ class OpenaiAgent(BaseAgent):
         else:
             raise Exception("bad message, function message expected")
 
-    async def arun(self, task, queue, context,  max_iteration=5):
+    async def arun(self, task, queue, context, max_iteration=5):
         """ """
         messages = [
             {"role": "system", "content": self.system_prompt},
@@ -287,7 +287,12 @@ class OpenaiAgent(BaseAgent):
                         continue
                     # call function
                     function_result = await self.handle_function(
-                        chat_message, queue, context, token_usage, iterations, model_name
+                        chat_message,
+                        queue,
+                        context,
+                        token_usage,
+                        iterations,
+                        model_name,
                     )
                     await queue.put(
                         TaskRespond(
