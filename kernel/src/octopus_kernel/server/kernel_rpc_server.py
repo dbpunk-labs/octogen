@@ -219,14 +219,8 @@ class KernelRpcServer(KernelServerNodeServicer):
         logger.debug("the code %s with kernel %s", request.code, kernel_name)
         # TODO check the busy status
         msg_id = self.kcs[kernel_name].execute(request.code)
-        response_args = {
-            "result": None,
-            "stdout": None,
-            "stderr": None,
-            "traceback": None,
-        }
-        async for msg in self.kcs[kernel_name].read_response(5):
-            if not msg:
+        async for msg in self.kcs[kernel_name].read_response(context, 5):
+            if context.cancelled() or not msg:
                 break
             if msg["parent_header"]["msg_id"] != msg_id:
                 continue

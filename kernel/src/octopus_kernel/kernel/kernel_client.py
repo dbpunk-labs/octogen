@@ -96,12 +96,14 @@ class KernelClient:
         self.is_running = True
         self.task = asyncio.create_task(self._loop(on_message_fn))
 
-    async def read_response(self, tries=1):
+    async def read_response(self, context, tries=1):
         try:
             hit_empty = 0
             while self.client:
                 try:
                     msg = await self.client.get_iopub_msg(timeout=1)
+                    if context.cancelled():
+                        break
                     logger.debug(f"{msg}")
                     yield msg
                 except queue.Empty:
