@@ -82,6 +82,7 @@ class CodellamaAgent(BaseAgent):
         function_result = None
         async for (result, respond) in self.call_function(
             code,
+            context,
             iteration=iteration,
             token_usage=token_usage,
             model_name=model_name,

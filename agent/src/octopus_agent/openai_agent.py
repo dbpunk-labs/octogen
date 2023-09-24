@@ -156,6 +156,8 @@ class OpenaiAgent(BaseAgent):
         text_content = ""
         code_content = ""
         async for chunk in response:
+            is_cancelled = context.cancelled()
+            logger.debug(f"the rpc is cancelled {is_cancelled}")
             if context.cancelled():
                 break
             if not chunk["choices"]:
@@ -244,6 +246,7 @@ class OpenaiAgent(BaseAgent):
             function_result = None
             async for (result, respond) in self.call_function(
                 code,
+                context,
                 iteration=iteration,
                 token_usage=token_usage,
                 model_name=model_name,

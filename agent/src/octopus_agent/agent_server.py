@@ -164,7 +164,7 @@ class AgentRpcServer(AgentServerServicer):
             ),
         )
         function_result = None
-        async for (result, respond) in agent.call_function(lite_app.code):
+        async for (result, respond) in agent.call_function(lite_app.code, context):
             if context.cancelled():
                 break
             function_result = result
@@ -304,6 +304,8 @@ class AgentRpcServer(AgentServerServicer):
             )
             yield respond
         finally:
+            is_cancelled = context.cancelled()
+            logger.debug(f" the context is cancelled {is_cancelled}")
             if context.cancelled():
                 try:
                     logger.warning("cancel the request by stop kernel")

@@ -60,7 +60,9 @@ class MockAgent(BaseAgent):
             )
         return message
 
-    async def handle_call_function(self, code, queue, explanation, saved_filenames=[]):
+    async def handle_call_function(
+        self, code, queue, explanation, context, saved_filenames=[]
+    ):
         tool_input = json.dumps({
             "code": code,
             "explanation": explanation,
@@ -78,7 +80,7 @@ class MockAgent(BaseAgent):
             )
         )
         function_result = None
-        async for (result, respond) in self.call_function(code):
+        async for (result, respond) in self.call_function(code, context):
             function_result = result
             if respond:
                 await queue.put(respond)
@@ -95,7 +97,9 @@ class MockAgent(BaseAgent):
                 if message.get("code", None):
                     function_result = await self.handle_call_function(
                         message["code"],
+                        queue,
                         message["explanation"],
+                        context,
                         message.get("saved_filenames", []),
                     )
                     await queue.put(

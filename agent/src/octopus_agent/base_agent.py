@@ -48,7 +48,9 @@ class BaseAgent:
     def __init__(self, sdk):
         self.kernel_sdk = sdk
 
-    async def call_function(self, code, iteration=1, token_usage=0, model_name=""):
+    async def call_function(
+        self, code, context, iteration=1, token_usage=0, model_name=""
+    ):
         """
         run code with kernel
         """
@@ -60,6 +62,8 @@ class BaseAgent:
         if not is_alive:
             await self.kernel_sdk.start(kernel_name="python3")
         async for kernel_respond in self.kernel_sdk.execute(code=code):
+            if context.cancelled():
+                break
             # process the stdout
             if kernel_respond.output_type == ExecuteResponse.StdoutType:
                 kernel_output = json.loads(kernel_respond.output)["text"]
