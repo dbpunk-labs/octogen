@@ -31,6 +31,7 @@ class MockContext:
     """
     Mock the grpc request context
     """
+
     def cancelled(self):
         return False
 

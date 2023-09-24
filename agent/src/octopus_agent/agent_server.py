@@ -270,7 +270,7 @@ class AgentRpcServer(AgentServerServicer):
 
         async def worker(task, agent, queue, context):
             try:
-                return await agent.arun(task, queue)
+                return await agent.arun(task, queue, context)
             except Exception as ex:
                 logger.exception("fail to run agent")
                 result = str(ex)

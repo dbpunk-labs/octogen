@@ -43,16 +43,37 @@ from octopus_agent.utils import process_char_stream
 OCTOPUS_TITLE = "🐙[bold red]Octopus Up"
 USE_SHELL = sys.platform.startswith( "win" )
 OCTOPUS_GITHUB_REPOS="dbpunk-labs/octopus"
+Welcome = f"""
+Welcome to use {OCTOPUS_TITLE}
+
+Need help?
+1. Create an issue on our GitHub page: [Octopus GitHub Issues](https://github.com/dbpunk-labs/octopus/issues)
+2. Alternatively, you can email us at [codego.me@gmail.com](mailto:codego.me@gmail.com).
+"""
+
 def random_str(n):
     # using random.choices()
     # generating random strings
     res = "".join(random.choices(string.ascii_uppercase + string.digits, k=n))
     return str(res)
+
+def run_install_cli(live, segment):
+    spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
+    step ="Install octopus terminal cli"
+    output = ""
+    segments.append((spinner, step, ""))
+    result_code = 0
+    for code, _ in run_with_realtime_print(command = ["pip", 'install', '-U', 'octopus_chat']):
+        result_code = code
+    if result_code == 0:
+        segments.append(("✅", "Install octopus terminal cli", ""))
+    else:
+        segments.append(("❌", "Install octopus terminal cli", ""))
+
 def run_with_realtime_print(command,
                             universal_newlines = True,
                             useshell = USE_SHELL,
-                            env = os.environ,
-                            print_output = True):
+                            env = os.environ):
     try:
         p = subprocess.Popen( command,
                               stdout = subprocess.PIPE,
@@ -76,11 +97,12 @@ def refresh(
     title=OCTOPUS_TITLE,
 ):
     table = Table.grid(padding=1, pad_edge=True)
+    table.add_column("Index", no_wrap=True, justify="center")
     table.add_column("Status", no_wrap=True, justify="center")
-    table.add_column("Step", no_wrap=True, justify="center", style="bold red")
+    table.add_column("Step", no_wrap=True, justify="center")
     table.add_column("Content", no_wrap=True, justify="center")
-    for status, step, segment in segments:
-        table.add_row(status, step, segment)
+    for index, (status, step, segment) in enumerate(segments):
+        table.add_row(index, status, step, segment)
     live.update(
         table
     )
@@ -287,6 +309,7 @@ def init_octopus(image_name, repo_name, install_dir, cli_dir, octopus_version):
     console = Console()
     choice, key, model = choose_api_service(console)
     segments = []
+    console.print(Markdown(welcome))
     with Live(Group(*segments), console=console) as live:
         if octopus_version:
             version = octopus_version
@@ -296,6 +319,7 @@ def init_octopus(image_name, repo_name, install_dir, cli_dir, octopus_version):
         kernel_key = random_str(32)
         admin_key = random_str(32)
         generate_kernel_env(live, segments, real_install_dir, kernel_key)
+        run_install_cli(live, segments)
         if choice == "1":
             download_model(live, segments)
             generate_agent_codellama(live, segments, real_install_dir, admin_key)
