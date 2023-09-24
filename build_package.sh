@@ -28,7 +28,7 @@ python3 sdk/setup.py --version
 # build octopus proto package
 cd ${WORKDIR}/proto  && make && python3 -m build
 # build octopus proto package
-cd ${WORKDIR}/sdk  && make && python3 -m build
+cd ${WORKDIR}/sdk && python3 -m build
 # build octopus kernel package
 cd ${WORKDIR}/kernel && python3 -m build
 # build agent package
