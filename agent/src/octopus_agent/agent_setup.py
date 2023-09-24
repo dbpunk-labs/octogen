@@ -17,7 +17,7 @@
 """ """
 import click
 import asyncio
-from octopus_agent.agent_sdk import AgentSDK
+from octopus_sdk.agent_sdk import AgentSDK
 
 
 async def add_kernel(endpoint, api_key, kernel_endpoint, kernel_api_key):
