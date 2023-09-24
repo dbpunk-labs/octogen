@@ -34,6 +34,7 @@ setup(
         "octopus_discord": "src/octopus_discord",
         "octopus_terminal": "src/octopus_terminal",
     },
+
     install_requires=[
         "octopus_sdk>=0.1.0",
         "rich>=13.5.2",
@@ -43,6 +44,7 @@ setup(
         "clipboard>=0.0.4",
         "term-image>=0.7.0",
     ],
+
     entry_points={
         "console_scripts": [
             "octopus = octopus_terminal.terminal_chat:app",
