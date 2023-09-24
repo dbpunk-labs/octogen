@@ -1,18 +1,6 @@
 # vim:fenc=utf-8
 #
 # Copyright (C) 2023 dbpunk.com Author imotai <codego.me@gmail.com>
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 
 import asyncio
 import logging
@@ -32,7 +20,7 @@ from dotenv import dotenv_values
 from typing import AsyncIterable, Any, Dict, List, Optional, Sequence, Union, Type
 from tempfile import gettempdir
 from grpc.aio import ServicerContext, server
-from octopus_kernel.sdk.kernel_sdk import KernelSDK
+from octopus_sdk.kernel_sdk import KernelSDK
 from octopus_sdk.utils import parse_image_filename
 from .agent_llm import LLMManager
 from .agent_builder import build_mock_agent, build_openai_agent, build_codellama_agent
@@ -71,7 +59,6 @@ class LiteApp(orm.Model):
         "desc": orm.String(max_length=100, allow_null=True),
         "saved_filenames": orm.String(max_length=512, allow_null=True),
     }
-
 
 class AgentRpcServer(AgentServerServicer):
 
