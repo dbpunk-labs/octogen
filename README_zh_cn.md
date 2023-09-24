@@ -7,6 +7,7 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/octopus_chat)](https://pypi.org/project/octopus-chat/)
 ![PyPI - Downloads](https://img.shields.io/pypi/dd/octopus_chat)
 
+[English](./README.md)
 > ## Octopus
 > 一款为终端用户打造地开源的代码解释器
 

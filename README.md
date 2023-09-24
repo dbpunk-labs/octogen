@@ -6,6 +6,7 @@
 [![Twitter Follow](https://img.shields.io/twitter/follow/OCopilot7817?style=flat-square)](https://twitter.com/OCopilot7817)
 [![PyPI - Version](https://img.shields.io/pypi/v/octopus_chat)](https://pypi.org/project/octopus-chat/)
 ![PyPI - Downloads](https://img.shields.io/pypi/dd/octopus_chat)
+
 [中文](./README_zh_cn.md)
 
 > ## Octopus
