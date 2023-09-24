@@ -33,12 +33,12 @@ from typing import AsyncIterable, Any, Dict, List, Optional, Sequence, Union, Ty
 from tempfile import gettempdir
 from grpc.aio import ServicerContext, server
 from octopus_kernel.sdk.kernel_sdk import KernelSDK
+from octopus_sdk.utils import parse_image_filename
 from .agent_llm import LLMManager
 from .agent_builder import build_mock_agent, build_openai_agent, build_codellama_agent
 import databases
 import orm
 from datetime import datetime
-from .utils import parse_image_filename
 
 config = dotenv_values(".env")
 LOG_LEVEL = (

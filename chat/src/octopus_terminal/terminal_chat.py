@@ -30,8 +30,8 @@ from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.shortcuts import CompleteStyle, clear
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit import PromptSession
-from octopus_agent.agent_sdk import AgentSyncSDK
-from octopus_agent.utils import process_char_stream
+from octopus_sdk.agent_sdk import AgentSyncSDK
+from octopus_sdk.utils import process_char_stream
 from octopus_proto import agent_server_pb2
 from dotenv import dotenv_values
 from prompt_toolkit.completion import Completer, Completion

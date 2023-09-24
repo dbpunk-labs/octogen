@@ -38,7 +38,7 @@ from rich.progress_bar import ProgressBar
 from rich.live import Live
 from rich.spinner import Spinner
 from rich.console import Group
-from octopus_agent.utils import process_char_stream
+from octopus_sdk.utils import process_char_stream
 
 OCTOPUS_TITLE = "🐙[bold red]Octopus Up"
 USE_SHELL = sys.platform.startswith( "win" )

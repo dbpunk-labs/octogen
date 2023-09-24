@@ -54,7 +54,6 @@ You can use /help to look for help
 * Octopus Agent: Manages client requests, uses ReAct to process complex tasks, and stores user-assembled applications.
 * Octopus Terminal Cli: Accepts user requests, sends them to the Agent, and renders rich results. Currently supports Discord, iTerm2, and Kitty terminals.
 
-For security, it is recommended to run the kernel and agent as Docker containers.
 
 ## Features
 
@@ -85,7 +84,7 @@ if you have any advice for the roadmap. please create a discuession to talk abou
 
 ## API Service Supported
 
-|name|status| note|
+|name|status| installation|
 |----|----------------|---|
 |[Openai GPT 3.5/4](https://openai.com/product#made-for-developers) | ✅ fully supported|the detail installation steps|
 |[Azure Openai GPT 3.5/4](https://azure.microsoft.com/en-us/products/ai-services/openai-service) |  ✅ fully supported|the detail install steps|
@@ -93,11 +92,8 @@ if you have any advice for the roadmap. please create a discuession to talk abou
 
 ## Platforms Supported
 
-|name|status| note|
+|name|status| installation|
 |----|----------------|---|
 |ubuntu 22.04 | ✅ fully supported|the detail installation steps|
 |macos |  ✅ fully supported|the detail install steps|
 
-## Thanks
-
-* [Octopus icons created by Whitevector - Flaticon](https://www.flaticon.com/free-icons/octopus)

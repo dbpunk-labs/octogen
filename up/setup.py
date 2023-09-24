@@ -36,10 +36,8 @@ setup(
     },
 
     install_requires=[
-        "octopus_agent",
+        "octopus_sdk",
         "requests",
-        "docker",
-        "tqdm",
         "huggingface_hub",
         "rich"
     ],
