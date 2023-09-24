@@ -84,7 +84,7 @@ class MockAgent(BaseAgent):
                 await queue.put(respond)
         return function_result
 
-    async def arun(self, task, queue, max_iteration=5):
+    async def arun(self, task, queue, context, max_iteration=5):
         """
         run the agent
         """
