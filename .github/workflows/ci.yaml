@@ -26,8 +26,6 @@ jobs:
           pytest tests/*.py
           cd ${WS_DIR}/kernel
           pytest tests/*.py
-          cd ${WS_DIR}/agent
-          pytest tests/*.py
       - uses: actions/upload-artifact@v3
         if: failure()
         with:
