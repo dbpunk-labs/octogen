@@ -19,7 +19,7 @@ import asyncio
 import pytest
 import logging
 import json
-from octopus_kernel.sdk.kernel_sdk import KernelSDK
+from octopus_sdk.kernel_sdk import KernelSDK
 from octopus_proto.kernel_server_pb2 import ExecuteResponse
 
 logger = logging.getLogger(__name__)

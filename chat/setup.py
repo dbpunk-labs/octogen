@@ -34,16 +34,17 @@ setup(
         "octopus_discord": "src/octopus_discord",
         "octopus_terminal": "src/octopus_terminal",
     },
+
     install_requires=[
-        "octopus_agent>=0.1.0",
+        "octopus_sdk>=0.1.0",
         "rich>=13.5.2",
         "prompt_toolkit>=3.0.0",
         "click>=8.0.0",
         "discord.py>=2.3.2",
         "clipboard>=0.0.4",
-        "Pillow",
         "term-image>=0.7.0",
     ],
+
     entry_points={
         "console_scripts": [
             "octopus = octopus_terminal.terminal_chat:app",

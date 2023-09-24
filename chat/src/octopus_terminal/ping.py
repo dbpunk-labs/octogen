@@ -18,7 +18,7 @@
 import sys
 import os
 import click
-from octopus_agent.agent_sdk import AgentSyncSDK
+from octopus_sdk.agent_sdk import AgentSyncSDK
 from rich.console import Console
 from dotenv import dotenv_values
 

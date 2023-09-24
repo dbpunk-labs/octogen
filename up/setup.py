@@ -34,14 +34,14 @@ setup(
     package_dir={
         "octopus_up": "src/octopus_up",
     },
+
     install_requires=[
-        "octopus_agent",
+        "octopus_sdk",
         "requests",
-        "docker",
-        "tqdm",
         "huggingface_hub",
         "rich"
     ],
+
     entry_points={
         "console_scripts": [
             "octopus_up = octopus_up.up:init_octopus",

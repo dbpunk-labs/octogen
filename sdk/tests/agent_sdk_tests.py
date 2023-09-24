@@ -21,14 +21,13 @@ import pytest
 import asyncio
 import logging
 import json
-from octopus_agent.agent_sdk import AgentSDK
-from octopus_agent.utils import random_str
+from octopus_sdk.agent_sdk import AgentSDK
+from octopus_sdk.utils import random_str
 from octopus_proto.agent_server_pb2 import TaskRespond
 
 logger = logging.getLogger(__name__)
 api_base = "127.0.0.1:9528"
 api_key = "ZCeI9cYtOCyLISoi488BgZHeBkHWuFUH"
-
 
 @pytest.fixture
 def agent_sdk():

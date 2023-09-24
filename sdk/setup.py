@@ -18,39 +18,24 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="octopus_kernel",
+    name="octopus_sdk",
     version="0.3.6",
     description="Open source code interpreter agent for LLM",
     author="imotai",
     author_email="wangtaize@dbpunk.com",
     url="https://github.com/dbpunk-labs/octopus",
-    long_description=open("README.md").read(),
-    long_description_content_type="text/markdown",
+    long_description= open('README.md').read(),
+    long_description_content_type='text/markdown',
+
     packages=[
-        "octopus_kernel",
-        "octopus_kernel.kernel",
-        "octopus_kernel.server",
+        "octopus_sdk",
     ],
+
     package_dir={
-        "octopus_kernel": "src/octopus_kernel",
-        "octopus_kernel.kernel": "src/octopus_kernel/kernel",
-        "octopus_kernel.server": "src/octopus_kernel/server",
+        "octopus_sdk": "src/octopus_sdk",
     },
+
     install_requires=[
         "octopus_proto",
-        "grpc-google-iam-v1>=0.12.6",
-        "grpcio-tools>=1.57.0",
-        "ipykernel>=6.25.1",
-        "jupyter_client>=8.3.0",
-        "matplotlib>=3.7.2",
-        "pandas",
-        "numpy",
-    ],
-    entry_points={
-        "console_scripts": [
-            "octopus_kernel_rpc_server = octopus_kernel.server.kernel_rpc_server:server_main",
-            "octopus_kernel_generate = octopus_kernel.server.kernel_env_sample:generate_sample_env",
-            "octopus_kernel_app = octopus_kernel.kernel.kernel_app:run_app",
-        ]
-    },
+    ]
 )

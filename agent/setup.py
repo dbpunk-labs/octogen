@@ -35,6 +35,7 @@ setup(
     install_requires=[
         "octopus_proto",
         "octopus_kernel",
+        "octopus_sdk",
         "grpcio-tools>=1.57.0",
         "grpc-google-iam-v1>=0.12.6",
         "aiofiles",

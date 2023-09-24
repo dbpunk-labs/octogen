@@ -43,6 +43,12 @@ jobs:
           packages-dir: up/dist
           password: ${{ secrets.PYPI_TOKEN }}
 
+      - name: Publish SDK
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: sdk/dist
+          password: ${{ secrets.PYPI_TOKEN }}
+
       - name: docker login
         uses: docker/login-action@v1
         with:

@@ -30,8 +30,8 @@ from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.shortcuts import CompleteStyle, clear
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit import PromptSession
-from octopus_agent.agent_sdk import AgentSyncSDK
-from octopus_agent.utils import process_char_stream
+from octopus_sdk.agent_sdk import AgentSyncSDK
+from octopus_sdk.utils import process_char_stream
 from octopus_proto import agent_server_pb2
 from dotenv import dotenv_values
 from prompt_toolkit.completion import Completer, Completion
@@ -267,11 +267,26 @@ def handle_action_start(segments, respond, images, values):
     if not action.input:
         return
     arguments = json.loads(action.input)
-    if action.tool == "execute_python_code" and action.input:
+    value = values.pop()
+    segment = segments.pop()
+    if action.tool == "execute_python_code":
         images.extend(arguments.get("saved_filenames", []))
-        value = values.pop()
-        segment = segments.pop()
-        if value[0] == "text":
+        if not value[1]:
+            new_value = (
+                "python",
+                arguments["code"],
+                arguments.get("saved_filenames", []),
+            )
+            values.append(new_value)
+            syntax = Syntax(
+                arguments["code"],
+                "python",
+                line_numbers=True,  # background_color="default"
+            )
+            new_segment = (segment[0], "📖", syntax)
+            segments.append(new_segment)
+
+        elif value[0] == "text":
             values.append(value)
             markdown = Markdown("\n" + value[1])
             new_segment = (segment[0], segment[1], markdown)
@@ -310,7 +325,7 @@ def find_code(content, segments, values):
                 code_content = content[first_pos : second_pos + 3]
                 clean_code_content = clean_code(code_content)
                 # TODO parse language
-                values.append(("python", clean_code_content))
+                values.append(("python", clean_code_content, []))
                 segments.append((len(values) - 1, "📖", Markdown(code_content)))
                 start_index = second_pos + 3
         else:
@@ -561,7 +576,7 @@ def app(octopus_dir):
             segments = [spinner]
             mk = """The following files will be uploaded
 """
-            with Live(Group(*segments), console=console, screen=True) as live:
+            with Live(Group(*segments), console=console) as live:
                 live.update(spinner)
                 for file in filepaths:
                     filename = file.split("/")[-1]
