@@ -24,7 +24,6 @@ jobs:
           bash start_sandbox.sh
           cd ${WS_DIR}/sdk
           pytest tests/*.py
-
           cd ${WS_DIR}/kernel
           pytest tests/*.py
           cd ${WS_DIR}/agent
