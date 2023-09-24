@@ -268,16 +268,16 @@ class AgentRpcServer(AgentServerServicer):
         sdk = self.agents[metadata["api_key"]]["sdk"]
         queue = asyncio.Queue()
 
-        async def worker(task, agent, queue, sdk):
+        async def worker(task, agent, queue, context):
             try:
-                return await agent.arun(task, queue)
+                return await agent.arun(task, queue, context)
             except Exception as ex:
                 logger.exception("fail to run agent")
                 result = str(ex)
                 return result
 
         logger.debug("create the agent task")
-        task = asyncio.create_task(worker(request.task, agent, queue, sdk))
+        task = asyncio.create_task(worker(request.task, agent, queue, context))
         try:
             while True:
                 try:

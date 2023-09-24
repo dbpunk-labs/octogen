@@ -11,12 +11,12 @@ generate: $(PROTOS)
 			--pyi_out=./src/octopus_proto \
 			--proto_path $(PROTO_PATH) \
 			$^
-	@sed -i 's/import kernel_server_pb2 as kernel__server__pb2/from . import kernel_server_pb2 as kernel__server__pb2/' src/octopus_proto/kernel_server_pb2_grpc.py
-	@sed -i 's/import common_pb2 as common__pb2/from . import common_pb2 as common__pb2/' src/octopus_proto/kernel_server_pb2_grpc.py
-	@sed -i 's/import common_pb2 as common__pb2/from . import common_pb2 as common__pb2/' src/octopus_proto/kernel_server_pb2.py
-	@sed -i 's/import agent_server_pb2 as agent__server__pb2/from . import agent_server_pb2 as agent__server__pb2/' src/octopus_proto/agent_server_pb2_grpc.py
-	@sed -i 's/import common_pb2 as common__pb2/from . import common_pb2 as common__pb2/' src/octopus_proto/agent_server_pb2_grpc.py
-	@sed -i 's/import common_pb2 as common__pb2/from . import common_pb2 as common__pb2/' src/octopus_proto/agent_server_pb2.py
+	@sed -i'' -e 's/import kernel_server_pb2 as kernel__server__pb2/from . import kernel_server_pb2 as kernel__server__pb2/' src/octopus_proto/kernel_server_pb2_grpc.py
+	@sed -i'' -e 's/import common_pb2 as common__pb2/from . import common_pb2 as common__pb2/' src/octopus_proto/kernel_server_pb2_grpc.py
+	@sed -i'' -e 's/import common_pb2 as common__pb2/from . import common_pb2 as common__pb2/' src/octopus_proto/kernel_server_pb2.py
+	@sed -i'' -e 's/import agent_server_pb2 as agent__server__pb2/from . import agent_server_pb2 as agent__server__pb2/' src/octopus_proto/agent_server_pb2_grpc.py
+	@sed -i'' -e 's/import common_pb2 as common__pb2/from . import common_pb2 as common__pb2/' src/octopus_proto/agent_server_pb2_grpc.py
+	@sed -i'' -e 's/import common_pb2 as common__pb2/from . import common_pb2 as common__pb2/' src/octopus_proto/agent_server_pb2.py
 	@echo "'${@}' done"
 
 clean:
