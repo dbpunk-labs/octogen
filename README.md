@@ -24,7 +24,7 @@ Prerequisites
 
 * python 3 >= 3.10
 * pip
-* docker
+* docker, the current use must be in the docker group
 
 1. Install octopus_up
 
@@ -46,6 +46,7 @@ You can use /help to look for help
 
 [1]🎧>
 ```
+
 
 ## The internal of Octopus
 

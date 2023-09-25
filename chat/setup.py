@@ -42,6 +42,7 @@ setup(
         "discord.py>=2.3.2",
         "clipboard>=0.0.4",
         "term-image>=0.7.0",
+        "python-dotenv",
     ],
     entry_points={
         "console_scripts": [
