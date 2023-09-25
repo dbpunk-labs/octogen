@@ -11,7 +11,7 @@ grpc-google-iam-v1==0.12.6
 matplotlib==3.8.0
 pydantic==2.3.0
 aiosqlite==0.19.0
-rich==13.5.2
+rich==13.5.3
 prompt_toolkit==3.0.39
 aiofiles==23.2.1
 click==8.1.7
