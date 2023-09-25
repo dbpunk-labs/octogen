@@ -23,7 +23,7 @@ if [ "$2" -eq 1 ]
 then
 echo "start codellama"
 mkdir -p ${ROOT_DIR}/model_server
-cd ${ROOT_DIR}/model_server && hap run -n codellama -- server -t 2  -m ../model/codellama-7b-instruct.Q4_K_M.gguf  --alias codellama-7b --host 127.0.0.1 --port 8080
+cd ${ROOT_DIR}/model_server && hap run -n codellama -- server -t 4  -m ../model/codellama-7b-instruct.Q4_K_M.gguf  --alias codellama-7b --host 127.0.0.1 --port 8080
 fi
 
 sleep 3
