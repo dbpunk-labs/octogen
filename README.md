@@ -10,7 +10,7 @@
 [中文](./README_zh_cn.md)
 
 > ## Octopus
-> an open-source code interpreter
+> an open-source code interpreter for developers
 
 <p align="center">
 <img width="1000px" src="https://github.com/dbpunk-labs/octopus/assets/8623385/3ccb2d00-7231-4014-9dc5-f7f3e487c8a2" align="center"/>
