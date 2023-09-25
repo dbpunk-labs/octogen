@@ -9,7 +9,7 @@
 
 [English](./README.md)
 > ## Octopus
-> 一款为终端用户打造的开源的代码解释器
+> 一款为开发者打造的开源的代码解释器
 
 <p align="center">
 <img width="1000px" src="https://github.com/dbpunk-labs/octopus/assets/8623385/3ccb2d00-7231-4014-9dc5-f7f3e487c8a2" align="center"/>
