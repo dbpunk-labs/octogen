@@ -50,23 +50,15 @@ jobs:
           password: ${{ secrets.PYPI_TOKEN }}
 
       - name: docker login
-        uses: docker/login-action@v1
+        uses: docker/login-action@v3
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build Docker image
         run: |
           ROOT_DIR=`pwd`
           RELEASE_NAME=${GITHUB_REF/refs\/tags\//}
-          cd ${ROOT_DIR}/docker && docker build -f Dockerfile --no-cache -t ghcr.io/dbpunk-labs/octopus:${RELEASE_NAME} .
-          docker push ghcr.io/dbpunk-labs/octopus:${RELEASE_NAME}
-          docker save ghcr.io/dbpunk-labs/octopus:${RELEASE_NAME} | gzip > octopus_image_${RELEASE_NAME}.tar.gz
+          cd ${ROOT_DIR}/docker && docker build -f Dockerfile --no-cache -t dbpunk/octopus:${RELEASE_NAME} .
+          docker push dbpunk/octopus:${RELEASE_NAME}
           echo "the new images version $RELEASE_NAME"
-
-      - name: Releasing assets
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-              docker/octopus_image_*.tar.gz

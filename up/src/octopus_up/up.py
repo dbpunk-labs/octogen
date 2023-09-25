@@ -45,10 +45,6 @@ USE_SHELL = sys.platform.startswith( "win" )
 OCTOPUS_GITHUB_REPOS="dbpunk-labs/octopus"
 Welcome = f"""
 Welcome to use {OCTOPUS_TITLE}
-
-Need help?
-1. Create an issue on our GitHub page: [Octopus GitHub Issues](https://github.com/dbpunk-labs/octopus/issues)
-2. Alternatively, you can email us at [codego.me@gmail.com](mailto:codego.me@gmail.com).
 """
 
 def random_str(n):
@@ -57,7 +53,7 @@ def random_str(n):
     res = "".join(random.choices(string.ascii_uppercase + string.digits, k=n))
     return str(res)
 
-def run_install_cli(live, segment):
+def run_install_cli(live, segments):
     spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
     step ="Install octopus terminal cli"
     output = ""
@@ -66,8 +62,10 @@ def run_install_cli(live, segment):
     for code, _ in run_with_realtime_print(command = ["pip", 'install', '-U', 'octopus_chat']):
         result_code = code
     if result_code == 0:
+        segments.pop()
         segments.append(("✅", "Install octopus terminal cli", ""))
     else:
+        segments.pop()
         segments.append(("❌", "Install octopus terminal cli", ""))
 
 def run_with_realtime_print(command,
@@ -82,7 +80,7 @@ def run_with_realtime_print(command,
                               env = env )
         text_fd = io.TextIOWrapper(p.stdout, newline=os.linesep)
         while True:
-            chunk = text_fd.read(20)
+            chunk = text_fd.read(40)
             if not chunk:
                 break
             yield 0, chunk
@@ -96,13 +94,13 @@ def refresh(
     segments,
     title=OCTOPUS_TITLE,
 ):
-    table = Table.grid(padding=1, pad_edge=True)
+    table = Table.grid(padding=0, pad_edge=True)
     table.add_column("Index", no_wrap=True, justify="center")
-    table.add_column("Status", no_wrap=True, justify="center")
-    table.add_column("Step", no_wrap=True, justify="center")
-    table.add_column("Content", no_wrap=True, justify="center")
+    table.add_column("Status", no_wrap=True, justify="left")
+    table.add_column("Step", no_wrap=True, justify="left")
+    table.add_column("Content", no_wrap=True, justify="left")
     for index, (status, step, segment) in enumerate(segments):
-        table.add_row(index, status, step, segment)
+        table.add_row(str(index), status, step, segment)
     live.update(
         table
     )
@@ -125,7 +123,6 @@ def get_latest_release_version(repo_name, live, segments):
 
 def download_model(live, segments, repo="TheBloke/CodeLlama-7B-Instruct-GGUF",
                                    filename="codellama-7b-instruct.Q4_K_M.gguf"):
-
     spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
     step ="Download CodeLlama"
     output = ""
@@ -151,55 +148,25 @@ def load_docker_image(version,
     download the image file and load it into docker
     """
     full_name = f"{image_name}:{version}"
-    output = ""
-    for code, chunk in run_with_realtime_print(command=['docker', 'images',
-        f'{image_name}:{version}']):
-        output += chunk
-    if output.find(image_name) >= 0:
-        segments.append(("✅", "Load Octopus Image", f"{image_name}:{version}"))
-        refresh(live, segments)
-        return
-    tmp_filename = Path(gettempdir()) / "".join(
-        random.choices(string.ascii_lowercase, k=16)
-    )
-    url = f"https://github.com/{repo_name}/releases/download/{version}/octopus_image_{version}.tar.gz"
-    resp = requests.get(url, stream=True, allow_redirects=True)
-    total = int(resp.headers.get('content-length', 0))
     spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
-    step ="Download Octopus Image"
-    content_bar = ProgressBar(width=50, total=total)
-    segments.append((spinner, step, content_bar))
-    refresh(live, segments)
-    downloaded_data = 0
-    with open(tmp_filename, 'wb+') as fd:
-        for data in resp.iter_content(chunk_size=chunk_size):
-            size = fd.write(data)
-            downloaded_data += size
-            content_bar.update(downloaded_data)
-            refresh(live, segments)
-    old_segment = segments.pop()
-    segments.append(("✅", old_segment[1], f"{total/1024/1024}M"))
-    refresh(live, segments)
-    spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
-    step ="Load Octopus Image"
+    step ="Pull Octopus Image"
     segments.append((spinner, step, ""))
     refresh(live, segments)
     return_code = 0
-    for code, msg in run_with_realtime_print(command=['docker', 'load', '-i', tmp_filename],
-            print_output=False):
+    for code, msg in run_with_realtime_print(command=['docker', 'pull', full_name]):
         return_code = code
     if return_code  == 0:
         old_segment = segments.pop()
-        segments.append(("✅", old_segment[1], old_segment[2]))
+        segments.append(("✅", old_segment[1], full_name))
     else:
-        segments.append(("❌", old_segment[1], old_segment[2]))
+        segments.append(("❌", old_segment[1], full_name))
     refresh(live, segments)
     return code
 
 def choose_api_service(console):
     mk = """Choose your favourite LLM
-1. Codellama-7B. this choice will download the model from huggingface
-2. OpenAI. this choice will require the api key of OpenAI
+1. Codellama-7B
+2. OpenAI
 """
     console.print(Markdown(mk))
     choice = Prompt.ask("Choices", choices=["1", "2"], default="1:Codellama-7B")
@@ -209,7 +176,6 @@ def choose_api_service(console):
         return choice, key, model
     return choice, "", ""
 
-
 def generate_agent_common(fd, rpc_key):
     fd.write("rpc_host=0.0.0.0\n")
     fd.write("rpc_port=9528\n")
@@ -217,6 +183,7 @@ def generate_agent_common(fd, rpc_key):
     fd.write("max_file_size=202400000\n")
     fd.write("max_iterations=8\n")
     fd.write("db_path=/app/agent/octopus.db\n")
+
 
 def generate_agent_openai(live, segments, install_dir, admin_key,
         openai_key, openai_model):
@@ -232,6 +199,7 @@ def generate_agent_openai(live, segments, install_dir, admin_key,
         fd.write("log_level=debug\n")
     segments.append(("✅", "Generate Agent Config", f"{agent_dir}/.env"))
     refresh(live, segments)
+
 
 def generate_agent_codellama(live, segments, install_dir, admin_key):
     agent_dir = f"{install_dir}/agent"
@@ -291,7 +259,7 @@ def update_cli_config(live, segments, api_key, cli_dir):
     refresh(live, segments)
 
 @click.command("init")
-@click.option('--image_name', default="ghcr.io/dbpunk-labs/octopus", help='the octopus image name')
+@click.option('--image_name', default="dbpunk/octopus", help='the octopus image name')
 @click.option('--repo_name', default=OCTOPUS_GITHUB_REPOS, help='the github repo of octopus')
 @click.option('--install_dir', default="~/.octopus/app", help='the install dir of octopus')
 @click.option('--cli_dir', default="~/.octopus/", help='the cli dir of octopus')
@@ -309,7 +277,7 @@ def init_octopus(image_name, repo_name, install_dir, cli_dir, octopus_version):
     console = Console()
     choice, key, model = choose_api_service(console)
     segments = []
-    console.print(Markdown(welcome))
+    console.print(Welcome)
     with Live(Group(*segments), console=console) as live:
         if octopus_version:
             version = octopus_version
@@ -325,10 +293,16 @@ def init_octopus(image_name, repo_name, install_dir, cli_dir, octopus_version):
             generate_agent_codellama(live, segments, real_install_dir, admin_key)
             if start_service(live, segments, real_install_dir, image_name, version) == 0:
                 update_cli_config(live, segments, kernel_key, real_cli_dir)
-                console.log(f"👍 install octopus service done!")
+                segments.append(("👍", "Setup octopus done", ""))
+            else:
+                segments.append(("❌", "Setup octopus failed", ""))
+            refresh(live, segments)
         else:
             generate_agent_openai(live, segments, real_install_dir, admin_key, key, model)
             if start_service(live, segments, real_install_dir, image_name, version,
                     is_codellama="0") == 0:
                 update_cli_config(live, segments, kernel_key, real_cli_dir)
-                console.log(f"👍 install octopus service done!")
+                segments.append(("👍", "Setup octopus done", ""))
+            else:
+                segments.append(("❌", "Setup octopus failed", ""))
+            refresh(live, segments)

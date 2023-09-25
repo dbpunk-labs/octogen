@@ -10,7 +10,7 @@
 [中文](./README_zh_cn.md)
 
 > ## Octopus
-> an open-source code interpreter for terminal users
+> an open-source code interpreter
 
 <p align="center">
 <img width="1000px" src="https://github.com/dbpunk-labs/octopus/assets/8623385/3ccb2d00-7231-4014-9dc5-f7f3e487c8a2" align="center"/>
@@ -82,6 +82,14 @@ if you have any advice for the roadmap. please create a discuession to talk abou
 
 [video](https://github.com/dbpunk-labs/octopus/assets/8623385/bea76119-a705-4ae1-907d-cb4e0a0c18a5)
 
+
+## UI Supported
+
+|name|status| installation|
+|----|----------------|---|
+|terminal | ✅ fully supported|the detail installation steps|
+|webui | on the plan|the detail install steps|
+|desktop | on the plan| You must start the llama cpp server by yourself|
 
 ## API Service Supported
 
