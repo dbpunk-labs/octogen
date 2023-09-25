@@ -65,8 +65,8 @@ def run_install_cli(live, segments):
         segments.pop()
         segments.append(("✅", "Install octopus terminal cli", ""))
     else:
-        segments.append(("❌", "Install octopus terminal cli", ""))
         segments.pop()
+        segments.append(("❌", "Install octopus terminal cli", ""))
 
 def run_with_realtime_print(command,
                             universal_newlines = True,
