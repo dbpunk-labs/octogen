@@ -15,18 +15,25 @@
 <p align="center">
 <img width="1000px" src="https://github.com/dbpunk-labs/octopus/assets/8623385/3ccb2d00-7231-4014-9dc5-f7f3e487c8a2" align="center"/>
 
+|platform|OS|status|
+|--|----|----------------|
+|x86|windows10 | ✅ fully supported|
+|x86|macOS |✅ fully supported|
+|m2 |macOS |✅ fully supported|
+|x86 |macOS |✅ fully supported|
+|x86 |ubuntu |✅ fully supported|
 
 ## Getting Started
 
-Install the octopus in your local computer
-
-Prerequisites
-
-* python 3 >= 3.10
+Requirement
+* python 3.10 and above
 * pip
 * docker
 
-if you choose the codellama as LLM, your computer must satisfy the minimal hardware requirement 8c 16G
+> To deploy Octopus, the user needs permission to run Docker commands.
+> To use codellama, your host must have at least 8 CPUs and 16 GB of RAM.
+
+Install the octopus on your local computer
 
 1. Install octopus_up
 
@@ -39,6 +46,8 @@ pip install octopus_up
 ```
 octopus_up
 ```
+> You can choose the openai, azure openai and codellama
+> Ocotopus will download codellama from huggingface.co if you choose codellama
 
 3. Open your terminal and execute the command `octopus`, you will see the following output
 
@@ -57,6 +66,7 @@ You can use /help to look for help
 |[Azure Openai GPT 3.5/4](https://azure.microsoft.com/en-us/products/ai-services/openai-service) |  ✅ fully supported|the detail install steps|
 |[LLama.cpp Server](https://github.com/ggerganov/llama.cpp/tree/master/examples/server) | ✔️  supported | You must have match the minimal hardware requirement |
 
+
 ## The internal of Octopus
 
 ![octopus_simple](https://github.com/dbpunk-labs/octopus/assets/8623385/e5bfb3fb-74a5-4c60-8842-a81ee54fcb9d)
@@ -65,6 +75,9 @@ You can use /help to look for help
 * Octopus Agent: Manages client requests, uses ReAct to process complex tasks, and stores user-assembled applications.
 * Octopus Terminal Cli: Accepts user requests, sends them to the Agent, and renders rich results. Currently supports Discord, iTerm2, and Kitty terminals.
 
+## Demo
+
+[video](https://github.com/dbpunk-labs/octopus/assets/8623385/bea76119-a705-4ae1-907d-cb4e0a0c18a5)
 
 ## Features
 
@@ -88,9 +101,6 @@ if you have any feature suggestion. please create a discuession to talk about it
 
 if you have any advice for the roadmap. please create a discuession to talk about it
 
-## Demo
-
-[video](https://github.com/dbpunk-labs/octopus/assets/8623385/bea76119-a705-4ae1-907d-cb4e0a0c18a5)
 
 ## VPS Deployment
 

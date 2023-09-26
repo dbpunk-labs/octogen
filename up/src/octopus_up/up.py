@@ -308,8 +308,15 @@ def stop_service(name):
         pass
 
 
-def start_service(live, segments, install_dir, image_name, version, is_codellama="1",
-        model_filename=""):
+def start_service(
+    live,
+    segments,
+    install_dir,
+    image_name,
+    version,
+    is_codellama="1",
+    model_filename="",
+):
     stop_service("octopus")
     # TODO stop the exist service
     full_name = f"{image_name}:{version}"
@@ -328,7 +335,7 @@ def start_service(live, segments, install_dir, image_name, version, is_codellama
         "/bin/start_all.sh",
         "/app",
         is_codellama,
-        model_filename
+        model_filename,
     ]
     result_code = 0
     output = ""
@@ -353,6 +360,7 @@ def update_cli_config(live, segments, api_key, cli_dir):
     segments.append(("✅", "Update cli config", ""))
     refresh(live, segments)
 
+
 @click.command("init")
 @click.option("--image_name", default="dbpunk/octopus", help="the octopus image name")
 @click.option(
@@ -364,12 +372,25 @@ def update_cli_config(live, segments, api_key, cli_dir):
 @click.option("--cli_dir", default="~/.octopus/", help="the cli dir of octopus")
 @click.option("--octopus_version", default="", help="the version of octopus")
 @click.option("--socks_proxy", default="", help="the socks proxy url")
-@click.option("--codellama_repo", default="TheBloke/CodeLlama-7B-Instruct-GGUF", help="the codellama repo of huggingface")
-@click.option("--model_filename", default="codellama-7b-instruct.Q5_K_S.gguf", help="the model filename in model repo")
+@click.option(
+    "--codellama_repo",
+    default="TheBloke/CodeLlama-7B-Instruct-GGUF",
+    help="the codellama repo of huggingface",
+)
+@click.option(
+    "--model_filename",
+    default="codellama-7b-instruct.Q5_K_S.gguf",
+    help="the model filename in model repo",
+)
 def init_octopus(
-    image_name, repo_name, install_dir, cli_dir, octopus_version, socks_proxy,
+    image_name,
+    repo_name,
+    install_dir,
+    cli_dir,
+    octopus_version,
+    socks_proxy,
     codellama_repo,
-    model_filename
+    model_filename,
 ):
     if cli_dir.find("~") == 0:
         real_cli_dir = cli_dir.replace("~", os.path.expanduser("~"))
@@ -400,8 +421,15 @@ def init_octopus(
             download_model(live, segments, socks_proxy, codellama_repo, model_filename)
             generate_agent_codellama(live, segments, real_install_dir, admin_key)
             if (
-                start_service(live, segments, real_install_dir, image_name, version,
-                    is_codellama="1", model_filename)
+                start_service(
+                    live,
+                    segments,
+                    real_install_dir,
+                    image_name,
+                    version,
+                    is_codellama="1",
+                    model_filename=model_filename,
+                )
                 == 0
             ):
                 update_cli_config(live, segments, kernel_key, real_cli_dir)
@@ -414,7 +442,14 @@ def init_octopus(
                 live, segments, real_install_dir, admin_key, key, model, api_base
             )
             if (
-                start_service(live, segments, real_install_dir, image_name, version, is_codellama="0")
+                start_service(
+                    live,
+                    segments,
+                    real_install_dir,
+                    image_name,
+                    version,
+                    is_codellama="0",
+                )
                 == 0
             ):
                 update_cli_config(live, segments, kernel_key, real_cli_dir)
