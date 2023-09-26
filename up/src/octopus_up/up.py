@@ -143,6 +143,7 @@ def download_model(
     step = "Download CodeLlama"
     output = ""
     segments.append((spinner, step, ""))
+    refresh(live, segments)
     for code, chunk in run_with_realtime_print(
         command=[
             "octopus_download",
@@ -235,7 +236,6 @@ def generate_agent_azure_openai(
         fd.write("log_level=debug\n")
     segments.append(("✅", "Generate Agent Config", f"{agent_dir}/.env"))
     refresh(live, segments)
-
 
 def generate_agent_openai(
     live, segments, install_dir, admin_key, openai_key, openai_model
