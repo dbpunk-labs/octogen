@@ -85,7 +85,7 @@ You can use /help to look for help
 
 * Automatically execute AI-generated code in a Docker environment.
 * Experiment feature, render images in iTerm2 and kitty.
-* Upload files with the /up command and you can use the `/up` in your prompt
+* Upload files with the `/up` command and you can use it in your prompt
 * Experiment feature, assemble code blocks into an application and you can run the code directly by `/run` command
 * Support copying output to the clipboard with `/cc` command
 * Support prompt histories stored in the octopus cli
