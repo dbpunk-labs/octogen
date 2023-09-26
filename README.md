@@ -28,7 +28,7 @@ Requirement
 * pip
 * docker 24.0.0 and above
 
-> To deploy Octopus, the user needs permission to run Docker commands.
+> To deploy Octopus, the user needs permission to run Docker commands.   
 > To use codellama, your host must have at least 8 CPUs and 16 GB of RAM.
 
 Install the octopus on your local computer
@@ -38,14 +38,17 @@ Install the octopus on your local computer
 ```bash
 pip install octopus_up
 ```
+> try to change the pip mirror if the step install octopus terminal cli takes a lot of time
 
 2. Set up the Octopus service using the OpenAI API key or the Codellama.
 
 ```
 octopus_up
 ```
+
 > You can choose the openai, azure openai and codellama
 > Ocotopus will download codellama from huggingface.co if you choose codellama
+> If the installation of the Octopus Terminal CLI takes a long time, consider changing the pip mirror.
 
 3. Open your terminal and execute the command `octopus`, you will see the following output
 
