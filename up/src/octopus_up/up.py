@@ -144,6 +144,7 @@ def download_model(
     output = ""
     segments.append((spinner, step, ""))
     refresh(live, segments)
+    result_code = 0
     for code, chunk in run_with_realtime_print(
         command=[
             "octopus_download",
@@ -155,15 +156,20 @@ def download_model(
             socks_proxy,
         ]
     ):
+        result_code = code
         output += chunk
         output = process_char_stream(output)
         old_segment = segments.pop()
         segments.append((old_segment[0], old_segment[1], output))
         refresh(live, segments)
-    old_segment = segments.pop()
-    segments.append(("✅", step, filename))
-    refresh(live, segments)
 
+    old_segment = segments.pop()
+    if result_code == 0:
+        segments.append(("✅", step, filename))
+    else:
+        segments.append(("❌", step, filename))
+    refresh(live, segments)
+    return result_code
 
 def load_docker_image(version, image_name, repo_name, live, segments, chunk_size=1024):
     """
@@ -351,7 +357,6 @@ def start_service(
     refresh(live, segments)
     return result_code
 
-
 def update_cli_config(live, segments, api_key, cli_dir):
     config_path = f"{cli_dir}/config"
     with open(config_path, "w+") as fd:
@@ -418,7 +423,10 @@ def init_octopus(
         generate_kernel_env(live, segments, real_install_dir, kernel_key)
         run_install_cli(live, segments)
         if choice == "3":
-            download_model(live, segments, socks_proxy, codellama_repo, model_filename)
+            if download_model(live, segments, socks_proxy, codellama_repo, model_filename) != 0:
+                segments.append(("❌", "Setup octopus failed", ""))
+                refresh(live, segments)
+                return 
             generate_agent_codellama(live, segments, real_install_dir, admin_key)
             if (
                 start_service(
