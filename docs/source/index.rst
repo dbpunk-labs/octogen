@@ -10,7 +10,7 @@ Welcome to Octopus's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   introduction.rst
+   installation.rst
 
 Indices and tables
 ==================
