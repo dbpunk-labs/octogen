@@ -40,13 +40,13 @@ pip install octopus_up
 ```
 > try to change the pip mirror if the step install octopus terminal cli takes a lot of time
 
-2. Set up the Octopus service using the OpenAI API key or the Codellama.
-
+2. Set up the Octopus service
+   
 ```
 octopus_up
 ```
 
-> You can choose the openai, azure openai and codellama
+> You can choose the openai, azure openai, codellama and octopus agent sevice
 > Ocotopus will download codellama from huggingface.co if you choose codellama
 > If the installation of the Octopus Terminal CLI takes a long time, consider changing the pip mirror.
 
