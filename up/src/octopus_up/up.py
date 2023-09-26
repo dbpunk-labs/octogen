@@ -201,7 +201,6 @@ def choose_api_service(console):
         return choice, key, model
     return choice, "", ""
 
-
 def generate_agent_common(fd, rpc_key):
     fd.write("rpc_host=0.0.0.0\n")
     fd.write("rpc_port=9528\n")
@@ -209,7 +208,6 @@ def generate_agent_common(fd, rpc_key):
     fd.write("max_file_size=202400000\n")
     fd.write("max_iterations=8\n")
     fd.write("db_path=/app/agent/octopus.db\n")
-
 
 def generate_agent_openai(
     live, segments, install_dir, admin_key, openai_key, openai_model
