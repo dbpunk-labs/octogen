@@ -13,18 +13,25 @@ then
 fi
 
 ROOT_DIR=$1
+
+if [ "$2" -eq 1 ]
+then
+    if [ -z "$3" ]
+    then
+        echo "no model name" 
+        exit 1
+    else
+        echo "start codellama with model name $3"
+        mkdir -p ${ROOT_DIR}/model_server
+        cd ${ROOT_DIR}/model_server && hap run -n codellama -- server -m ../model/$3  --alias codellama --host 127.0.0.1 --port 8080
+    fi
+fi
+
 echo "start kernel.."
 cd ${ROOT_DIR}/kernel && hap run -n octopus_kernel -- octopus_kernel_rpc_server
 
 echo "start agent"
 cd ${ROOT_DIR}/agent && hap run -n octopus_agent -- octopus_agent_rpc_server
-
-if [ "$2" -eq 1 ]
-then
-echo "start codellama"
-mkdir -p ${ROOT_DIR}/model_server
-cd ${ROOT_DIR}/model_server && hap run -n codellama -- server -t 4  -m ../model/codellama-7b-instruct.Q4_K_M.gguf  --alias codellama-7b --host 127.0.0.1 --port 8080
-fi
 
 sleep 3
 
