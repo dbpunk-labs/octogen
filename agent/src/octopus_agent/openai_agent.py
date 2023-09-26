@@ -82,9 +82,9 @@ class OpenaiAgent(BaseAgent):
         super().__init__(sdk)
         self.model = model
         self.system_prompt = system_prompt
-        logger.info(f"use openai model {model}")
+        logger.info(f"use openai model {model} is_azure {is_azure}")
         logger.info(f"use openai with system prompt {system_prompt}")
-        self.is_azure = True
+        self.is_azure = is_azure
 
     def _merge_delta_for_function_call(self, message, delta):
         if not delta:
