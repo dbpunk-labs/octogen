@@ -197,12 +197,13 @@ def load_docker_image(version, image_name, repo_name, live, segments, chunk_size
 
 def choose_api_service(console):
     mk = """Choose your favourite LLM
-1. OpenAI
-2. Azure OpenAI
-3. Codellama
+1. OpenAI, Kernel, Agent and Cli will be installed
+2. Azure OpenAI, Kernel, Agent and Cli will be installed
+3. Codellama, Model Server, Kernel, Agent and Cli will be installed
+4. Octopus, Only Cli will be installed
 """
     console.print(Markdown(mk))
-    choice = Prompt.ask("Choices", choices=["1", "2", "3"], default="1:OpenAI")
+    choice = Prompt.ask("Choices", choices=["1", "2", "3", "4"], default="1:OpenAI")
     if choice == "1":
         key = Prompt.ask("Enter OpenAI Key")
         model = Prompt.ask("Enter OpenAI Model", default="gpt-3.5-turbo-16k-0613")
@@ -212,8 +213,11 @@ def choose_api_service(console):
         deployment = Prompt.ask("Enter Azure OpenAI Deployment")
         api_base = Prompt.ask("Enter Azure OpenAI Base")
         return choice, key, deployment, api_base
+    elif choice == "4":
+        key = Prompt.ask("Enter Octopus Key")
+        api_base = "https://agent.runsandbox.xyz"
+        return choice, key, "" , api_base
     return choice, "", "", ""
-
 
 def generate_agent_common(fd, rpc_key):
     fd.write("rpc_host=0.0.0.0\n")
@@ -357,10 +361,10 @@ def start_service(
     refresh(live, segments)
     return result_code
 
-def update_cli_config(live, segments, api_key, cli_dir):
+def update_cli_config(live, segments, api_key, cli_dir, api_base="127.0.0.1:9528"):
     config_path = f"{cli_dir}/config"
     with open(config_path, "w+") as fd:
-        fd.write("endpoint=127.0.0.1:9528\n")
+        fd.write(f"endpoint={api_base}\n")
         fd.write(f"api_key={api_key}\n")
     segments.append(("✅", "Update cli config", ""))
     refresh(live, segments)
@@ -411,6 +415,11 @@ def init_octopus(
     choice, key, model, api_base = choose_api_service(console)
     segments = []
     with Live(Group(*segments), console=console) as live:
+        if choice == "4":
+            update_cli_config(live, segments, key, real_cli_dir, api_base)
+            segments.append(("👍", "Setup octopus done", ""))
+            refresh(live, segments)
+            return
         if octopus_version:
             version = octopus_version
         else:
