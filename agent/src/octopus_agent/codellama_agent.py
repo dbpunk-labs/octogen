@@ -33,6 +33,11 @@ class CodellamaAgent(BaseAgent):
         super().__init__(kernel_sdk)
         self.client = client
 
+    def _output_exception(self):
+        return (
+            "Sorry, the LLM did return nothing, You can use a better performance model"
+        )
+
     def _format_output(self, json_response):
         """
         format the response and send it to the user
@@ -80,6 +85,7 @@ class CodellamaAgent(BaseAgent):
             )
         )
         function_result = None
+
         async for (result, respond) in self.call_function(
             code,
             context,
@@ -87,11 +93,14 @@ class CodellamaAgent(BaseAgent):
             token_usage=token_usage,
             model_name=model_name,
         ):
-            if not context.cancelled():
+            if context.done():
+                logger.debug("the client has cancelled the request")
                 break
+
             function_result = result
             if respond:
                 await queue.put(respond)
+
         return function_result
 
     def _get_argument_new_typing(self, message):
@@ -126,7 +135,8 @@ class CodellamaAgent(BaseAgent):
         async for line in self.client.prompt(question, chat_history=chat_history):
             if len(line) < 6:
                 continue
-            if context.cancelled():
+            if context.done():
+                logger.debug("the client has cancelled the request")
                 break
             respond = json.loads(line[6:])
             message += respond["content"]
@@ -178,14 +188,45 @@ class CodellamaAgent(BaseAgent):
         token_usage = 0
         model_name = ""
         try:
-            while iteration < max_iteration and not context.cancelled():
+            while iteration < max_iteration:
+                if context.done():
+                    logger.debug("the client has cancelled the request")
+                    break
+
                 iteration += 1
                 response = []
                 chat_history = "\n".join(history)
                 (message, state) = await self.call_codellama(
                     current_question, chat_history, queue, context
                 )
-                json_response = json.loads(message)
+                try:
+                    json_response = json.loads(message)
+                    if not json_response:
+                        await queue.put(
+                            TaskRespond(
+                                token_usage=token_usage,
+                                iteration=iteration,
+                                respond_type=TaskRespond.OnFinalAnswerType,
+                                model_name=model_name,
+                                final_respond=FinalRespond(
+                                    answer=self._output_exception()
+                                ),
+                            )
+                        )
+                        break
+                except Exception as ex:
+                    await queue.put(
+                        TaskRespond(
+                            token_usage=token_usage,
+                            iteration=iteration,
+                            respond_type=TaskRespond.OnFinalAnswerType,
+                            model_name=model_name,
+                            final_respond=FinalRespond(
+                                answer="The model made an invalid respone"
+                            ),
+                        )
+                    )
+                    break
                 logger.debug(f" codellama response {json_response}")
                 if (
                     json_response["action"] == "execute_python_code"
@@ -245,5 +286,6 @@ class CodellamaAgent(BaseAgent):
                         )
                     )
                     break
+
         finally:
             await queue.put(None)

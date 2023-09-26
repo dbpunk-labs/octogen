@@ -14,19 +14,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-
-"""
+""" """
 import os
 import click
 from huggingface_hub import hf_hub_download
 
+
 @click.command()
-@click.option('--repo',  help='the repo of huggingface')
-@click.option('--filename', help='the filename of model')
-@click.option('--cache_dir', default="~/.octopus/app/cache", help='the cache_dir of huggingface')
-@click.option('--local_dir', default="~/.octopus/app/model", help='the local dir of huggingface')
-def download(repo, filename, cache_dir, local_dir):
+@click.option("--repo", help="the repo of huggingface")
+@click.option("--filename", help="the filename of model")
+@click.option(
+    "--cache_dir", default="~/.octopus/app/cache", help="the cache_dir of huggingface"
+)
+@click.option(
+    "--local_dir", default="~/.octopus/app/model", help="the local dir of huggingface"
+)
+@click.option("--socks_proxy", default="", help="the socks proxy url")
+def download(repo, filename, cache_dir, local_dir, socks_proxy):
     if local_dir.find("~") == 0:
         real_local_dir = local_dir.replace("~", os.path.expanduser("~"))
     else:
@@ -38,5 +42,13 @@ def download(repo, filename, cache_dir, local_dir):
 
     os.makedirs(real_cache_dir, exist_ok=True)
     os.makedirs(real_local_dir, exist_ok=True)
-    hf_hub_download(repo_id=repo, filename=filename, cache_dir=real_cache_dir, local_dir=real_local_dir)
-
+    proxies = {}
+    if socks_proxy:
+        proxies = {"http": socks_proxy, "https": socks_proxy}
+    hf_hub_download(
+        repo_id=repo,
+        filename=filename,
+        cache_dir=real_cache_dir,
+        local_dir=real_local_dir,
+        proxies=proxies,
+    )

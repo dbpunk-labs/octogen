@@ -156,9 +156,8 @@ class OpenaiAgent(BaseAgent):
         text_content = ""
         code_content = ""
         async for chunk in response:
-            is_cancelled = context.cancelled()
-            logger.debug(f"the rpc is cancelled {is_cancelled}")
-            if context.cancelled():
+            if context.done():
+                logger.debug("the client has cancelled the request")
                 break
             if not chunk["choices"]:
                 continue
@@ -219,7 +218,10 @@ class OpenaiAgent(BaseAgent):
     async def handle_function(
         self, message, queue, context, token_usage=0, iteration=0, model_name=""
     ):
-        if "function_call" in message and not context.cancelled():
+        if "function_call" in message:
+            if context.done():
+                logging.debug("the client has cancelled the request")
+                return
             function_name = message["function_call"]["name"]
             arguments = json.loads(message["function_call"]["arguments"])
             logger.debug(f"call function {function_name} with args {arguments}")
@@ -251,7 +253,8 @@ class OpenaiAgent(BaseAgent):
                 token_usage=token_usage,
                 model_name=model_name,
             ):
-                if context.cancelled():
+                if context.done():
+                    logger.debug("the client has cancelled the request")
                     break
                 function_result = result
                 if respond:

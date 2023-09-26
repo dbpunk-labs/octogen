@@ -62,7 +62,10 @@ class BaseAgent:
         if not is_alive:
             await self.kernel_sdk.start(kernel_name="python3")
         async for kernel_respond in self.kernel_sdk.execute(code=code):
-            if context.cancelled():
+            if context.done():
+                logger.debug(
+                    "the context is not active and the client cancelled the request"
+                )
                 break
             # process the stdout
             if kernel_respond.output_type == ExecuteResponse.StdoutType:

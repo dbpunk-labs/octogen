@@ -6,6 +6,7 @@ import re
 import string
 import random
 
+
 def process_char_stream(stream):
     buffer = []
     i = 0

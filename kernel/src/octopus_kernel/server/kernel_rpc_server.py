@@ -220,14 +220,17 @@ class KernelRpcServer(KernelServerNodeServicer):
         # TODO check the busy status
         msg_id = self.kcs[kernel_name].execute(request.code)
         async for msg in self.kcs[kernel_name].read_response(context, 5):
-            if context.cancelled() or not msg:
-                break
-            if msg["parent_header"]["msg_id"] != msg_id:
-                continue
-            if msg["msg_type"] in ["status", "execute_input"]:
-                continue
-            respond = self._build_payload(msg, config["workspace"])
-            yield respond
+            try:
+                if context.cancelled() or not msg:
+                    break
+                if msg["parent_header"]["msg_id"] != msg_id:
+                    continue
+                if msg["msg_type"] in ["status", "execute_input"]:
+                    continue
+                respond = self._build_payload(msg, config["workspace"])
+                yield respond
+            except Exception as ex:
+                logger.exception("fail to handle the result")
 
     def _build_payload(self, msg, workspace) -> kernel_server_pb2.ExecuteResponse:
         if msg["msg_type"] == "display_data":

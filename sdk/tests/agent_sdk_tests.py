@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 api_base = "127.0.0.1:9528"
 api_key = "ZCeI9cYtOCyLISoi488BgZHeBkHWuFUH"
 
+
 @pytest.fixture
 def agent_sdk():
     sdk = AgentSDK(api_base, api_key)

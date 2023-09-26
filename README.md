@@ -5,7 +5,7 @@
 [![Discord](https://badgen.net/badge/icon/discord?icon=discord&label)](https://discord.gg/UjSHsjaz66)
 [![Twitter Follow](https://img.shields.io/twitter/follow/OCopilot7817?style=flat-square)](https://twitter.com/OCopilot7817)
 [![PyPI - Version](https://img.shields.io/pypi/v/octopus_chat)](https://pypi.org/project/octopus-chat/)
-![PyPI - Downloads](https://img.shields.io/pypi/dd/octopus_chat)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/octopus_chat?logo=pypi)
 
 [中文](./README_zh_cn.md)
 
@@ -18,7 +18,7 @@
 
 ## Getting Started
 
-Install the octopus with codellama-7B in your local computer
+Install the octopus in your local computer
 
 Prerequisites
 
@@ -26,13 +26,18 @@ Prerequisites
 * pip
 * docker
 
+Minimal Hardware requirement
+
+* Codellama, the minimal requirement is 8C 16G
+* Openai, no minimal requirement
+
 1. Install octopus_up
 
 ```bash
 pip install octopus_up
 ```
 
-2. Set up the Octopus service using the OpenAI API key or the embedding model Codellama-7b.
+2. Set up the Octopus service using the OpenAI API key or the Codellama.
 
 ```
 octopus_up
@@ -82,13 +87,31 @@ if you have any advice for the roadmap. please create a discuession to talk abou
 
 [video](https://github.com/dbpunk-labs/octopus/assets/8623385/bea76119-a705-4ae1-907d-cb4e0a0c18a5)
 
+## VPS Deployment
+
+|name|location| recommanded hardware|
+|----|----------------|---|
+|kernel|Your own VPS|todo|
+|Agent|Your own VPS|todo|
+|Model|GPT3.5|todo|
+
+
+## Home Labs Deployment
+
+Recommanded hardware configuration
+
+|name|configuration| installation|
+|----|--------------|---|
+|CPU|8c|todo|
+|Memory|32G|todo|
+|GPU|3090|todo|
+|Model|Codellama 13B|todo|
 
 ## UI Supported
 
 |name|status| installation|
 |----|----------------|---|
 |terminal | ✅ fully supported|the detail installation steps|
-|webui | on the plan|the detail install steps|
 |desktop | on the plan| You must start the llama cpp server by yourself|
 
 ## API Service Supported

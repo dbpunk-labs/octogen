@@ -119,7 +119,7 @@ class AgentRpcServer(AgentServerServicer):
         return agent_server_pb2.AssembleAppResponse(code=0, msg="ok")
 
     async def run(
-        self, request: agent_server_pb2.RunAppRequest, context: ServicerContext
+        self, request: agent_server_pb2.RunAppRequest, context
     ) -> AsyncIterable[agent_server_pb2.TaskRespond]:
         metadata = dict(context.invocation_metadata())
         if (
@@ -238,7 +238,7 @@ class AgentRpcServer(AgentServerServicer):
         return agent_server_pb2.AddKernelResponse(code=0, msg="ok")
 
     async def send_task(
-        self, request: agent_server_pb2.SendTaskRequest, context: ServicerContext
+        self, request: agent_server_pb2.SendTaskRequest, context
     ) -> AsyncIterable[agent_server_pb2.TaskRespond]:
         """
         process the task from the client

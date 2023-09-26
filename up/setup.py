@@ -26,27 +26,17 @@ setup(
     url="https://github.com/dbpunk-labs/octopus",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-
     packages=[
         "octopus_up",
     ],
-
     package_dir={
         "octopus_up": "src/octopus_up",
     },
-
-    install_requires=[
-        "octopus_sdk",
-        "requests",
-        "huggingface_hub",
-        "rich"
-    ],
-
+    install_requires=["octopus_sdk", "requests", "huggingface_hub", "rich", "click"],
     entry_points={
         "console_scripts": [
             "octopus_up = octopus_up.up:init_octopus",
             "octopus_download = octopus_up.model_downloader:download",
         ]
     },
-
 )
