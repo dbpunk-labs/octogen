@@ -18,7 +18,7 @@
 |OS|Platform|
 |----|----------------|
 |windows10 | ✅ x86|
-|macOS |✅ x86, ✅ m2|
+|macOS |✅ x86, ✅ m1, ✅ m2|
 |ubuntu |✅ x86|
 
 ## Getting Started
