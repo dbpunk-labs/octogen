@@ -26,7 +26,7 @@
 Requirement
 * python 3.10 and above
 * pip
-* docker
+* docker 24.0.0 and above
 
 > To deploy Octopus, the user needs permission to run Docker commands.
 > To use codellama, your host must have at least 8 CPUs and 16 GB of RAM.
