@@ -47,28 +47,34 @@ Welcome to use {OCTOPUS_TITLE}
 
 
 def random_str(n):
-    # using random.choices()
     # generating random strings
     res = "".join(random.choices(string.ascii_uppercase + string.digits, k=n))
     return str(res)
 
 
 def run_install_cli(live, segments):
+    """
+    Install the octopus chat cli
+    """
     spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
     step = "Install octopus terminal cli"
     output = ""
     segments.append((spinner, step, ""))
     result_code = 0
-    for code, _ in run_with_realtime_print(
-        command=["pip", "install", "-U", "octopus_chat"]
+    refresh(live, segments)
+    outputs = ""
+    for code, output in run_with_realtime_print(
+        command=["pip", "install", "octopus_chat"]
     ):
+        outputs += output
         result_code = code
     if result_code == 0:
         segments.pop()
         segments.append(("✅", "Install octopus terminal cli", ""))
     else:
         segments.pop()
-        segments.append(("❌", "Install octopus terminal cli", ""))
+        segments.append(("❌", "Install octopus terminal cli", outputs))
+    refresh(live, segments)
 
 
 def run_with_realtime_print(
@@ -129,6 +135,7 @@ def get_latest_release_version(repo_name, live, segments):
 def download_model(
     live,
     segments,
+    socks_proxy="",
     repo="TheBloke/CodeLlama-7B-Instruct-GGUF",
     filename="codellama-7b-instruct.Q5_K_S.gguf",
 ):
@@ -137,7 +144,15 @@ def download_model(
     output = ""
     segments.append((spinner, step, ""))
     for code, chunk in run_with_realtime_print(
-        command=["octopus_download", "--repo", repo, "--filename", filename]
+        command=[
+            "octopus_download",
+            "--repo",
+            repo,
+            "--filename",
+            filename,
+            "--socks_proxy",
+            socks_proxy,
+        ]
     ):
         output += chunk
         output = process_char_stream(output)
@@ -159,20 +174,23 @@ def load_docker_image(version, image_name, repo_name, live, segments, chunk_size
     segments.append((spinner, step, ""))
     refresh(live, segments)
     return_code = 0
+    output = ""
     for code, msg in run_with_realtime_print(command=["docker", "pull", full_name]):
         return_code = code
+        output += msg
+
+    old_segment = segments.pop()
     if return_code == 0:
-        old_segment = segments.pop()
         segments.append(("✅", old_segment[1], full_name))
     else:
-        segments.append(("❌", old_segment[1], full_name))
+        segments.append(("❌", old_segment[1], output))
     refresh(live, segments)
     return code
 
 
 def choose_api_service(console):
     mk = """Choose your favourite LLM
-1. Codellama-7B
+1. Codellama
 2. OpenAI
 """
     console.print(Markdown(mk))
@@ -244,15 +262,21 @@ def generate_kernel_env(live, segments, install_dir, rpc_key):
 
 
 def stop_service(name):
-    command = ["docker", "ps", "-f", f'"name={name}"', "--format", "json"]
+    command = ["docker", "ps", "-f", f"name={name}", "--format", "json"]
     output = ""
     for _, chunk in run_with_realtime_print(command=command):
         output += chunk
         pass
     if output:
         for line in output.split(os.linesep):
-            id = json.loads(line)["ID"]
+            if not line:
+                break
+            row = json.loads(line.strip())
+            id = row["ID"]
             command = ["docker", "kill", id]
+            for _, chunk in run_with_realtime_print(command=command):
+                pass
+            command = ["docker", "container", "rm", id]
             for _, chunk in run_with_realtime_print(command=command):
                 pass
 
@@ -311,7 +335,10 @@ def update_cli_config(live, segments, api_key, cli_dir):
 )
 @click.option("--cli_dir", default="~/.octopus/", help="the cli dir of octopus")
 @click.option("--octopus_version", default="", help="the version of octopus")
-def init_octopus(image_name, repo_name, install_dir, cli_dir, octopus_version):
+@click.option("--socks_proxy", default="", help="the socks proxy url")
+def init_octopus(
+    image_name, repo_name, install_dir, cli_dir, octopus_version, socks_proxy
+):
     if cli_dir.find("~") == 0:
         real_cli_dir = cli_dir.replace("~", os.path.expanduser("~"))
     else:
@@ -321,8 +348,8 @@ def init_octopus(image_name, repo_name, install_dir, cli_dir, octopus_version):
     else:
         real_install_dir = install_dir
     os.makedirs(real_install_dir, exist_ok=True)
-    console.print(Welcome)
     console = Console()
+    console.print(Welcome)
     choice, key, model = choose_api_service(console)
     segments = []
     with Live(Group(*segments), console=console) as live:
@@ -330,13 +357,15 @@ def init_octopus(image_name, repo_name, install_dir, cli_dir, octopus_version):
             version = octopus_version
         else:
             version = get_latest_release_version(repo_name, live, segments)
-        load_docker_image(version, image_name, repo_name, live, segments)
+        code = load_docker_image(version, image_name, repo_name, live, segments)
+        if code != 0:
+            return
         kernel_key = random_str(32)
         admin_key = random_str(32)
         generate_kernel_env(live, segments, real_install_dir, kernel_key)
         run_install_cli(live, segments)
         if choice == "1":
-            download_model(live, segments)
+            download_model(live, segments, socks_proxy)
             generate_agent_codellama(live, segments, real_install_dir, admin_key)
             if (
                 start_service(live, segments, real_install_dir, image_name, version)

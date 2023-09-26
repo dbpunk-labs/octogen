@@ -102,7 +102,8 @@ class KernelClient:
             while self.client:
                 try:
                     msg = await self.client.get_iopub_msg(timeout=1)
-                    if context.cancelled():
+                    if context.done():
+                        logger.debug("the client  has cancelled the request")
                         break
                     logger.debug(f"{msg}")
                     yield msg
