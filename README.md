@@ -48,7 +48,7 @@ octopus_up
 
 > You can choose the openai, azure openai and codellama
 > Ocotopus will download codellama from huggingface.co if you choose codellama
-> Try to change the pip mirror if the step install octopus terminal cli takes a lot of time
+> If the installation of the Octopus Terminal CLI takes a long time, consider changing the pip mirror.
 
 3. Open your terminal and execute the command `octopus`, you will see the following output
 
