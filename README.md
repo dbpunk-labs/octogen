@@ -26,10 +26,7 @@ Prerequisites
 * pip
 * docker
 
-Minimal Hardware requirement
-
-* Codellama, the minimal requirement is 8C 16G
-* Openai, no minimal requirement
+if you choose the codellama as LLM, your computer must satisfy the minimal hardware requirement 8c 16G
 
 1. Install octopus_up
 
@@ -51,6 +48,14 @@ You can use /help to look for help
 
 [1]🎧>
 ```
+
+## Supported API Service
+
+|name|status| installation|
+|----|----------------|---|
+|[Openai GPT 3.5/4](https://openai.com/product#made-for-developers) | ✅ fully supported|the detail installation steps|
+|[Azure Openai GPT 3.5/4](https://azure.microsoft.com/en-us/products/ai-services/openai-service) |  ✅ fully supported|the detail install steps|
+|[LLama.cpp Server](https://github.com/ggerganov/llama.cpp/tree/master/examples/server) | ✔️  supported | You must have match the minimal hardware requirement |
 
 ## The internal of Octopus
 
@@ -113,14 +118,6 @@ Recommanded hardware configuration
 |----|----------------|---|
 |terminal | ✅ fully supported|the detail installation steps|
 |desktop | on the plan| You must start the llama cpp server by yourself|
-
-## API Service Supported
-
-|name|status| installation|
-|----|----------------|---|
-|[Openai GPT 3.5/4](https://openai.com/product#made-for-developers) | ✅ fully supported|the detail installation steps|
-|[Azure Openai GPT 3.5/4](https://azure.microsoft.com/en-us/products/ai-services/openai-service) |  ✅ fully supported|the detail install steps|
-|[LLama.cpp Server](https://github.com/ggerganov/llama.cpp/tree/master/examples/server) | ✔️  supported| You must start the llama cpp server by yourself|
 
 ## Platforms Supported
 

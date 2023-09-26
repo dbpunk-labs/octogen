@@ -190,16 +190,22 @@ def load_docker_image(version, image_name, repo_name, live, segments, chunk_size
 
 def choose_api_service(console):
     mk = """Choose your favourite LLM
-1. Codellama
-2. OpenAI
+1. OpenAI
+2. Azure OpenAI
+3. Codellama
 """
     console.print(Markdown(mk))
-    choice = Prompt.ask("Choices", choices=["1", "2"], default="1:Codellama-7B")
-    if choice == "2":
+    choice = Prompt.ask("Choices", choices=["1", "2", "3"], default="1:OpenAI")
+    if choice == "1":
         key = Prompt.ask("Enter OpenAI Key")
         model = Prompt.ask("Enter OpenAI Model", default="gpt-3.5-turbo-16k-0613")
-        return choice, key, model
-    return choice, "", ""
+        return choice, key, model, ""
+    elif choice == "2":
+        key = Prompt.ask("Enter Azure OpenAI Key")
+        deployment = Prompt.ask("Enter Azure OpenAI Deployment")
+        api_base = Prompt.ask("Enter Azure OpenAI Base")
+        return choice, key, deployment, api_base
+    return choice, "", "", ""
 
 
 def generate_agent_common(fd, rpc_key):
@@ -209,6 +215,26 @@ def generate_agent_common(fd, rpc_key):
     fd.write("max_file_size=202400000\n")
     fd.write("max_iterations=8\n")
     fd.write("db_path=/app/agent/octopus.db\n")
+
+
+def generate_agent_azure_openai(
+    live, segments, install_dir, admin_key, openai_key, deployment, api_base
+):
+    agent_dir = f"{install_dir}/agent"
+    os.makedirs(agent_dir, exist_ok=True)
+    with open(f"{agent_dir}/.env", "w+") as fd:
+        generate_agent_common(fd, admin_key)
+        fd.write("llm_key=azure_openai\n")
+        fd.write(f"openai_api_type=azure\n")
+        fd.write(f"openai_api_version=2023-07-01-preview\n")
+        fd.write(f"openai_api_key={openai_key}\n")
+        fd.write(f"openai_api_base={api_base}\n")
+        fd.write(f"openai_api_deployment={deployment}\n")
+        fd.write("max_file_size=202400000\n")
+        fd.write("max_iterations=8\n")
+        fd.write("log_level=debug\n")
+    segments.append(("✅", "Generate Agent Config", f"{agent_dir}/.env"))
+    refresh(live, segments)
 
 
 def generate_agent_openai(
@@ -276,9 +302,10 @@ def stop_service(name):
             command = ["docker", "kill", id]
             for _, chunk in run_with_realtime_print(command=command):
                 pass
-            command = ["docker", "container", "rm", id]
-            for _, chunk in run_with_realtime_print(command=command):
-                pass
+
+    command = ["docker", "container", "rm", name]
+    for _, chunk in run_with_realtime_print(command=command):
+        pass
 
 
 def start_service(live, segments, install_dir, image_name, version, is_codellama="1"):
@@ -350,7 +377,7 @@ def init_octopus(
     os.makedirs(real_install_dir, exist_ok=True)
     console = Console()
     console.print(Welcome)
-    choice, key, model = choose_api_service(console)
+    choice, key, model, api_base = choose_api_service(console)
     segments = []
     with Live(Group(*segments), console=console) as live:
         if octopus_version:
@@ -364,7 +391,7 @@ def init_octopus(
         admin_key = random_str(32)
         generate_kernel_env(live, segments, real_install_dir, kernel_key)
         run_install_cli(live, segments)
-        if choice == "1":
+        if choice == "3":
             download_model(live, segments, socks_proxy)
             generate_agent_codellama(live, segments, real_install_dir, admin_key)
             if (
@@ -376,6 +403,20 @@ def init_octopus(
             else:
                 segments.append(("❌", "Setup octopus failed", ""))
             refresh(live, segments)
+        elif choice == "2":
+            generate_agent_azure_openai(
+                live, segments, real_install_dir, admin_key, key, model, api_base
+            )
+            if (
+                start_service(live, segments, real_install_dir, image_name, version)
+                == 0
+            ):
+                update_cli_config(live, segments, kernel_key, real_cli_dir)
+                segments.append(("👍", "Setup octopus done", ""))
+            else:
+                segments.append(("❌", "Setup octopus failed", ""))
+            refresh(live, segments)
+
         else:
             generate_agent_openai(
                 live, segments, real_install_dir, admin_key, key, model
