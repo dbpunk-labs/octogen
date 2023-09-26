@@ -61,12 +61,12 @@ You can use /help to look for help
 
 ## Supported API Service
 
-|name|status| installation|
-|----|----------------|---|
-|[Openai GPT 3.5/4](https://openai.com/product#made-for-developers) | ✅ fully supported|use `octopus_up` then choose the `OpenAI`|
-|[Azure Openai GPT 3.5/4](https://azure.microsoft.com/en-us/products/ai-services/openai-service) |  ✅ fully supported|use `octopus_up` then choose the `Azure OpenAI`|
-|[LLama.cpp Server](https://github.com/ggerganov/llama.cpp/tree/master/examples/server) | ✔️  supported | use `octopus_up` then choose the `CodeLlama` |
-|[Octopus Agent Service](https://dbpunk.xyz) | ✅ supported | use `octopus_up` then choose the `Octopus` |
+|name|type|status| installation|
+|----|-----|----------------|---|
+|[Openai GPT 3.5/4](https://openai.com/product#made-for-developers) |LLM| ✅ fully supported|use `octopus_up` then choose the `OpenAI`|
+|[Azure Openai GPT 3.5/4](https://azure.microsoft.com/en-us/products/ai-services/openai-service) |LLM|  ✅ fully supported|use `octopus_up` then choose the `Azure OpenAI`|
+|[LLama.cpp Server](https://github.com/ggerganov/llama.cpp/tree/master/examples/server) |LLM| ✔️  supported | use `octopus_up` then choose the `CodeLlama` |
+|[Octopus Agent Service](https://dbpunk.xyz) |Code Interpreter| ✅ supported | use `octopus_up` then choose the `Octopus` |
 
 
 ## The internal of Octopus
