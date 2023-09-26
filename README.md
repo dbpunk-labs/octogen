@@ -63,10 +63,10 @@ You can use /help to look for help
 
 |name|status| installation|
 |----|----------------|---|
-|[Openai GPT 3.5/4](https://openai.com/product#made-for-developers) | ✅ fully supported|the detail installation steps|
-|[Azure Openai GPT 3.5/4](https://azure.microsoft.com/en-us/products/ai-services/openai-service) |  ✅ fully supported|the detail install steps|
-|[LLama.cpp Server](https://github.com/ggerganov/llama.cpp/tree/master/examples/server) | ✔️  supported | You must have match the minimal hardware requirement |
-
+|[Openai GPT 3.5/4](https://openai.com/product#made-for-developers) | ✅ fully supported|use `octpus_up` then choose the `OpenAI`|
+|[Azure Openai GPT 3.5/4](https://azure.microsoft.com/en-us/products/ai-services/openai-service) |  ✅ fully supported|use `octopus_up` then choose the `Azure OpenAI`|
+|[LLama.cpp Server](https://github.com/ggerganov/llama.cpp/tree/master/examples/server) | ✔️  supported | use `octopus_up` then choost the `CodeLlama` |
+|Octopus Agent Service | ✅ supported | use `octopus_up` then choost the `Octopus` |
 
 ## The internal of Octopus
 
@@ -91,49 +91,8 @@ You can use /help to look for help
 
 if you have any feature suggestion. please create a discuession to talk about it
 
-## Plan
+## Roadmap
 
-* Improve the stability of octopus and security
-* Support external codellama api service
-* Support memory system
-* Enhence the agent programming capability
-* Enhence the kernel capability
-    * support gpu to accelerate processing of video
+* [roadmap for v0.5.0](https://github.com/dbpunk-labs/octopus/issues/64)
 
-if you have any advice for the roadmap. please create a discuession to talk about it
-
-
-## VPS Deployment
-
-|name|location| recommanded hardware|
-|----|----------------|---|
-|kernel|Your own VPS|todo|
-|Agent|Your own VPS|todo|
-|Model|GPT3.5|todo|
-
-
-## Home Labs Deployment
-
-Recommanded hardware configuration
-
-|name|configuration| installation|
-|----|--------------|---|
-|CPU|8c|todo|
-|Memory|32G|todo|
-|GPU|3090|todo|
-|Model|Codellama 13B|todo|
-
-## UI Supported
-
-|name|status| installation|
-|----|----------------|---|
-|terminal | ✅ fully supported|the detail installation steps|
-|desktop | on the plan| You must start the llama cpp server by yourself|
-
-## Platforms Supported
-
-|name|status| installation|
-|----|----------------|---|
-|ubuntu 22.04 | ✅ fully supported|the detail installation steps|
-|macos |  ✅ fully supported|the detail install steps|
 
