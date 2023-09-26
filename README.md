@@ -66,7 +66,7 @@ You can use /help to look for help
 |[Openai GPT 3.5/4](https://openai.com/product#made-for-developers) | ✅ fully supported|use `octpus_up` then choose the `OpenAI`|
 |[Azure Openai GPT 3.5/4](https://azure.microsoft.com/en-us/products/ai-services/openai-service) |  ✅ fully supported|use `octopus_up` then choose the `Azure OpenAI`|
 |[LLama.cpp Server](https://github.com/ggerganov/llama.cpp/tree/master/examples/server) | ✔️  supported | use `octopus_up` then choost the `CodeLlama` |
-|Octopus Agent Service | ✅ supported | use `octopus_up` then choost the `Octopus` |
+|[Octopus Agent Service](https://dbpunk.xyz) | ✅ supported | use `octopus_up` then choost the `Octopus` |
 
 ## The internal of Octopus
 
