@@ -20,7 +20,7 @@ import json
 import logging
 import io
 from .codellama_client import CodellamaClient
-from octopus_proto.agent_server_pb2 import OnAgentAction, TaskRespond, OnAgentActionEnd, FinalRespond
+from og_proto.agent_server_pb2 import OnAgentAction, TaskRespond, OnAgentActionEnd, FinalRespond
 from .base_agent import BaseAgent, TypingState
 from .tokenizer import tokenize
 
@@ -253,7 +253,7 @@ class CodellamaAgent(BaseAgent):
                         )
                     )
                     history.append("User:%s" % current_question)
-                    history.append("Octopus:%s\n" % ("".join(response)))
+                    history.append("Octogen:%s\n" % ("".join(response)))
                     ins = "Check if the following output meets the goal. If it does, explain it and stop respond. Otherwise, try a new solution."
                     # TODO limit the output size
                     if function_result.has_result:

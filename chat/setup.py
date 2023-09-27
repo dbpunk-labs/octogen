@@ -18,24 +18,24 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="octopus_chat",
+    name="og_chat",
     version="0.3.6",
     description="the chat client for open source code interpreter octopus",
     author="imotai",
-    author_email="wangtaize@dbpunk.com",
-    url="https://github.com/dbpunk-labs/octopus",
+    author_email="codego.me@gmail.com",
+    url="https://github.com/dbpunk-labs/octogen",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     packages=[
-        "octopus_discord",
-        "octopus_terminal",
+        "og_discord",
+        "og_terminal",
     ],
     package_dir={
-        "octopus_discord": "src/octopus_discord",
-        "octopus_terminal": "src/octopus_terminal",
+        "og_discord": "src/og_discord",
+        "og_terminal": "src/og_terminal",
     },
     install_requires=[
-        "octopus_sdk>=0.1.0",
+        "og_sdk>=0.1.0",
         "rich>=13.5.2",
         "prompt_toolkit>=3.0.0",
         "click>=8.0.0",
@@ -46,9 +46,9 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "octopus = octopus_terminal.terminal_chat:app",
-            "octopus_ping = octopus_terminal.ping:app",
-            "octopus_discord_bot = octopus_discord.discord_chat:run_app",
+            "og = og_terminal.terminal_chat:app",
+            "og_ping = og_terminal.ping:app",
+            "og_discord_bot = og_discord.discord_chat:run_app",
         ]
     },
 )

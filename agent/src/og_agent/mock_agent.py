@@ -18,7 +18,7 @@
 
 import logging
 from .base_agent import BaseAgent, TypingState
-from octopus_proto.agent_server_pb2 import OnAgentAction, TaskRespond, OnAgentActionEnd, FinalRespond
+from og_proto.agent_server_pb2 import OnAgentAction, TaskRespond, OnAgentActionEnd, FinalRespond
 from .tokenizer import tokenize
 
 logger = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 class MockAgent(BaseAgent):
     """
-    a test agent for octopus
+    a test agent for octogen
     """
 
     def __init__(self, messages, sdk):

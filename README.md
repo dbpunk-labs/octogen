@@ -1,11 +1,10 @@
 <p align="center">
-<img width="100px" src="https://github.com/dbpunk-labs/octopus/assets/8623385/6c60cb2b-415f-4979-9dc2-b8ce1958e17a" align="center"/>
 
-![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/dbpunk-labs/octopus/ci.yml?branch=main&style=flat-square)
+![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/dbpunk-labs/octogen/ci.yml?branch=main&style=flat-square)
 [![Discord](https://badgen.net/badge/icon/discord?icon=discord&label)](https://discord.gg/UjSHsjaz66)
 [![Twitter Follow](https://img.shields.io/twitter/follow/OCopilot7817?style=flat-square)](https://twitter.com/OCopilot7817)
-[![PyPI - Version](https://img.shields.io/pypi/v/octopus_chat)](https://pypi.org/project/octopus-chat/)
-![PyPI - Downloads](https://img.shields.io/pypi/dm/octopus_chat?logo=pypi)
+[![PyPI - Version](https://img.shields.io/pypi/v/og_chat)](https://pypi.org/project/og-chat/)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/og_chat?logo=pypi)
 
 [中文](./README_zh_cn.md)
 
@@ -28,10 +27,10 @@ Requirement
 * pip
 * docker 24.0.0 and above
 
-> To deploy Octopus, the user needs permission to run Docker commands.   
+> To deploy Octogen, the user needs permission to run Docker commands.   
 > To use codellama, your host must have at least 8 CPUs and 16 GB of RAM.
 
-Install the octopus on your local computer
+Install the octogen on your local computer
 
 1. Install og_up
 
@@ -46,9 +45,9 @@ pip install og_up
 og_up
 ```
 
-> You can choose the openai, azure openai, codellama and octopus agent sevice
-> Ocotopus will download codellama from huggingface.co if you choose codellama
-> If the installation of the Octopus Terminal CLI takes a long time, consider changing the pip mirror.
+> You can choose the openai, azure openai, codellama and octogen agent sevice
+> Octogen will download codellama from huggingface.co if you choose codellama
+> If the installation of the Octogen Terminal CLI takes a long time, consider changing the pip mirror.
 
 3. Open your terminal and execute the command `og`, you will see the following output
 
@@ -63,19 +62,19 @@ You can use /help to look for help
 
 |name|type|status| installation|
 |----|-----|----------------|---|
-|[Openai GPT 3.5/4](https://openai.com/product#made-for-developers) |LLM| ✅ fully supported|use `octopus_up` then choose the `OpenAI`|
-|[Azure Openai GPT 3.5/4](https://azure.microsoft.com/en-us/products/ai-services/openai-service) |LLM|  ✅ fully supported|use `octopus_up` then choose the `Azure OpenAI`|
-|[LLama.cpp Server](https://github.com/ggerganov/llama.cpp/tree/master/examples/server) |LLM| ✔️  supported | use `octopus_up` then choose the `CodeLlama` |
-|[Octopus Agent Service](https://dbpunk.xyz) |Code Interpreter| ✅ supported | use `octopus_up` then choose the `Octopus` |
+|[Openai GPT 3.5/4](https://openai.com/product#made-for-developers) |LLM| ✅ fully supported|use `og_up` then choose the `OpenAI`|
+|[Azure Openai GPT 3.5/4](https://azure.microsoft.com/en-us/products/ai-services/openai-service) |LLM|  ✅ fully supported|use `og_up` then choose the `Azure OpenAI`|
+|[LLama.cpp Server](https://github.com/ggerganov/llama.cpp/tree/master/examples/server) |LLM| ✔️  supported | use `og_up` then choose the `CodeLlama` |
+|[Octopus Agent Service](https://dbpunk.xyz) |Code Interpreter| ✅ supported | use `og_up` then choose the `Octogen` |
 
 
 ## The internal of Octopus
 
 ![octopus_simple](https://github.com/dbpunk-labs/octopus/assets/8623385/e5bfb3fb-74a5-4c60-8842-a81ee54fcb9d)
 
-* Octopus Kernel: The code execution engine, based on notebook kernels.
-* Octopus Agent: Manages client requests, uses ReAct to process complex tasks, and stores user-assembled applications.
-* Octopus Terminal Cli: Accepts user requests, sends them to the Agent, and renders rich results. Currently supports Discord, iTerm2, and Kitty terminals.
+* Octogen Kernel: The code execution engine, based on notebook kernels.
+* Octogen Agent: Manages client requests, uses ReAct to process complex tasks, and stores user-assembled applications.
+* Octogen Terminal Cli: Accepts user requests, sends them to the Agent, and renders rich results. Currently supports Discord, iTerm2, and Kitty terminals.
 
 ## Demo
 
@@ -94,6 +93,6 @@ if you have any feature suggestion. please create a discuession to talk about it
 
 ## Roadmap
 
-* [roadmap for v0.5.0](https://github.com/dbpunk-labs/octopus/issues/64)
+* [roadmap for v0.5.0](https://github.com/dbpunk-labs/octogen/issues/64)
 
 

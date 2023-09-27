@@ -18,22 +18,22 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="octopus_sdk",
+    name="og_sdk",
     version="0.3.6",
     description="Open source code interpreter agent for LLM",
     author="imotai",
-    author_email="wangtaize@dbpunk.com",
-    url="https://github.com/dbpunk-labs/octopus",
+    author_email="codego.me@gmail.com",
+    url="https://github.com/dbpunk-labs/octogen",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     packages=[
-        "octopus_sdk",
+        "og_sdk",
     ],
     package_dir={
-        "octopus_sdk": "src/octopus_sdk",
+        "og_sdk": "src/og_sdk",
     },
     install_requires=[
-        "octopus_proto",
+        "og_proto",
         "aiofiles",
     ],
 )

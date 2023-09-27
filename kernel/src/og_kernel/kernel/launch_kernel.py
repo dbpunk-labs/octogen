@@ -15,7 +15,7 @@
 # limitations under the License.
 
 """ """
-from octopus_kernel.kernel.kernel_app import run_app
+from og_kernel.kernel.kernel_app import run_app
 
 if __name__ == "__main__":
     run_app()

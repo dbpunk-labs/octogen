@@ -35,10 +35,10 @@ from grpc.aio import ServicerContext, server, ServerInterceptor
 from google.rpc import status_pb2
 from dotenv import dotenv_values
 from ..kernel.kernel_mgr import KernelManager
-from octopus_proto.kernel_server_pb2_grpc import KernelServerNodeServicer
-from octopus_proto.kernel_server_pb2_grpc import add_KernelServerNodeServicer_to_server
-from octopus_proto import kernel_server_pb2
-from octopus_proto import common_pb2
+from og_proto.kernel_server_pb2_grpc import KernelServerNodeServicer
+from og_proto.kernel_server_pb2_grpc import add_KernelServerNodeServicer_to_server
+from og_proto import kernel_server_pb2
+from og_proto import common_pb2
 from ..kernel.kernel_client import KernelClient
 from tempfile import gettempdir
 import aiofiles

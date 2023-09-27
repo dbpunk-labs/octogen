@@ -30,9 +30,9 @@ from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
 from prompt_toolkit.shortcuts import CompleteStyle, clear
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit import PromptSession
-from octopus_sdk.agent_sdk import AgentSyncSDK
-from octopus_sdk.utils import process_char_stream
-from octopus_proto import agent_server_pb2
+from og_sdk.agent_sdk import AgentSyncSDK
+from og_sdk.utils import process_char_stream
+from og_proto import agent_server_pb2
 from dotenv import dotenv_values
 from prompt_toolkit.completion import Completer, Completion
 from .utils import parse_file_path
@@ -43,15 +43,15 @@ from term_image.image import AutoImage
 
 Markdown.elements["fence"] = CodeBlock
 Markdown.elements["code_block"] = CodeBlock
-OCTOPUS_TITLE = "🐙[bold red]Octopus"
-OCTOPUS_APP_TITLE = "🐙[bold red]App"
+OCTOGEN_TITLE = "🐙[bold red]Octogen"
+OCTOGEN_APP_TITLE = "🐙[bold red]App"
 
 EMOJI_KEYS = list(EMOJI.keys())
 
 
 def show_welcome(console):
     welcome = """
-Welcome to use octopus❤️ . To ask a programming question, simply type your question and press [bold yellow]esc + enter[/]
+Welcome to use octogen❤️ . To ask a programming question, simply type your question and press [bold yellow]esc + enter[/]
 Use [bold yellow]/help[/] for help
 """
     console.print(welcome)
@@ -60,13 +60,13 @@ Use [bold yellow]/help[/] for help
 def show_help(console):
     help = """
 ### Keyboard Shortcut:
-- **`ESC + ENTER`**: Submit your question to Octopus or execute your command.
+- **`ESC + ENTER`**: Submit your question to Octogen or execute your command.
 
 ### Commands:
 
 - **`/clear`**: Clears the screen.
-- **`/cc{number}`**: Copies the output of Octopus to your clipboard.
-- **`/exit`**: Exits the Octopus CLI.
+- **`/cc{number}`**: Copies the output of Octogen to your clipboard.
+- **`/exit`**: Exits the Octogen CLI.
 - **`/up`**: Uploads files from your local machine; useful for including in your questions.
 - **`/assemble {name} {number1} {number2}`**: Assembles the specified code segments into an application.
 - **`/run {name}`**: Executes an application with the specified name.
@@ -74,7 +74,7 @@ def show_help(console):
 
 ### Need Help?
 
-1. Create an issue on our GitHub page: [Octopus GitHub Issues](https://github.com/dbpunk-labs/octopus/issues)
+1. Create an issue on our GitHub page: [Octogen GitHub Issues](https://github.com/dbpunk-labs/octogen/issues)
 2. Alternatively, you can email us at [codego.me@gmail.com](mailto:codego.me@gmail.com).
 """
     mk = Markdown(help, justify="left")
@@ -100,7 +100,7 @@ def parse_numbers(text):
     return numbers
 
 
-class OctopusCompleter(Completer):
+class OctogenCompleter(Completer):
 
     def __init__(self, values):
         Completer.__init__(self)
@@ -124,7 +124,7 @@ def check_parameter(octopus_config, console):
     if "api_key" not in octopus_config or not octopus_config["api_key"]:
         content = """No api key was found, you can get api key from the following ways
 * You can use your [self-hosted](https://github.com/dbpunk-labs) agent server api key
-* You can apply the api key from [octopus waitlist](https://octopus.dbpunk.com]octopus) directly"""
+* You can apply the api key from [octogen waitlist](https://octogen.dev) directly"""
         mk = Markdown(content)
         console.print(mk)
         return False
@@ -147,7 +147,7 @@ def refresh(
     token_usage="0",
     iteration="0",
     model_name="",
-    title=OCTOPUS_TITLE,
+    title=OCTOGEN_TITLE,
 ):
     table = Table.grid(padding=1, pad_edge=True)
     table.add_column("Index", no_wrap=True, justify="center", style="bold red")
@@ -410,17 +410,17 @@ def run_app(name, sdk, session, console, values, filedir=None):
         spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
         values.append(("text", "", []))
         segments.append((len(values) - 1, spinner, ""))
-        refresh(live, segments, title=OCTOPUS_APP_TITLE + f":{name}")
+        refresh(live, segments, title=OCTOGEN_APP_TITLE + f":{name}")
         for respond in sdk.run(name):
             if not respond:
                 break
             handle_action_start(segments, respond, images, values)
             handle_action_output(segments, respond, values)
             handle_action_end(segments, respond, images, values)
-            refresh(live, segments, title=OCTOPUS_APP_TITLE + f":{name}")
+            refresh(live, segments, title=OCTOGEN_APP_TITLE + f":{name}")
         values.pop()
         segments.pop()
-        refresh(live, segments, title=OCTOPUS_APP_TITLE + f":{name}")
+        refresh(live, segments, title=OCTOGEN_APP_TITLE + f":{name}")
     # display the images
     render_image(images, sdk, filedir, console)
 
@@ -449,7 +449,7 @@ def query_apps(sdk, console):
             gen_app_panel(apps.apps[index + 2]) if index + 2 < len(apps.apps) else "",
             gen_app_panel(apps.apps[index + 3]) if index + 3 < len(apps.apps) else "",
         )
-    console.print(Panel(table, title=OCTOPUS_APP_TITLE, title_align="left"))
+    console.print(Panel(table, title=OCTOGEN_APP_TITLE, title_align="left"))
 
 
 def assemble_app(sdk, name, numbers, values):
@@ -479,24 +479,24 @@ def assemble_app(sdk, name, numbers, values):
 
 
 @click.command()
-@click.option("--octopus_dir", default="~/.octopus", help="the root path of octopus")
-def app(octopus_dir):
+@click.option("--octogen_dir", default="~/.octogen", help="the root path of octogen")
+def app(octogen_dir):
     console = Console()
-    if octopus_dir.find("~") == 0:
-        real_octopus_dir = octopus_dir.replace("~", os.path.expanduser("~"))
+    if octogen_dir.find("~") == 0:
+        real_octogen_dir = octogen_dir.replace("~", os.path.expanduser("~"))
     else:
-        real_octopus_dir = octopus_dir
-    os.makedirs(real_octopus_dir, exist_ok=True)
-    octopus_config = dotenv_values(real_octopus_dir + "/config")
+        real_octogen_dir = octogen_dir
+    os.makedirs(real_octogen_dir, exist_ok=True)
+    octopus_config = dotenv_values(real_octogen_dir + "/config")
     if not check_parameter(octopus_config, console):
         return
-    filedir = real_octopus_dir + "/data"
+    filedir = real_octogen_dir + "/data"
     os.makedirs(filedir, exist_ok=True)
     sdk = AgentSyncSDK(octopus_config["endpoint"], octopus_config["api_key"])
     sdk.connect()
-    history = FileHistory(real_octopus_dir + "/history")
+    history = FileHistory(real_octogen_dir + "/history")
     values = []
-    completer = OctopusCompleter(values)
+    completer = OctogenCompleter(values)
     session = PromptSession(
         history=history,
         completer=completer,

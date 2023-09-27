@@ -21,8 +21,8 @@ import asyncio
 import random
 import pytest
 import logging
-from octopus_kernel.kernel.kernel_mgr import KernelManager
-from octopus_kernel.kernel.kernel_client import KernelClient
+from og_kernel.kernel.kernel_mgr import KernelManager
+from og_kernel.kernel.kernel_client import KernelClient
 
 logger = logging.getLogger(__name__)
 

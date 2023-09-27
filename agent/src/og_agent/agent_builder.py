@@ -16,7 +16,7 @@
 
 """ """
 import json
-from .prompt import OCTOPUS_FUNCTION_SYSTEM, OCTOPUS_CODELLAMA_SYSTEM
+from .prompt import OCTOGEN_FUNCTION_SYSTEM, OCTOGEN_CODELLAMA_SYSTEM
 from .codellama_agent import CodellamaAgent
 from .openai_agent import OpenaiAgent
 from .codellama_client import CodellamaClient
@@ -31,7 +31,7 @@ def build_codellama_agent(endpoint, key, sdk, grammer_path):
         grammar = fd.read()
 
     client = CodellamaClient(
-        endpoint, key, OCTOPUS_CODELLAMA_SYSTEM, "Octopus", "User", grammar
+        endpoint, key, OCTOGEN_CODELLAMA_SYSTEM, "Octogen", "User", grammar
     )
 
     # init the agent
@@ -43,7 +43,7 @@ def build_openai_agent(sdk, model_name, is_azure=True):
     # TODO a data dir per user
     # init the agent
 
-    agent = OpenaiAgent(model_name, OCTOPUS_FUNCTION_SYSTEM, sdk, is_azure=is_azure)
+    agent = OpenaiAgent(model_name, OCTOGEN_FUNCTION_SYSTEM, sdk, is_azure=is_azure)
     return agent
 
 

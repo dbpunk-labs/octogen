@@ -25,8 +25,8 @@ import os
 import click
 from datetime import datetime
 from dotenv import dotenv_values
-from octopus_proto import common_pb2
-from octopus_agent.agent_sdk import AgentSDK
+from og_proto import common_pb2
+from og_sdk.agent_sdk import AgentSDK
 
 LOG_LEVEL = logging.INFO
 logging.basicConfig(
@@ -37,11 +37,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-class OctopusDiscordBot(discord.Client):
+class OctogenDiscordBot(discord.Client):
 
-    def __init__(self, octopus_sdk, filedir, **kwargs):
+    def __init__(self, octogen_sdk, filedir, **kwargs):
         discord.Client.__init__(self, **kwargs)
-        self.octopus_sdk = octopus_sdk
+        self.octogen_sdk = octogen_sdk
         self.filedir = filedir
 
     def handle_action_start(self, respond, saved_images):
@@ -93,14 +93,14 @@ class OctopusDiscordBot(discord.Client):
 
     async def download_files(self, images):
         for image in images:
-            await self.octopus_sdk.download_file(image, self.filedir)
+            await self.octogen_sdk.download_file(image, self.filedir)
 
     async def on_ready(self):
         logger.info(f"Logged in as {self.user} (ID: {self.user.id})")
 
     async def run_app(self, name, message):
         saved_images = []
-        async for respond in self.octopus_sdk.run(name):
+        async for respond in self.octogen_sdk.run(name):
             if not respond:
                 break
             if respond.on_agent_action_end:
@@ -125,7 +125,7 @@ class OctopusDiscordBot(discord.Client):
         header = """Apps
 """
         rows = []
-        apps = await self.octopus_sdk.query_apps()
+        apps = await self.octogen_sdk.query_apps()
         for index, app in enumerate(apps.apps):
             ctime = datetime.fromtimestamp(app.ctime).strftime("%m/%d/%Y")
             rows.append(f"{index+1}.{app.name}")
@@ -162,7 +162,7 @@ class OctopusDiscordBot(discord.Client):
             else:
                 prompt = message.content
             try:
-                async for respond in self.octopus_sdk.prompt(prompt):
+                async for respond in self.octogen_sdk.prompt(prompt):
                     if not respond:
                         break
                     logger.info(f"{respond}")
@@ -203,23 +203,23 @@ class OctopusDiscordBot(discord.Client):
 
 
 async def app():
-    octopus_discord_bot_dir = "~/.octopus_discord_bot"
-    if octopus_discord_bot_dir.find("~") == 0:
-        real_octopus_dir = octopus_discord_bot_dir.replace("~", os.path.expanduser("~"))
+    octogen_discord_bot_dir = "~/.octogen_discord_bot"
+    if octogen_discord_bot_dir.find("~") == 0:
+        real_octogen_dir = octogen_discord_bot_dir.replace("~", os.path.expanduser("~"))
     else:
-        real_octopus_dir = octopus_discord_bot_dir
-    if not os.path.exists(real_octopus_dir):
-        os.mkdir(real_octopus_dir)
-    octopus_config = dotenv_values(real_octopus_dir + "/config")
-    filedir = real_octopus_dir + "/data"
+        real_octogen_dir = octogen_discord_bot_dir
+    if not os.path.exists(real_octogen_dir):
+        os.mkdir(real_octogen_dir)
+    octogen_config = dotenv_values(real_octogen_dir + "/config")
+    filedir = real_octogen_dir + "/data"
     if not os.path.exists(filedir):
         os.mkdir(filedir)
-    sdk = AgentSDK(octopus_config["endpoint"], octopus_config["api_key"])
+    sdk = AgentSDK(octogen_config["endpoint"], octogen_config["api_key"])
     sdk.connect()
     intents = discord.Intents.default()
     intents.message_content = True
-    client = OctopusDiscordBot(sdk, filedir, intents=intents)
-    await client.start(octopus_config["discord_bot_token"])
+    client = OctogenDiscordBot(sdk, filedir, intents=intents)
+    await client.start(octogen_config["discord_bot_token"])
 
 
 def run_app():

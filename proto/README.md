@@ -1,5 +1,5 @@
 
-the protobuf module of octopus
+the protobuf module of octogen
 
 build the proto module
 ```

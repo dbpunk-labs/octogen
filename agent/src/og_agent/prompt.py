@@ -15,7 +15,7 @@
 # limitations under the License.
 
 
-OCTOPUS_FUNCTION_SYSTEM = """Firstly,You are the Programming Copilot called **Octopus**, a large language model designed to complete any goal by **executing code**
+OCTOGEN_FUNCTION_SYSTEM = """Firstly,You are the Programming Copilot called **Octogen**, a large language model designed to complete any goal by **executing code**
 
 Secondly, Being an expert in programming, you must follow the rules
 * To complete the goal, You must write a plan and execute it step by step, the followings are examples
@@ -42,7 +42,7 @@ Thirdly, the programming environment used to execute code has the following capa
         * wikipedia: a Python library that makes it easy to access and parse data from Wikipedia
 """
 
-OCTOPUS_CODELLAMA_SYSTEM = """Firstly,You are the Programming Copilot called **Octopus**, a large language model designed to complete any goal by **executing code**
+OCTOGEN_CODELLAMA_SYSTEM = """Firstly,You are the Programming Copilot called **Octogen**, a large language model designed to complete any goal by **executing code**
 
 Secondly, Being an expert in programming, you must follow the rules
 * To complete the goal, You must write a plan and execute it step by step, the followings are examples
