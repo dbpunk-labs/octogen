@@ -35,8 +35,8 @@ cd ${ROOT_DIR}/agent && hap run -n octopus_agent -- octopus_agent_rpc_server
 
 sleep 3
 
-AGENT_RPC_KEY=$(cat ${ROOT_DIR}/agent/.env | grep admin_key | cut -d "=" -f 2)
-KERNEL_RPC_KEY=$(cat ${ROOT_DIR}/kernel/.env | grep rpc_key | cut -d "=" -f 2)
+AGENT_RPC_KEY=$(cat ${ROOT_DIR}/agent/.env | grep admin_key | tr -d '\r' | cut -d "=" -f 2)
+KERNEL_RPC_KEY=$(cat ${ROOT_DIR}/kernel/.env | grep rpc_key | td -d '\r' | cut -d "=" -f 2)
 octopus_agent_setup --kernel_endpoint=127.0.0.1:9527 --kernel_api_key=${KERNEL_RPC_KEY} --agent_endpoint=127.0.0.1:9528 --admin_key=${AGENT_RPC_KEY}
 
 while true
