@@ -1,4 +1,5 @@
 <p align="center">
+<img  width="400px" src="https://github.com/dbpunk-labs/octogen/assets/8623385/bdab9beb-fc92-46a0-b041-90f37960e253" align="center"/>
 
 ![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/dbpunk-labs/octogen/ci.yml?branch=main&style=flat-square)
 [![Discord](https://badgen.net/badge/icon/discord?icon=discord&label)](https://discord.gg/UjSHsjaz66)
