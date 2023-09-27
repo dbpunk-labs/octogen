@@ -18,24 +18,24 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="octopus_agent",
+    name="og_agent",
     version="0.3.6",
     description="Open source code interpreter agent",
     author="imotai",
     author_email="wangtaize@dbpunk.com",
-    url="https://github.com/dbpunk-labs/octopus",
+    url="https://github.com/dbpunk-labs/octogen",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     packages=[
-        "octopus_agent",
+        "og_agent",
     ],
     package_dir={
-        "octopus_agent": "src/octopus_agent",
+        "og_agent": "src/og_agent",
     },
     install_requires=[
-        "octopus_proto",
-        "octopus_kernel",
-        "octopus_sdk",
+        "og_proto",
+        "og_kernel",
+        "og_sdk",
         "grpcio-tools>=1.57.0",
         "grpc-google-iam-v1>=0.12.6",
         "aiofiles",
@@ -48,8 +48,8 @@ setup(
     package_data={"octopus_agent": ["*.bnf"]},
     entry_points={
         "console_scripts": [
-            "octopus_agent_rpc_server = octopus_agent.agent_server:server_main",
-            "octopus_agent_setup = octopus_agent.agent_setup:setup",
+            "og_agent_rpc_server = og_agent.agent_server:server_main",
+            "og_agent_setup = og_agent.agent_setup:setup",
         ]
     },
 )

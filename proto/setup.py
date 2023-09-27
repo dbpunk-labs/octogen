@@ -18,24 +18,24 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="octopus_proto",
+    name="og_proto",
     version="0.3.6",
     description="Open source code interpreter agent for LLM",
     author="imotai",
-    author_email="wangtaize@dbpunk.com",
-    url="https://github.com/dbpunk-labs/octopus",
+    author_email="codego.me@gmail.com",
+    url="https://github.com/dbpunk-labs/octogen",
     long_description= open('README.md').read(),
     long_description_content_type='text/markdown',
 
     packages=[
-        "octopus_proto",
+        "og_proto",
     ],
 
     package_dir={
-        "octopus_proto": "src/octopus_proto",
+        "og_proto": "src/og_proto",
     },
 
-    package_data={"octopus_proto": ["*.pyi"]},
+    package_data={"og_proto": ["*.pyi"]},
 
     install_requires=[
         "grpc-google-iam-v1>=0.12.6",

@@ -24,10 +24,10 @@ from huggingface_hub import hf_hub_download
 @click.option("--repo", help="the repo of huggingface")
 @click.option("--filename", help="the filename of model")
 @click.option(
-    "--cache_dir", default="~/.octopus/app/cache", help="the cache_dir of huggingface"
+    "--cache_dir", default="~/.octogen/app/cache", help="the cache_dir of huggingface"
 )
 @click.option(
-    "--local_dir", default="~/.octopus/app/model", help="the local dir of huggingface"
+    "--local_dir", default="~/.octogen/app/model", help="the local dir of huggingface"
 )
 @click.option("--socks_proxy", default="", help="the socks proxy url")
 def download(repo, filename, cache_dir, local_dir, socks_proxy):

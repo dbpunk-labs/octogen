@@ -20,13 +20,13 @@ import io
 import json
 import logging
 from pydantic import BaseModel, Field
-from octopus_proto.agent_server_pb2 import OnAgentAction, TaskRespond, OnAgentActionEnd, FinalRespond
+from og_proto.agent_server_pb2 import OnAgentAction, TaskRespond, OnAgentActionEnd, FinalRespond
 from .base_agent import BaseAgent, TypingState
 from .tokenizer import tokenize
 
 logger = logging.getLogger(__name__)
 
-OCTOPUS_FUNCTIONS = [
+OCTOGEN_FUNCTIONS = [
     {
         "name": "execute_python_code",
         "description": "Safely execute arbitrary Python code and return the result, stdout, and stderr.",
@@ -139,7 +139,7 @@ class OpenaiAgent(BaseAgent):
                 engine=self.model,
                 messages=messages,
                 temperature=0,
-                functions=OCTOPUS_FUNCTIONS,
+                functions=OCTOGEN_FUNCTIONS,
                 function_call="auto",
                 stream=True,
             )
@@ -148,7 +148,7 @@ class OpenaiAgent(BaseAgent):
                 model=self.model,
                 messages=messages,
                 temperature=0,
-                functions=OCTOPUS_FUNCTIONS,
+                functions=OCTOGEN_FUNCTIONS,
                 function_call="auto",
                 stream=True,
             )

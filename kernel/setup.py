@@ -18,26 +18,26 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="octopus_kernel",
+    name="og_kernel",
     version="0.3.6",
     description="Open source code interpreter agent for LLM",
     author="imotai",
-    author_email="wangtaize@dbpunk.com",
-    url="https://github.com/dbpunk-labs/octopus",
+    author_email="codego.me@gmail.com",
+    url="https://github.com/dbpunk-labs/octogen",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     packages=[
-        "octopus_kernel",
-        "octopus_kernel.kernel",
-        "octopus_kernel.server",
+        "og_kernel",
+        "og_kernel.kernel",
+        "og_kernel.server",
     ],
     package_dir={
-        "octopus_kernel": "src/octopus_kernel",
-        "octopus_kernel.kernel": "src/octopus_kernel/kernel",
-        "octopus_kernel.server": "src/octopus_kernel/server",
+        "og_kernel": "src/og_kernel",
+        "og_kernel.kernel": "src/og_kernel/kernel",
+        "og_kernel.server": "src/og_kernel/server",
     },
     install_requires=[
-        "octopus_proto",
+        "og_proto",
         "grpc-google-iam-v1>=0.12.6",
         "grpcio-tools>=1.57.0",
         "ipykernel>=6.25.1",
@@ -48,9 +48,8 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "octopus_kernel_rpc_server = octopus_kernel.server.kernel_rpc_server:server_main",
-            "octopus_kernel_generate = octopus_kernel.server.kernel_env_sample:generate_sample_env",
-            "octopus_kernel_app = octopus_kernel.kernel.kernel_app:run_app",
+            "og_kernel_rpc_server = og_kernel.server.kernel_rpc_server:server_main",
+            "og_kernel_app = og_kernel.kernel.kernel_app:run_app",
         ]
     },
 )

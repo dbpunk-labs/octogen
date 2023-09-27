@@ -18,25 +18,25 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="octopus_up",
+    name="og_up",
     version="0.3.6",
     description="Open source code interpreter agent for LLM",
     author="imotai",
-    author_email="wangtaize@dbpunk.com",
-    url="https://github.com/dbpunk-labs/octopus",
+    author_email="codego.me@gmail.com",
+    url="https://github.com/dbpunk-labs/octogen",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     packages=[
-        "octopus_up",
+        "og_up",
     ],
     package_dir={
-        "octopus_up": "src/octopus_up",
+        "og_up": "src/og_up",
     },
-    install_requires=["octopus_sdk", "requests", "huggingface_hub", "rich", "click"],
+    install_requires=["og_sdk", "requests", "huggingface_hub", "rich", "click"],
     entry_points={
         "console_scripts": [
-            "octopus_up = octopus_up.up:init_octopus",
-            "octopus_download = octopus_up.model_downloader:download",
+            "og_up = og_up.up:init_octogen",
+            "og_download = og_up.model_downloader:download",
         ]
     },
 )

@@ -20,9 +20,9 @@ import json
 import logging
 from typing import Any, Dict, List, Optional, Sequence, Union, Type
 from pydantic import BaseModel, Field
-from octopus_proto.kernel_server_pb2 import ExecuteResponse
-from octopus_proto.agent_server_pb2 import OnAgentAction, TaskRespond, OnAgentActionEnd, FinalRespond
-from octopus_sdk.utils import parse_image_filename, process_char_stream
+from og_proto.kernel_server_pb2 import ExecuteResponse
+from og_proto.agent_server_pb2 import OnAgentAction, TaskRespond, OnAgentActionEnd, FinalRespond
+from og_sdk.utils import parse_image_filename, process_char_stream
 
 logger = logging.getLogger(__name__)
 

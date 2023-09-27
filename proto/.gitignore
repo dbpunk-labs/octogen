@@ -9,9 +9,9 @@ __pycache__/
 # Distribution / packaging
 .Python
 build/
-src/octopus_proto/*_pb2.py
-src/octopus_proto/*_pb2.pyi
-src/octopus_proto/*_pb2_grpc.py
+src/og_proto/*_pb2.py
+src/og_proto/*_pb2.pyi
+src/og_proto/*_pb2_grpc.py
 develop-eggs/
 dist/
 downloads/

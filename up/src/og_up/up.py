@@ -38,11 +38,11 @@ from rich.spinner import Spinner
 from rich.console import Group
 from octopus_sdk.utils import process_char_stream
 
-OCTOPUS_TITLE = "🐙[bold red]Octopus Up"
+OCTOGEN_TITLE = "🐙[bold red]Octogen Up"
 USE_SHELL = sys.platform.startswith("win")
-OCTOPUS_GITHUB_REPOS = "dbpunk-labs/octopus"
+OCTOGEN_GITHUB_REPOS = "dbpunk-labs/octogen"
 Welcome = f"""
-Welcome to use {OCTOPUS_TITLE}
+Welcome to use {OCTOGEN_TITLE}
 """
 
 
@@ -54,26 +54,26 @@ def random_str(n):
 
 def run_install_cli(live, segments):
     """
-    Install the octopus chat cli
+    Install the octogen chat cli
     """
     spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
-    step = "Install octopus terminal cli"
+    step = "Install octogen terminal cli"
     output = ""
     segments.append((spinner, step, ""))
     result_code = 0
     refresh(live, segments)
     outputs = ""
     for code, output in run_with_realtime_print(
-        command=["pip", "install", "octopus_chat"]
+        command=["pip", "install", "og_chat"]
     ):
         outputs += output
         result_code = code
     if result_code == 0:
         segments.pop()
-        segments.append(("✅", "Install octopus terminal cli", ""))
+        segments.append(("✅", "Install octogen terminal cli", ""))
     else:
         segments.pop()
-        segments.append(("❌", "Install octopus terminal cli", outputs))
+        segments.append(("❌", "Install octogen terminal cli", outputs))
     refresh(live, segments)
 
 
@@ -99,7 +99,6 @@ def run_with_realtime_print(
     except Exception as ex:
         yield -1, str(ex)
 
-
 def refresh(
     live,
     segments,
@@ -121,13 +120,13 @@ def get_latest_release_version(repo_name, live, segments):
     get the latest release version
     """
     spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
-    step = "Get octopus version"
+    step = "Get octogen version"
     segments.append((spinner, step, ""))
     refresh(live, segments)
     r = requests.get(f"https://api.github.com/repos/{repo_name}/releases/latest")
     old_segment = segments.pop()
     version = r.json()["name"]
-    segments.append(("✅", "Get octopus version", version))
+    segments.append(("✅", "Get octogen version", version))
     refresh(live, segments)
     return version
 
@@ -147,7 +146,7 @@ def download_model(
     result_code = 0
     for code, chunk in run_with_realtime_print(
         command=[
-            "octopus_download",
+            "og_download",
             "--repo",
             repo,
             "--filename",
@@ -200,7 +199,7 @@ def choose_api_service(console):
 1. OpenAI, Kernel, Agent and Cli will be installed
 2. Azure OpenAI, Kernel, Agent and Cli will be installed
 3. Codellama, Model Server, Kernel, Agent and Cli will be installed
-4. Octopus, Only Cli will be installed
+4. Octogen, Only Cli will be installed
 """
     console.print(Markdown(mk))
     choice = Prompt.ask("Choices", choices=["1", "2", "3", "4"], default="1:OpenAI")
@@ -214,8 +213,8 @@ def choose_api_service(console):
         api_base = Prompt.ask("Enter Azure OpenAI Base")
         return choice, key, deployment, api_base
     elif choice == "4":
-        key = Prompt.ask("Enter Octopus Key")
-        api_base = "https://agent.runsandbox.xyz"
+        key = Prompt.ask("Enter Octogen Key")
+        api_base = "https://agent.octogen.dev"
         return choice, key, "" , api_base
     return choice, "", "", ""
 
@@ -327,14 +326,14 @@ def start_service(
     is_codellama="1",
     model_filename="",
 ):
-    stop_service("octopus")
+    stop_service("octogen")
     # TODO stop the exist service
     full_name = f"{image_name}:{version}"
     command = [
         "docker",
         "run",
         "--name",
-        "octopus",
+        "octogen",
         "-p",
         "127.0.0.1:9528:9528",
         "-v",
@@ -355,9 +354,9 @@ def start_service(
         pass
 
     if result_code == 0:
-        segments.append(("✅", "Start octopus service", ""))
+        segments.append(("✅", "Start octogen service", ""))
     else:
-        segments.append(("❌", "Start octopus service", output))
+        segments.append(("❌", "Start octogen service", output))
     refresh(live, segments)
     return result_code
 
@@ -371,15 +370,15 @@ def update_cli_config(live, segments, api_key, cli_dir, api_base="127.0.0.1:9528
 
 
 @click.command("init")
-@click.option("--image_name", default="dbpunk/octopus", help="the octopus image name")
+@click.option("--image_name", default="dbpunk/octogen", help="the octogen image name")
 @click.option(
-    "--repo_name", default=OCTOPUS_GITHUB_REPOS, help="the github repo of octopus"
+    "--repo_name", default=OCTOGEN_GITHUB_REPOS, help="the github repo of octogen"
 )
 @click.option(
-    "--install_dir", default="~/.octopus/app", help="the install dir of octopus"
+    "--install_dir", default="~/.octogen/app", help="the install dir of octogen"
 )
-@click.option("--cli_dir", default="~/.octopus/", help="the cli dir of octopus")
-@click.option("--octopus_version", default="", help="the version of octopus")
+@click.option("--cli_dir", default="~/.octogen/", help="the cli dir of octogen")
+@click.option("--octogen_version", default="", help="the version of octogen")
 @click.option("--socks_proxy", default="", help="the socks proxy url")
 @click.option(
     "--codellama_repo",
@@ -391,12 +390,12 @@ def update_cli_config(live, segments, api_key, cli_dir, api_base="127.0.0.1:9528
     default="codellama-7b-instruct.Q5_K_S.gguf",
     help="the model filename in model repo",
 )
-def init_octopus(
+def init_octogen(
     image_name,
     repo_name,
     install_dir,
     cli_dir,
-    octopus_version,
+    octogen_version,
     socks_proxy,
     codellama_repo,
     model_filename,
@@ -417,11 +416,11 @@ def init_octopus(
     with Live(Group(*segments), console=console) as live:
         if choice == "4":
             update_cli_config(live, segments, key, real_cli_dir, api_base)
-            segments.append(("👍", "Setup octopus done", ""))
+            segments.append(("👍", "Setup octogen done", ""))
             refresh(live, segments)
             return
-        if octopus_version:
-            version = octopus_version
+        if octogen_version:
+            version = octogen_version
         else:
             version = get_latest_release_version(repo_name, live, segments)
         code = load_docker_image(version, image_name, repo_name, live, segments)
@@ -433,7 +432,7 @@ def init_octopus(
         run_install_cli(live, segments)
         if choice == "3":
             if download_model(live, segments, socks_proxy, codellama_repo, model_filename) != 0:
-                segments.append(("❌", "Setup octopus failed", ""))
+                segments.append(("❌", "Setup octogen failed", ""))
                 refresh(live, segments)
                 return 
             generate_agent_codellama(live, segments, real_install_dir, admin_key)
@@ -450,9 +449,9 @@ def init_octopus(
                 == 0
             ):
                 update_cli_config(live, segments, kernel_key, real_cli_dir)
-                segments.append(("👍", "Setup octopus done", ""))
+                segments.append(("👍", "Setup octogen done", ""))
             else:
-                segments.append(("❌", "Setup octopus failed", ""))
+                segments.append(("❌", "Setup octogen failed", ""))
             refresh(live, segments)
         elif choice == "2":
             generate_agent_azure_openai(
@@ -470,9 +469,9 @@ def init_octopus(
                 == 0
             ):
                 update_cli_config(live, segments, kernel_key, real_cli_dir)
-                segments.append(("👍", "Setup octopus done", ""))
+                segments.append(("👍", "Setup octogen done", ""))
             else:
-                segments.append(("❌", "Setup octopus failed", ""))
+                segments.append(("❌", "Setup octogen failed", ""))
             refresh(live, segments)
 
         else:
@@ -491,7 +490,7 @@ def init_octopus(
                 == 0
             ):
                 update_cli_config(live, segments, kernel_key, real_cli_dir)
-                segments.append(("👍", "Setup octopus done", ""))
+                segments.append(("👍", "Setup octogen done", ""))
             else:
-                segments.append(("❌", "Setup octopus failed", ""))
+                segments.append(("❌", "Setup octogen failed", ""))
             refresh(live, segments)

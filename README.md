@@ -1,15 +1,14 @@
 <p align="center">
-<img width="100px" src="https://github.com/dbpunk-labs/octopus/assets/8623385/6c60cb2b-415f-4979-9dc2-b8ce1958e17a" align="center"/>
 
-![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/dbpunk-labs/octopus/ci.yml?branch=main&style=flat-square)
+![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/dbpunk-labs/octogen/ci.yml?branch=main&style=flat-square)
 [![Discord](https://badgen.net/badge/icon/discord?icon=discord&label)](https://discord.gg/UjSHsjaz66)
 [![Twitter Follow](https://img.shields.io/twitter/follow/OCopilot7817?style=flat-square)](https://twitter.com/OCopilot7817)
-[![PyPI - Version](https://img.shields.io/pypi/v/octopus_chat)](https://pypi.org/project/octopus-chat/)
-![PyPI - Downloads](https://img.shields.io/pypi/dm/octopus_chat?logo=pypi)
+[![PyPI - Version](https://img.shields.io/pypi/v/og_chat)](https://pypi.org/project/og-chat/)
+![PyPI - Downloads](https://img.shields.io/pypi/dm/og_chat?logo=pypi)
 
 [中文](./README_zh_cn.md)
 
-> ## Octopus
+> ## Octogen
 > an open-source code interpreter for developers
 
 <p align="center">
