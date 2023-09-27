@@ -15,7 +15,7 @@ echo "rpc_host=127.0.0.1">> .env
 echo "rpc_port=9527">> .env
 echo "rpc_key=${KERNEL_RPC_KEY}">> .env
 echo "start kernel with endpoint 127.0.0.1:9527"
-octopus_kernel_rpc_server > kernel_rpc.log 2>&1 &
+og_kernel_rpc_server > kernel_rpc.log 2>&1 &
 sleep 2
 cd ${WORKDIR}/sandbox/agent
 AGENT_RPC_KEY=ZCeI9cYtOCyLISoi488BgZHeBkHWuFUH
@@ -29,7 +29,7 @@ echo "max_file_size=10240000" >> .env
 echo "verbose=True" >> .env
 echo "db_path=/tmp/octopus_sandbox.db" >> .env
 echo "cases_path=${WORKDIR}/sdk/tests/mock_messages.json" >> .env
-octopus_agent_rpc_server > agent_rpc.log 2>&1 &
+og_agent_rpc_server > agent_rpc.log 2>&1 &
 sleep 2
 echo "add a kernel"
-octopus_agent_setup --kernel_endpoint=127.0.0.1:9527 --kernel_api_key=${KERNEL_RPC_KEY} --agent_endpoint=127.0.0.1:9528 --admin_key=${AGENT_RPC_KEY}
+og_agent_setup --kernel_endpoint=127.0.0.1:9527 --kernel_api_key=${KERNEL_RPC_KEY} --agent_endpoint=127.0.0.1:9528 --admin_key=${AGENT_RPC_KEY}
