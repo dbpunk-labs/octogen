@@ -16,9 +16,9 @@
 
 |OS|Platform|
 |----|----------------|
-|windows10 | ✅ x86|
-|macOS |✅ x86, ✅ m2|
-|ubuntu |✅ x86|
+|![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)| ✅ |
+|![macOS](https://img.shields.io/badge/mac%20os-000000?style=for-the-badge&logo=macos&logoColor=F0F0F0)|✅ |
+|![ubuntu](https://img.shields.io/badge/Ubuntu-E95420?style=for-the-badge&logo=ubuntu&logoColor=white) |✅|
 
 ## Getting Started
 
@@ -32,27 +32,27 @@ Requirement
 
 Install the octopus on your local computer
 
-1. Install octopus_up
+1. Install og_up
 
 ```bash
-pip install octopus_up
+pip install og_up
 ```
 > try to change the pip mirror if the step install octopus terminal cli takes a lot of time
 
-2. Set up the Octopus service using the OpenAI API key or the Codellama.
-
+2. Set up the Octopus service
+   
 ```
-octopus_up
+og_up
 ```
 
-> You can choose the openai, azure openai and codellama
+> You can choose the openai, azure openai, codellama and octopus agent sevice
 > Ocotopus will download codellama from huggingface.co if you choose codellama
 > If the installation of the Octopus Terminal CLI takes a long time, consider changing the pip mirror.
 
-3. Open your terminal and execute the command `octopus`, you will see the following output
+3. Open your terminal and execute the command `og`, you will see the following output
 
 ```
-Welcome to use octopus❤️ . To ask a programming question, simply type your question and press esc + enter
+Welcome to use octogen❤️ . To ask a programming question, simply type your question and press esc + enter
 You can use /help to look for help
 
 [1]🎧>
@@ -60,11 +60,12 @@ You can use /help to look for help
 
 ## Supported API Service
 
-|name|status| installation|
-|----|----------------|---|
-|[Openai GPT 3.5/4](https://openai.com/product#made-for-developers) | ✅ fully supported|the detail installation steps|
-|[Azure Openai GPT 3.5/4](https://azure.microsoft.com/en-us/products/ai-services/openai-service) |  ✅ fully supported|the detail install steps|
-|[LLama.cpp Server](https://github.com/ggerganov/llama.cpp/tree/master/examples/server) | ✔️  supported | You must have match the minimal hardware requirement |
+|name|type|status| installation|
+|----|-----|----------------|---|
+|[Openai GPT 3.5/4](https://openai.com/product#made-for-developers) |LLM| ✅ fully supported|use `octopus_up` then choose the `OpenAI`|
+|[Azure Openai GPT 3.5/4](https://azure.microsoft.com/en-us/products/ai-services/openai-service) |LLM|  ✅ fully supported|use `octopus_up` then choose the `Azure OpenAI`|
+|[LLama.cpp Server](https://github.com/ggerganov/llama.cpp/tree/master/examples/server) |LLM| ✔️  supported | use `octopus_up` then choose the `CodeLlama` |
+|[Octopus Agent Service](https://dbpunk.xyz) |Code Interpreter| ✅ supported | use `octopus_up` then choose the `Octopus` |
 
 
 ## The internal of Octopus
@@ -83,56 +84,15 @@ You can use /help to look for help
 
 * Automatically execute AI-generated code in a Docker environment.
 * Experiment feature, render images in iTerm2 and kitty.
-* Upload files with the /up command and you can use the `/up` in your prompt
+* Upload files with the `/up` command and you can use it in your prompt
 * Experiment feature, assemble code blocks into an application and you can run the code directly by `/run` command
 * Support copying output to the clipboard with `/cc` command
 * Support prompt histories stored in the octopus cli
 
 if you have any feature suggestion. please create a discuession to talk about it
 
-## Plan
+## Roadmap
 
-* Improve the stability of octopus and security
-* Support external codellama api service
-* Support memory system
-* Enhence the agent programming capability
-* Enhence the kernel capability
-    * support gpu to accelerate processing of video
+* [roadmap for v0.5.0](https://github.com/dbpunk-labs/octopus/issues/64)
 
-if you have any advice for the roadmap. please create a discuession to talk about it
-
-
-## VPS Deployment
-
-|name|location| recommanded hardware|
-|----|----------------|---|
-|kernel|Your own VPS|todo|
-|Agent|Your own VPS|todo|
-|Model|GPT3.5|todo|
-
-
-## Home Labs Deployment
-
-Recommanded hardware configuration
-
-|name|configuration| installation|
-|----|--------------|---|
-|CPU|8c|todo|
-|Memory|32G|todo|
-|GPU|3090|todo|
-|Model|Codellama 13B|todo|
-
-## UI Supported
-
-|name|status| installation|
-|----|----------------|---|
-|terminal | ✅ fully supported|the detail installation steps|
-|desktop | on the plan| You must start the llama cpp server by yourself|
-
-## Platforms Supported
-
-|name|status| installation|
-|----|----------------|---|
-|ubuntu 22.04 | ✅ fully supported|the detail installation steps|
-|macos |  ✅ fully supported|the detail install steps|
 
