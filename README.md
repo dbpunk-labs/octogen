@@ -18,9 +18,10 @@
 
 |OS|Platform|
 |----|----------------|
-|![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)| ✅ |
-|![macOS](https://img.shields.io/badge/mac%20os-000000?style=for-the-badge&logo=macos&logoColor=F0F0F0)|✅ |
-|![ubuntu](https://img.shields.io/badge/Ubuntu-E95420?style=for-the-badge&logo=ubuntu&logoColor=white) |✅|
+|<img  width="40px" src="https://github.com/dbpunk-labs/octogen/assets/8623385/fe2fcce8-ba62-4080-a64e-c430c4b6dc4d"/>| ✅ |
+|<img  width="40px" src="https://github.com/dbpunk-labs/octogen/assets/8623385/249acefa-72f4-443b-8a44-9a2601b50262"/>|✅ |
+|<img  width="40px" src="https://github.com/dbpunk-labs/octogen/assets/8623385/9db08c89-c5f6-498c-bff4-6dc71f743ff1"/>|✅|
+
 
 ## Getting Started
 
