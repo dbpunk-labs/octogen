@@ -9,7 +9,7 @@
 
 [中文](./README_zh_cn.md)
 
-> ## Octopus
+> ## Octogen
 > an open-source code interpreter for developers
 
 <p align="center">
@@ -33,27 +33,27 @@ Requirement
 
 Install the octopus on your local computer
 
-1. Install octopus_up
+1. Install og_up
 
 ```bash
-pip install octopus_up
+pip install og_up
 ```
 > try to change the pip mirror if the step install octopus terminal cli takes a lot of time
 
 2. Set up the Octopus service
    
 ```
-octopus_up
+og_up
 ```
 
 > You can choose the openai, azure openai, codellama and octopus agent sevice
 > Ocotopus will download codellama from huggingface.co if you choose codellama
 > If the installation of the Octopus Terminal CLI takes a long time, consider changing the pip mirror.
 
-3. Open your terminal and execute the command `octopus`, you will see the following output
+3. Open your terminal and execute the command `og`, you will see the following output
 
 ```
-Welcome to use octopus❤️ . To ask a programming question, simply type your question and press esc + enter
+Welcome to use octogen❤️ . To ask a programming question, simply type your question and press esc + enter
 You can use /help to look for help
 
 [1]🎧>
