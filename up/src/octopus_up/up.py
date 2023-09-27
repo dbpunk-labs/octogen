@@ -167,7 +167,7 @@ def download_model(
     if result_code == 0:
         segments.append(("✅", step, filename))
     else:
-        segments.append(("❌", step, filename))
+        segments.append(("❌", step, output))
     refresh(live, segments)
     return result_code
 
