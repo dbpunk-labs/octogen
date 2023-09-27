@@ -36,7 +36,7 @@ from rich.progress_bar import ProgressBar
 from rich.live import Live
 from rich.spinner import Spinner
 from rich.console import Group
-from octopus_sdk.utils import process_char_stream
+from og_sdk.utils import process_char_stream
 
 OCTOGEN_TITLE = "🐙[bold red]Octogen Up"
 USE_SHELL = sys.platform.startswith("win")
@@ -102,7 +102,7 @@ def run_with_realtime_print(
 def refresh(
     live,
     segments,
-    title=OCTOPUS_TITLE,
+    title=OCTOGEN_TITLE,
 ):
     table = Table.grid(padding=(0, 1, 0, 0), pad_edge=True)
     table.add_column("Index", no_wrap=True, justify="center")
@@ -176,7 +176,7 @@ def load_docker_image(version, image_name, repo_name, live, segments, chunk_size
     """
     full_name = f"{image_name}:{version}"
     spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
-    step = "Pull Octopus Image"
+    step = "Pull Octogen Image"
     segments.append((spinner, step, ""))
     refresh(live, segments)
     return_code = 0
@@ -224,7 +224,7 @@ def generate_agent_common(fd, rpc_key):
     fd.write(f"admin_key={rpc_key}\n")
     fd.write("max_file_size=202400000\n")
     fd.write("max_iterations=8\n")
-    fd.write("db_path=/app/agent/octopus.db\n")
+    fd.write("db_path=/app/agent/octogen.db\n")
 
 
 def generate_agent_azure_openai(
