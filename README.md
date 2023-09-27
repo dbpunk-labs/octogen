@@ -1,5 +1,5 @@
 <p align="center">
-<img  width="150px" src="https://github.com/dbpunk-labs/octogen/assets/8623385/2e3d36d1-c01e-4cb8-a5b0-3ccdff6a0056" align="center"/>
+<img  width="200px" src="https://github.com/dbpunk-labs/octogen/assets/8623385/7d1eb933-aad6-4458-9a71-6dfec2fb0671" align="center"/>
 
 
 ![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/dbpunk-labs/octogen/ci.yml?branch=main&style=flat-square)
