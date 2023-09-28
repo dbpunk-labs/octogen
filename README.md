@@ -2,7 +2,7 @@
 <img  width="200px" src="https://github.com/dbpunk-labs/octogen/assets/8623385/86af130f-7d0d-4cfb-9410-fc338426938e" align="center"/>
 
 
-![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/dbpunk-labs/octogen/ci.yml?branch=main&style=flat-square)
+![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/dbpunk-labs/octogen/ci.yaml)
 [![Discord](https://badgen.net/badge/icon/discord?icon=discord&label)](https://discord.gg/UjSHsjaz66)
 [![Twitter Follow](https://img.shields.io/twitter/follow/OCopilot7817?style=flat-square)](https://twitter.com/OCopilot7817)
 [![PyPI - Version](https://img.shields.io/pypi/v/og_chat)](https://pypi.org/project/og-chat/)
@@ -18,9 +18,9 @@
 
 |OS|Platform|
 |----|----------------|
-|<img  width="40px" src="https://github.com/dbpunk-labs/octogen/assets/8623385/fe2fcce8-ba62-4080-a64e-c430c4b6dc4d"/>| ✅ |
-|<img  width="40px" src="https://github.com/dbpunk-labs/octogen/assets/8623385/249acefa-72f4-443b-8a44-9a2601b50262"/>|✅ |
-|<img  width="40px" src="https://github.com/dbpunk-labs/octogen/assets/8623385/9db08c89-c5f6-498c-bff4-6dc71f743ff1"/>|✅|
+|<img  width="40px" src="https://github.com/dbpunk-labs/octogen/assets/8623385/31b907e9-3a6f-4e9e-b0c0-f01d1e758a21"/>| ✅ |
+|<img  width="40px" src="https://github.com/dbpunk-labs/octogen/assets/8623385/565d5f93-baac-4a77-ab1c-7d845e2fdb6d"/>|✅ |
+|<img  width="40px" src="https://github.com/dbpunk-labs/octogen/assets/8623385/acb7f919-ef09-446e-b1bc-0b50bc28de5a"/>|✅|
 
 
 ## Getting Started
