@@ -7,8 +7,8 @@
 import logging
 import grpc
 from grpc import aio
-from octopus_proto import agent_server_pb2, common_pb2
-from octopus_proto.agent_server_pb2_grpc import AgentServerStub
+from og_proto import agent_server_pb2, common_pb2
+from og_proto.agent_server_pb2_grpc import AgentServerStub
 import aiofiles
 from typing import AsyncIterable
 

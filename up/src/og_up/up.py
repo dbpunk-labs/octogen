@@ -63,9 +63,7 @@ def run_install_cli(live, segments):
     result_code = 0
     refresh(live, segments)
     outputs = ""
-    for code, output in run_with_realtime_print(
-        command=["pip", "install", "og_chat"]
-    ):
+    for code, output in run_with_realtime_print(command=["pip", "install", "og_chat"]):
         outputs += output
         result_code = code
     if result_code == 0:
@@ -98,6 +96,7 @@ def run_with_realtime_print(
         yield p.returncode, ""
     except Exception as ex:
         yield -1, str(ex)
+
 
 def refresh(
     live,
@@ -170,6 +169,7 @@ def download_model(
     refresh(live, segments)
     return result_code
 
+
 def load_docker_image(version, image_name, repo_name, live, segments, chunk_size=1024):
     """
     download the image file and load it into docker
@@ -215,8 +215,9 @@ def choose_api_service(console):
     elif choice == "4":
         key = Prompt.ask("Enter Octogen Key", password=True)
         api_base = "https://agent.octogen.dev"
-        return choice, key, "" , api_base
+        return choice, key, "", api_base
     return choice, "", "", ""
+
 
 def generate_agent_common(fd, rpc_key):
     fd.write("rpc_host=0.0.0.0\n")
@@ -245,6 +246,7 @@ def generate_agent_azure_openai(
         fd.write("log_level=debug\n")
     segments.append(("✅", "Generate Agent Config", f"{agent_dir}/.env"))
     refresh(live, segments)
+
 
 def generate_agent_openai(
     live, segments, install_dir, admin_key, openai_key, openai_model
@@ -326,7 +328,6 @@ def start_service(
     is_codellama="1",
     model_filename="",
 ):
-
     spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
     step = "Start octogen service"
     output = ""
@@ -365,6 +366,7 @@ def start_service(
         segments.append(("❌", "Start octogen service", output))
     refresh(live, segments)
     return result_code
+
 
 def update_cli_config(live, segments, api_key, cli_dir, api_base="127.0.0.1:9528"):
     config_path = f"{cli_dir}/config"
@@ -437,10 +439,15 @@ def init_octogen(
         generate_kernel_env(live, segments, real_install_dir, kernel_key)
         run_install_cli(live, segments)
         if choice == "3":
-            if download_model(live, segments, socks_proxy, codellama_repo, model_filename) != 0:
+            if (
+                download_model(
+                    live, segments, socks_proxy, codellama_repo, model_filename
+                )
+                != 0
+            ):
                 segments.append(("❌", "Setup octogen failed", ""))
                 refresh(live, segments)
-                return 
+                return
             generate_agent_codellama(live, segments, real_install_dir, admin_key)
             if (
                 start_service(

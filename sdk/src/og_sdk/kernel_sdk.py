@@ -7,9 +7,9 @@
 import logging
 import grpc
 from grpc import aio
-from octopus_proto import kernel_server_pb2
-from octopus_proto import common_pb2
-from octopus_proto.kernel_server_pb2_grpc import KernelServerNodeStub
+from og_proto import kernel_server_pb2
+from og_proto import common_pb2
+from og_proto.kernel_server_pb2_grpc import KernelServerNodeStub
 from typing import AsyncIterable
 
 logger = logging.getLogger(__name__)

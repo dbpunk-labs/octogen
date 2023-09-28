@@ -2,8 +2,8 @@ on: workflow_dispatch
 jobs:
   pypi-publish:
     name: Release the library to PYPI
-    runs-on: self-hosted
-    #runs-on: ubuntu-latest
+      #runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
