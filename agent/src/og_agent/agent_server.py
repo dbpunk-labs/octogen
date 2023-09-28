@@ -11,17 +11,17 @@ import hashlib
 import grpc
 import json
 from grpc.aio import AioRpcError
-from octopus_proto.agent_server_pb2_grpc import AgentServerServicer
-from octopus_proto.agent_server_pb2_grpc import add_AgentServerServicer_to_server
-from octopus_proto import agent_server_pb2
-from octopus_proto import common_pb2
-from octopus_proto import kernel_server_pb2
+from og_proto.agent_server_pb2_grpc import AgentServerServicer
+from og_proto.agent_server_pb2_grpc import add_AgentServerServicer_to_server
+from og_proto import agent_server_pb2
+from og_proto import common_pb2
+from og_proto import kernel_server_pb2
 from dotenv import dotenv_values
 from typing import AsyncIterable, Any, Dict, List, Optional, Sequence, Union, Type
 from tempfile import gettempdir
 from grpc.aio import ServicerContext, server
-from octopus_sdk.kernel_sdk import KernelSDK
-from octopus_sdk.utils import parse_image_filename
+from og_sdk.kernel_sdk import KernelSDK
+from og_sdk.utils import parse_image_filename
 from .agent_llm import LLMManager
 from .agent_builder import build_mock_agent, build_openai_agent, build_codellama_agent
 import databases
