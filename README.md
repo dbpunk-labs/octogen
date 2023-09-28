@@ -48,9 +48,9 @@ pip install og_up
 og_up
 ```
 
-> You can choose the openai, azure openai, codellama and octogen agent sevice 
-> Octogen will download codellama from huggingface.co if you choose codellama 
-> If the installation of the Octogen Terminal CLI takes a long time, consider changing the pip mirror.
+> You have the option to select from OpenAI, Azure OpenAI, CodeLlama, and Octogen agent services.
+> If you opt for CodeLlama, Octogen will automatically download it from huggingface.co.
+> In case the installation of the Octogen Terminal CLI is taking longer than expected, you might want to consider switching to a different pip mirror.
 
 3. Open your terminal and execute the command `og`, you will see the following output
 
