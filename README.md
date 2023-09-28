@@ -79,7 +79,6 @@ You can use /help to look for help
 * Octogen Agent: Manages client requests, uses ReAct to process complex tasks, and stores user-assembled applications.
 * Octogen Terminal Cli: Accepts user requests, sends them to the Agent, and renders rich results. Currently supports Discord, iTerm2, and Kitty terminals.
 
-
 ## Features
 
 * Automatically execute AI-generated code in a Docker environment.

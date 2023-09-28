@@ -48,3 +48,26 @@ the third step, open your terminal and execute the command ``og``, you will see 
 How to use
 ----------
 
+just type the question and  press ``esc + enter`` to get the answer, if you want to know more function just type ``/help`` + ``esc+enter``::
+
+   [1]🎧>/help
+                                                                                           Keyboard Shortcut:
+
+  • ESC + ENTER: Submit your question to Octogen or execute your command.
+
+                                                                                               Commands:
+
+  • /clear: Clears the screen.
+  • /cc{number}: Copies the output of Octogen to your clipboard.
+  • /exit: Exits the Octogen CLI.
+  • /up: Uploads files from your local machine; useful for including in your questions.
+  • /assemble {name} {number1} {number2}: Assembles the specified code segments into an application.
+  • /run {name}: Executes an application with the specified name.
+  • /apps: Displays a list of all your apps.
+
+                                                                                               Need Help?
+
+  1 Create an issue on our GitHub page: Octogen GitHub Issues
+  2 Alternatively, you can email us at codego.me@gmail.com.
+
+
