@@ -199,21 +199,21 @@ def choose_api_service(console):
 1. OpenAI, Kernel, Agent and Cli will be installed
 2. Azure OpenAI, Kernel, Agent and Cli will be installed
 3. Codellama, Model Server, Kernel, Agent and Cli will be installed
-4. Octogen, Only Cli will be installed
+4. Octogen(beta), Only Cli will be installed
 """
     console.print(Markdown(mk))
     choice = Prompt.ask("Choices", choices=["1", "2", "3", "4"], default="1:OpenAI")
     if choice == "1":
-        key = Prompt.ask("Enter OpenAI Key")
+        key = Prompt.ask("Enter OpenAI Key", password=True)
         model = Prompt.ask("Enter OpenAI Model", default="gpt-3.5-turbo-16k-0613")
         return choice, key, model, ""
     elif choice == "2":
-        key = Prompt.ask("Enter Azure OpenAI Key")
+        key = Prompt.ask("Enter Azure OpenAI Key", password=True)
         deployment = Prompt.ask("Enter Azure OpenAI Deployment")
         api_base = Prompt.ask("Enter Azure OpenAI Base")
         return choice, key, deployment, api_base
     elif choice == "4":
-        key = Prompt.ask("Enter Octogen Key")
+        key = Prompt.ask("Enter Octogen Key", password=True)
         api_base = "https://agent.octogen.dev"
         return choice, key, "" , api_base
     return choice, "", "", ""
@@ -326,6 +326,12 @@ def start_service(
     is_codellama="1",
     model_filename="",
 ):
+
+    spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
+    step = "Start octogen service"
+    output = ""
+    segments.append((spinner, step, ""))
+    refresh(live, segments)
     stop_service("octogen")
     # TODO stop the exist service
     full_name = f"{image_name}:{version}"
@@ -352,7 +358,7 @@ def start_service(
         result_code = code
         output += chunk
         pass
-
+    segments.pop()
     if result_code == 0:
         segments.append(("✅", "Start octogen service", ""))
     else:
