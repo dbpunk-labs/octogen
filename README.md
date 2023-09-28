@@ -42,7 +42,7 @@ pip install og_up
 ```
 > try to change the pip mirror if the step install octopus terminal cli takes a lot of time
 
-2. Set up the Octopus service
+2. Set up the Octogen service
    
 ```
 og_up
