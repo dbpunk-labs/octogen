@@ -71,9 +71,9 @@ You can use /help to look for help
 |[Octopus Agent Service](https://dbpunk.xyz) |Code Interpreter| ✅ supported | apply api key from [octogen.dev](https://www.octogen.dev/) then use `og_up` then choose the `Octogen` |
 
 
-## The internal of Octopus
+## The internal of local deployment
 
-![octopus_simple](https://github.com/dbpunk-labs/octopus/assets/8623385/e5bfb3fb-74a5-4c60-8842-a81ee54fcb9d)
+![octogen-internal](https://github.com/dbpunk-labs/octogen/assets/8623385/9e49ce14-239e-4c2b-836c-0d53a117d83f)
 
 * Octogen Kernel: The code execution engine, based on notebook kernels.
 * Octogen Agent: Manages client requests, uses ReAct to process complex tasks, and stores user-assembled applications.
