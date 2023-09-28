@@ -14,7 +14,7 @@
 > an open-source code interpreter for developers
 
 <p align="center">
-<img width="1000px" src="https://github.com/dbpunk-labs/octopus/assets/8623385/3ccb2d00-7231-4014-9dc5-f7f3e487c8a2" align="center"/>
+<img width="1000px" src="https://github.com/dbpunk-labs/octogen/assets/8623385/8ec0a02b-20a9-47ec-9b15-1ede8fa94dbb" align="center"/>
 
 |OS|Platform|
 |----|----------------|
@@ -79,9 +79,6 @@ You can use /help to look for help
 * Octogen Agent: Manages client requests, uses ReAct to process complex tasks, and stores user-assembled applications.
 * Octogen Terminal Cli: Accepts user requests, sends them to the Agent, and renders rich results. Currently supports Discord, iTerm2, and Kitty terminals.
 
-## Demo
-
-[video](https://github.com/dbpunk-labs/octopus/assets/8623385/bea76119-a705-4ae1-907d-cb4e0a0c18a5)
 
 ## Features
 
