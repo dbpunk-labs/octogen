@@ -17,3 +17,4 @@ aiofiles==23.2.1
 click==8.1.7
 discord.py==2.3.2
 openai==0.28.0
+build==1.0.3
