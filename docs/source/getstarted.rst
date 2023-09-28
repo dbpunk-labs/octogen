@@ -1,7 +1,7 @@
-Installation
-============
+Getting Started
+===============
 
-You can install octopus to your local computer and cloud server
+Octogen is an Open-Source Code Interpreter Powered by GPT 3.5/4 and Codellama.
 
 Requirements
 ------------
@@ -16,7 +16,7 @@ Octopus requires the following enviroment
 To use codellama, your host must have at least 8 CPUs and 16 GB of RAM
 
 Install
--------------------------
+-------
 
 the first step, install ``og_up`` tool::
 
@@ -44,4 +44,7 @@ the third step, open your terminal and execute the command ``og``, you will see 
 
     [1]🎧>
 
+
+How to use
+----------
 

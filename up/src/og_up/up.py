@@ -326,6 +326,12 @@ def start_service(
     is_codellama="1",
     model_filename="",
 ):
+
+    spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
+    step = "Start octogen service"
+    output = ""
+    segments.append((spinner, step, ""))
+    refresh(live, segments)
     stop_service("octogen")
     # TODO stop the exist service
     full_name = f"{image_name}:{version}"
@@ -352,7 +358,7 @@ def start_service(
         result_code = code
         output += chunk
         pass
-
+    segments.pop()
     if result_code == 0:
         segments.append(("✅", "Start octogen service", ""))
     else:

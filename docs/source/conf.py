@@ -8,8 +8,8 @@
 
 import sphinx_readable_theme
 
-project = 'octopus'
-copyright = '2023, imotai'
+project = 'octogen'
+copyright = '2023 octogem.dev'
 author = 'imotai'
 
 # -- General configuration ---------------------------------------------------
@@ -25,4 +25,6 @@ exclude_patterns = []
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
+html_theme = "alabaster"
 html_static_path = ['_static']
+html_logo = "_static/octogen_logo.png"
