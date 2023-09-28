@@ -63,6 +63,7 @@ You can use /help to look for help
 
 ## Supported API Service
 
+
 |name|type|status| installation|
 |----|-----|----------------|---|
 |[Openai GPT 3.5/4](https://openai.com/product#made-for-developers) |LLM| ✅ fully supported|use `og_up` then choose the `OpenAI`|
@@ -73,7 +74,7 @@ You can use /help to look for help
 
 ## The internal of local deployment
 
-![octogen-internal](https://github.com/dbpunk-labs/octogen/assets/8623385/9e49ce14-239e-4c2b-836c-0d53a117d83f)
+![octogen-internal](https://github.com/dbpunk-labs/octogen/assets/8623385/81f634c8-59b1-4c1a-85a0-86323ff37d1e)
 
 * Octogen Kernel: The code execution engine, based on notebook kernels.
 * Octogen Agent: Manages client requests, uses ReAct to process complex tasks, and stores user-assembled applications.
