@@ -15,7 +15,7 @@
 # limitations under the License.
 import pytest
 
-from octopus_kernel.kernel.kernel_mgr import KernelManager
+from og_kernel.kernel.kernel_mgr import KernelManager
 
 
 @pytest.mark.parametrize(

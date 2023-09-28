@@ -71,3 +71,12 @@ just type the question and  press ``esc + enter`` to get the answer, if you want
   2 Alternatively, you can email us at codego.me@gmail.com.
 
 
+How it works
+------------
+
+.. image:: _static/octogen-internal.drawio.png
+
+- Octogen Kernel: The code execution engine, based on notebook kernels.
+- Octogen Agent: Manages client requests, uses ReAct to process complex tasks, and stores user-assembled applications.
+- Octogen Terminal Cli: Accepts user requests, sends them to the Agent, and renders rich results. Currently supports Discord, iTerm2, and Kitty terminals.
+
