@@ -6,7 +6,7 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'octogen'
+project = 'Octogen'
 copyright = '2023 octogem.dev'
 author = 'imotai'
 
@@ -25,4 +25,3 @@ exclude_patterns = []
 
 html_theme = "alabaster"
 html_static_path = ['_static']
-html_logo = "_static/octogen_logo.png"
