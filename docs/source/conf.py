@@ -6,8 +6,6 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-import sphinx_readable_theme
-
 project = 'octogen'
 copyright = '2023 octogem.dev'
 author = 'imotai'
