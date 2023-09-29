@@ -9,8 +9,9 @@ on:
       - main
 jobs:
   build:
-    #runs-on: self-hosted
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
