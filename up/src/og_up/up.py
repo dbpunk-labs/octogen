@@ -100,6 +100,7 @@ def run_with_realtime_print(
     except Exception as ex:
         yield -1, str(ex)
 
+
 def refresh(
     live,
     segments,
@@ -248,6 +249,7 @@ def generate_agent_azure_openai(
         fd.write("log_level=debug\n")
     segments.append(("✅", "Generate Agent Config", f"{agent_dir}/.env"))
     refresh(live, segments)
+
 
 def generate_agent_openai(
     live, segments, install_dir, admin_key, openai_key, openai_model
