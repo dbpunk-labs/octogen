@@ -27,11 +27,9 @@ jobs:
         run: pip install -r requirements.txt
       - name: Run cli tests
         run: |
-          WORK_DIR=`pwd`
-          cd ${WORK_DIR}/up
+          cd up
           pip install .
           pytest tests/*.py
-          cd ${WORK_DIR}/chat
+          cd ../chat
           pip install .
           pytest tests/*.py
-
