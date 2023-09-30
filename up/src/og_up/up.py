@@ -100,7 +100,6 @@ def run_with_realtime_print(
     except Exception as ex:
         yield -1, str(ex)
 
-
 def refresh(
     live,
     segments,
@@ -173,7 +172,7 @@ def download_model(
     return result_code
 
 
-def load_docker_image(version, image_name, repo_name, live, segments, chunk_size=1024):
+def load_docker_image(version, image_name, live, segments, chunk_size=1024):
     """
     download the image file and load it into docker
     """
@@ -249,7 +248,6 @@ def generate_agent_azure_openai(
         fd.write("log_level=debug\n")
     segments.append(("✅", "Generate Agent Config", f"{agent_dir}/.env"))
     refresh(live, segments)
-
 
 def generate_agent_openai(
     live, segments, install_dir, admin_key, openai_key, openai_model
@@ -434,7 +432,7 @@ def init_octogen(
             version = octogen_version
         else:
             version = get_latest_release_version(repo_name, live, segments)
-        code = load_docker_image(version, image_name, repo_name, live, segments)
+        code = load_docker_image(version, image_name, live, segments)
         if code != 0:
             return
         kernel_key = random_str(32)
