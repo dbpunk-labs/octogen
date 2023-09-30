@@ -45,7 +45,7 @@ setup(
         "aiohttp>=3.8.5",
         "pydantic",
     ],
-    package_data={"octopus_agent": ["*.bnf"]},
+    package_data={"og_agent": ["*.bnf"]},
     entry_points={
         "console_scripts": [
             "og_agent_rpc_server = og_agent.agent_server:server_main",
