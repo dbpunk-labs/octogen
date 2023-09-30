@@ -52,4 +52,4 @@ def test_load_valid_docker_image():
     segments = []
     with Live(Group(*segments), console=console) as live:
         code = load_docker_image("v0.4.26", "dbpunk/octogen", live, segments)
-        assert code != 0, "loading image should be failed"
+        assert code == 0, "loading image should be ok"
