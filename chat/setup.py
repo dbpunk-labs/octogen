@@ -20,7 +20,7 @@ from setuptools import setup, find_packages
 setup(
     name="og_chat",
     version="0.3.6",
-    description="the chat client for open source code interpreter octopus",
+    description="the chat client for open source code interpreter octogen",
     author="imotai",
     author_email="codego.me@gmail.com",
     url="https://github.com/dbpunk-labs/octogen",

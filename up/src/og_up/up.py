@@ -87,7 +87,9 @@ def run_with_realtime_print(
             env=env,
         )
 
-        text_fd = io.TextIOWrapper(p.stdout, encoding="utf-8", newline=os.linesep, errors='replace')
+        text_fd = io.TextIOWrapper(
+            p.stdout, encoding="utf-8", newline=os.linesep, errors="replace"
+        )
         while True:
             chunk = text_fd.read(40)
             if not chunk:
