@@ -1,4 +1,4 @@
-name: Python Project
+name: backend testing
 
 on:
   push:
