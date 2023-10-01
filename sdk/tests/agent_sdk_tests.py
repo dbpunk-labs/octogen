@@ -53,6 +53,7 @@ def test_connect_bad_endpoint():
 @pytest.mark.asyncio
 async def test_ping_test(agent_sdk):
     try:
+        await agent_sdk.add_kernel(api_key, "127.0.0.1:9527")
         response = await agent_sdk.ping()
         assert response.code == 0
     except Exception as ex:
@@ -61,22 +62,20 @@ async def test_ping_test(agent_sdk):
 
 @pytest.mark.asyncio
 async def test_upload_and_download_test(agent_sdk):
-    try:
-        sdk = agent_sdk
-        await sdk.add_kernel(api_key, "127.0.0.1:9527")
-        path = os.path.abspath(__file__)
-        # upload file
-        uploaded = await sdk.upload_file(path, "agent_sdk_tests.py")
-        file_stats = os.stat(path)
-        assert file_stats.st_size == uploaded.length, "bad upload_file size"
-        # download file
-        tmp_dir = gettempdir()
-        fullpath = "%s%s%s" % (tmp_dir.os.sep, "agent_sdk_tests.py")
-        await sdk.download_file("agent_sdk_tests.py", tmp_dir)
-        file_stats2 = os.stat(fullpath)
-        assert file_stats.st_size == file_stats2.st_size, "bad download_file size"
-    except Exception as ex:
-        assert 0, str(ex)
+    sdk = agent_sdk
+    await sdk.add_kernel(api_key, "127.0.0.1:9527")
+    path = os.path.abspath(__file__)
+    # upload file
+    uploaded = await sdk.upload_file(path, "agent_sdk_tests.py")
+    assert uploaded
+    file_stats = os.stat(path)
+    assert file_stats.st_size == uploaded.length, "bad upload_file size"
+    # download file
+    tmp_dir = gettempdir()
+    fullpath = "%s%s%s" % (tmp_dir, os.sep, "agent_sdk_tests.py")
+    await sdk.download_file("agent_sdk_tests.py", tmp_dir)
+    file_stats2 = os.stat(fullpath)
+    assert file_stats.st_size == file_stats2.st_size, "bad download_file size"
 
 
 @pytest.mark.asyncio

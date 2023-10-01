@@ -204,7 +204,7 @@ class AgentSDK:
             except Exception as ex:
                 logger.error("fail to read file %s", ex)
 
-        await self.upload_binary(generate_trunk(filepath, filename))
+        return await self.upload_binary(generate_trunk(filepath, filename))
 
     def close(self):
         if self.channel:

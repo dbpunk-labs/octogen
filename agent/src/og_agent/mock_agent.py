@@ -15,7 +15,7 @@
 # limitations under the License.
 
 """ """
-
+import json
 import logging
 from .base_agent import BaseAgent, TypingState
 from og_proto.agent_server_pb2 import OnAgentAction, TaskRespond, OnAgentActionEnd, FinalRespond
@@ -70,10 +70,10 @@ class MockAgent(BaseAgent):
         })
         await queue.put(
             TaskRespond(
-                token_usage=token_usage,
-                iteration=iteration,
+                token_usage=0,
+                iteration=0,
                 respond_type=TaskRespond.OnAgentActionType,
-                model_name=model_name,
+                model_name="mock model",
                 on_agent_action=OnAgentAction(
                     input=tool_input, tool="execute_python_code"
                 ),
@@ -94,6 +94,7 @@ class MockAgent(BaseAgent):
         try:
             while iteration < max_iteration:
                 message = await self.call_ai(task, queue, iteration)
+                iteration = iteration + 1
                 if message.get("code", None):
                     function_result = await self.handle_call_function(
                         message["code"],
@@ -104,10 +105,10 @@ class MockAgent(BaseAgent):
                     )
                     await queue.put(
                         TaskRespond(
-                            token_usage=token_usage,
-                            iteration=iterations,
+                            token_usage=0,
+                            iteration=iteration,
                             respond_type=TaskRespond.OnAgentActionEndType,
-                            model_name=model_name,
+                            model_name="mock model",
                             on_agent_action_end=OnAgentActionEnd(
                                 output="", output_files=function_result.saved_filenames
                             ),
