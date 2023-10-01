@@ -175,7 +175,6 @@ def handle_action_output(segments, respond, values):
         agent_server_pb2.TaskRespond.OnAgentActionStderr,
     ]:
         return
-
     value = values.pop()
     new_stdout = value[1][0]
     new_stderr = value[1][1]

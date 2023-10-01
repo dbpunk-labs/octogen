@@ -29,6 +29,7 @@ import uuid
 import random
 import string
 import base64
+import tempfile
 from pathlib import Path
 from typing import Awaitable, Callable, Optional, AsyncIterable
 from grpc.aio import ServicerContext, server, ServerInterceptor
@@ -40,7 +41,6 @@ from og_proto.kernel_server_pb2_grpc import add_KernelServerNodeServicer_to_serv
 from og_proto import kernel_server_pb2
 from og_proto import common_pb2
 from ..kernel.kernel_client import KernelClient
-from tempfile import gettempdir
 import aiofiles
 from aiofiles import os as aio_os
 
@@ -183,19 +183,24 @@ class KernelRpcServer(KernelServerNodeServicer):
         """
         upload file
         """
-        tmp_filename = Path(gettempdir()) / "".join(
-            random.choices(string.ascii_lowercase, k=16)
-        )
+        temp_dir = tempfile.mkdtemp(prefix="octogen")
+        filename = "".join(random.choices(string.ascii_lowercase, k=16))
+        tmp_full_path = f"{temp_dir}{os.sep}{filename}"
         target_filename = None
-        logger.info(f"upload file to temp file {tmp_filename}")
+        logger.info(f"upload file to temp file {tmp_full_path}")
         length = 0
-        async with aiofiles.open(tmp_filename, "wb+") as afp:
+        async with aiofiles.open(tmp_full_path, "wb") as afp:
             async for chunk in request:
                 length = length + await afp.write(chunk.buffer)
+                logger.debug(f"write the {tmp_full_path} with {length}")
                 if not target_filename:
                     target_filename = "%s/%s" % (config["workspace"], chunk.filename)
-        logging.info(f"move file from {tmp_filename} to  {target_filename}")
-        await aio_os.rename(tmp_filename, target_filename)
+        if length != 0:
+            logging.info(f"move file from {tmp_full_path} to  {target_filename}")
+            await aio_os.rename(tmp_full_path, target_filename)
+        else:
+            logging.warning("empty file")
+        await aio_os.rmdir(temp_dir)
         return common_pb2.FileUploaded(length=length)
 
     async def execute(

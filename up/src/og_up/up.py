@@ -87,7 +87,9 @@ def run_with_realtime_print(
             env=env,
         )
 
-        text_fd = io.TextIOWrapper(p.stdout, encoding="utf-8", newline=os.linesep, errors='replace')
+        text_fd = io.TextIOWrapper(
+            p.stdout, encoding="utf-8", newline=os.linesep, errors="replace"
+        )
         while True:
             chunk = text_fd.read(40)
             if not chunk:
@@ -125,8 +127,11 @@ def get_latest_release_version(repo_name, live, segments):
     refresh(live, segments)
     r = requests.get(f"https://api.github.com/repos/{repo_name}/releases/latest")
     old_segment = segments.pop()
-    version = r.json()["name"]
-    segments.append(("✅", "Get octogen version", version))
+    version = r.json().get("name", "")
+    if not version:
+        segments.append(("❌", "Get octogen latest version failed", version))
+    else:
+        segments.append(("✅", "Get octogen latest version", version))
     refresh(live, segments)
     return version
 
@@ -171,7 +176,7 @@ def download_model(
     return result_code
 
 
-def load_docker_image(version, image_name, repo_name, live, segments, chunk_size=1024):
+def load_docker_image(version, image_name, live, segments, chunk_size=1024):
     """
     download the image file and load it into docker
     """
@@ -277,7 +282,6 @@ def generate_agent_codellama(live, segments, install_dir, admin_key):
         fd.write("max_file_size=202400000\n")
         fd.write("max_iterations=8\n")
         fd.write("log_level=debug\n")
-
     segments.append(("✅", "Generate Agent Config", f"{agent_dir}/.env"))
     refresh(live, segments)
 
@@ -314,7 +318,6 @@ def stop_service(name):
             command = ["docker", "kill", id]
             for _, chunk in run_with_realtime_print(command=command):
                 pass
-
     command = ["docker", "container", "rm", name]
     for _, chunk in run_with_realtime_print(command=command):
         pass
@@ -378,6 +381,51 @@ def update_cli_config(live, segments, api_key, cli_dir, api_base="127.0.0.1:9528
     refresh(live, segments)
 
 
+def start_octogen_for_codellama(
+    live,
+    segments,
+    model_repo,
+    model_filename,
+    install_dir,
+    cli_install_dir,
+    admin_key,
+    kernel_key,
+    image_name,
+    version,
+    socks_proxy="",
+):
+    """
+    start the octogen service for codellama
+    """
+
+    if download_model(live, segments, socks_proxy, model_repo, model_filename) != 0:
+        segments.append(("❌", "Setup octogen service failed", ""))
+        refresh(live, segments)
+        return False
+
+    generate_agent_codellama(live, segments, install_dir, admin_key)
+    if (
+        start_service(
+            live,
+            segments,
+            install_dir,
+            image_name,
+            version,
+            is_codellama="1",
+            model_filename=model_filename,
+        )
+        == 0
+    ):
+        update_cli_config(live, segments, kernel_key, cli_install_dir)
+        segments.append(("👍", "Setup octogen service done", ""))
+        refresh(live, segments)
+        return True
+    else:
+        segments.append(("❌", "Setup octogen service failed", ""))
+        refresh(live, segments)
+        return False
+
+
 @click.command("init")
 @click.option("--image_name", default="dbpunk/octogen", help="the octogen image name")
 @click.option(
@@ -432,7 +480,7 @@ def init_octogen(
             version = octogen_version
         else:
             version = get_latest_release_version(repo_name, live, segments)
-        code = load_docker_image(version, image_name, repo_name, live, segments)
+        code = load_docker_image(version, image_name, live, segments)
         if code != 0:
             return
         kernel_key = random_str(32)
@@ -440,33 +488,19 @@ def init_octogen(
         generate_kernel_env(live, segments, real_install_dir, kernel_key)
         run_install_cli(live, segments)
         if choice == "3":
-            if (
-                download_model(
-                    live, segments, socks_proxy, codellama_repo, model_filename
-                )
-                != 0
-            ):
-                segments.append(("❌", "Setup octogen failed", ""))
-                refresh(live, segments)
-                return
-            generate_agent_codellama(live, segments, real_install_dir, admin_key)
-            if (
-                start_service(
-                    live,
-                    segments,
-                    real_install_dir,
-                    image_name,
-                    version,
-                    is_codellama="1",
-                    model_filename=model_filename,
-                )
-                == 0
-            ):
-                update_cli_config(live, segments, kernel_key, real_cli_dir)
-                segments.append(("👍", "Setup octogen done", ""))
-            else:
-                segments.append(("❌", "Setup octogen failed", ""))
-            refresh(live, segments)
+            start_octogen_for_codellama(
+                live,
+                segments,
+                codellama_repo,
+                model_filename,
+                real_install_dir,
+                real_cli_dir,
+                admin_key,
+                kernel_key,
+                image_name,
+                version,
+                socks_proxy,
+            )
         elif choice == "2":
             generate_agent_azure_openai(
                 live, segments, real_install_dir, admin_key, key, model, api_base

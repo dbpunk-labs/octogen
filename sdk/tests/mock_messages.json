@@ -3,5 +3,15 @@
         {
             "explanation": "how can I help you today?"
         }
+    ],
+    "write a hello world in python":[
+        {
+            "explanation": "this is a hello world code",
+            "code":"print('hello world')"
+        },
+        {
+            "explanation": "this code prints 'hello world'"
+        }
     ]
+
 }

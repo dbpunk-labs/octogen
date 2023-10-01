@@ -8,6 +8,7 @@ mkdir -p ${WORKDIR}/sandbox/agent
 cd ${WORKDIR}/sandbox/kernel
 KERNEL_RPC_KEY=ZCeI9cYtOCyLISoi488BgZHeBkHWuFUH
 echo ${KERNEL_RPC_KEY}
+mkdir -p /tmp/ws1 /tmp/kernel_config
 echo "config_root_path=/tmp/kernel_config"> .env
 echo "workspace=/tmp/ws1">> .env
 echo "rpc_host=127.0.0.1">> .env

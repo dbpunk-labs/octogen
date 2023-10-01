@@ -18,30 +18,30 @@
 import sys
 import os
 import click
-from octopus_sdk.agent_sdk import AgentSyncSDK
+from og_sdk.agent_sdk import AgentSyncSDK
 from rich.console import Console
 from dotenv import dotenv_values
 
 
 @click.command()
-@click.option("--octopus_dir", default="~/.octopus", help="the root path of octopus")
-def app(octopus_dir):
+@click.option("--octogen_dir", default="~/.octogen", help="the root path of octogen")
+def app(octogen_dir):
     console = Console()
-    if octopus_dir.find("~") == 0:
-        real_octopus_dir = octopus_dir.replace("~", os.path.expanduser("~"))
+    if octogen_dir.find("~") == 0:
+        real_octogen_dir = octogen_dir.replace("~", os.path.expanduser("~"))
     else:
-        real_octopus_dir = octopus_dir
-    if not os.path.exists(real_octopus_dir):
+        real_octogen_dir = octogen_dir
+    if not os.path.exists(real_octogen_dir):
         os.mkdir(real_octopus_dir)
-    octopus_config = dotenv_values(real_octopus_dir + "/config")
+    octogen_config = dotenv_values(real_octogen_dir + "/config")
     console = Console()
     try:
-        if "api_key" not in octopus_config or "endpoint" not in octopus_config:
+        if "api_key" not in octogen_config or "endpoint" not in octogen_config:
             console.print(
-                f"❌ api key and endpoint are required! please check your config {octopus_dir}/config"
+                f"❌ api key and endpoint are required! please check your config {octogen_dir}/config"
             )
             sys.exit(1)
-        sdk = AgentSyncSDK(octopus_config["endpoint"], octopus_config["api_key"])
+        sdk = AgentSyncSDK(octogen_config["endpoint"], octogen_config["api_key"])
         sdk.connect()
         response = sdk.ping()
         if response.code == 0:
@@ -52,5 +52,5 @@ def app(octopus_dir):
             sys.exit(1)
     except Exception as ex:
         console.print(
-            f"❌ please check your config {octopus_dir}/config with error {ex}"
+            f"❌ please check your config {octogen_dir}/config with error {ex}"
         )
