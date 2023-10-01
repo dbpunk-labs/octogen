@@ -413,7 +413,7 @@ def start_octogen_for_codellama(
         )
         == 0
     ):
-        update_cli_config(live, segments, kernel_key, real_cli_dir)
+        update_cli_config(live, segments, kernel_key, cli_install_dir)
         segments.append(("👍", "Setup octogen service done", ""))
         refresh(live, segments)
         return True
@@ -498,7 +498,6 @@ def init_octogen(
                 version,
                 socks_proxy,
             )
-
         elif choice == "2":
             generate_agent_azure_openai(
                 live, segments, real_install_dir, admin_key, key, model, api_base
