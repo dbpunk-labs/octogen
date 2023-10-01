@@ -44,3 +44,9 @@ og_agent_rpc_server > agent_rpc.log 2>&1 &
 sleep 2
 echo "add a kernel"
 og_agent_setup --kernel_endpoint=127.0.0.1:9527 --kernel_api_key=${KERNEL_RPC_KEY} --agent_endpoint=127.0.0.1:9528 --admin_key=${AGENT_RPC_KEY}
+
+mkdir -p ~/.octogen
+cat <<EOF> ~/.octogen/config
+endpoint=127.0.0.1:9528
+api_key=${KERNEL_RPC_KEY}
+EOF
