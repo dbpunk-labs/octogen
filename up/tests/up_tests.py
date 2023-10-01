@@ -8,6 +8,7 @@
 """ """
 
 import os
+import sys
 import pytest
 from rich.live import Live
 from rich.console import Console
@@ -39,6 +40,7 @@ def test_download_model():
         assert result_code == 0, "fail to download model"
 
 
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="skip on windows")
 def test_load_bad_docker_image():
     console = Console()
     segments = []
@@ -47,6 +49,7 @@ def test_load_bad_docker_image():
         assert code != 0, "loading image should be failed"
 
 
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="skip on windows")
 def test_load_valid_docker_image():
     console = Console()
     segments = []
