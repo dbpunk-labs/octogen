@@ -127,8 +127,11 @@ def get_latest_release_version(repo_name, live, segments):
     refresh(live, segments)
     r = requests.get(f"https://api.github.com/repos/{repo_name}/releases/latest")
     old_segment = segments.pop()
-    version = r.json()["name"]
-    segments.append(("✅", "Get octogen version", version))
+    version = r.json().get("name", "")
+    if not version:
+        segments.append(("❌", "Get octogen latest version failed", version))
+    else:
+        segments.append(("✅", "Get octogen latest version", version))
     refresh(live, segments)
     return version
 
