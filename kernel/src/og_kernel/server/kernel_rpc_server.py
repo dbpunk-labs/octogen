@@ -192,10 +192,14 @@ class KernelRpcServer(KernelServerNodeServicer):
         async with aiofiles.open(tmp_full_path, "wb") as afp:
             async for chunk in request:
                 length = length + await afp.write(chunk.buffer)
+                logger.debug(f"write the {tmp_full_path} with {length}")
                 if not target_filename:
                     target_filename = "%s/%s" % (config["workspace"], chunk.filename)
-        logging.info(f"move file from {tmp_full_path} to  {target_filename}")
-        await aio_os.rename(tmp_full_path, target_filename)
+        if length != 0:
+            logging.info(f"move file from {tmp_full_path} to  {target_filename}")
+            await aio_os.rename(tmp_full_path, target_filename)
+        else:
+            logging.warning("empty file")
         await aio_os.rmdir(temp_dir)
         return common_pb2.FileUploaded(length=length)
 
