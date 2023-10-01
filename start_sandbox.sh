@@ -13,10 +13,10 @@ mkdir -p /tmp/ws1 /tmp/kernel_config
 
 cat <<EOF> .env
 config_root_path=/tmp/kernel_config
-echo workspace=/tmp/ws1
-echo rpc_host=127.0.0.1
-echo rpc_port=9527
-echo rpc_key=${KERNEL_RPC_KEY}
+workspace=/tmp/ws1
+rpc_host=127.0.0.1
+rpc_port=9527
+rpc_key=${KERNEL_RPC_KEY}
 EOF
 
 echo "start kernel with endpoint 127.0.0.1:9527"
@@ -30,14 +30,14 @@ test -f /tmp/octopus_sandbox.db && rm /tmp/octopus_sandbox.db
 echo "start agent with endpoint 127.0.0.1:9528"
 
 cat <<EOF> .env
-echo rpc_host=127.0.0.1
-echo rpc_port=9528
-echo admin_key=${AGENT_RPC_KEY}
-echo llm_key=mock
-echo max_file_size=10240000
-echo verbose=True
-echo db_path=/tmp/octopus_sandbox.db
-echo cases_path=${WORKDIR}/sdk/tests/mock_messages.json
+rpc_host=127.0.0.1
+rpc_port=9528
+admin_key=${AGENT_RPC_KEY}
+llm_key=mock
+max_file_size=10240000
+verbose=True
+db_path=/tmp/octopus_sandbox.db
+cases_path=${WORKDIR}/sdk/tests/mock_messages.json
 EOF
 
 og_agent_rpc_server > agent_rpc.log 2>&1 &
