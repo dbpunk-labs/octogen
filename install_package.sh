@@ -8,3 +8,4 @@ cd ${WORKDIR}/sdk && pip install .
 cd ${WORKDIR}/kernel && pip install .
 cd ${WORKDIR}/agent && pip install .
 cd ${WORKDIR}/chat && pip install .
+cd ${WORKDIR}/up && pip install .

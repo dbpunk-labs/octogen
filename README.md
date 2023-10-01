@@ -94,4 +94,19 @@ if you have any feature suggestion. please create a discuession to talk about it
 
 * [roadmap for v0.5.0](https://github.com/dbpunk-labs/octogen/issues/64)
 
+## Development
 
+Prepare the environment
+
+```
+git clone https://github.com/dbpunk-labs/octogen.git
+cd octogen
+python3 -m venv octogen_venv
+source octogen_venv/bin/activate
+pip install -r requirements.txt
+```
+
+Run the sandbox including Agent, Kernel and a mock mode
+```
+bash start_sandbox.sh
+```
