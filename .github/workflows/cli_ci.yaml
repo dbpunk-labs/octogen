@@ -20,9 +20,8 @@ jobs:
         with:
           submodules: recursive
 
-      - name: setup docker
-        uses: docker-practice/actions-setup-docker@master
-        timeout-minutes: 12
+      - name: Setup Docker on macOS
+        uses: douglascamata/setup-docker-macos-action@v1-alpha
         if: startsWith(runner.os, 'macos')
 
       - name: Set up Python ${{ matrix.python-version }}
