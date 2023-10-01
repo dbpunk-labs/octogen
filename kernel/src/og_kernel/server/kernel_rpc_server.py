@@ -189,7 +189,7 @@ class KernelRpcServer(KernelServerNodeServicer):
         target_filename = None
         logger.info(f"upload file to temp file {tmp_filename}")
         length = 0
-        async with aiofiles.open(tmp_filename, "wb+") as afp:
+        async with aiofiles.open(tmp_filename, "wb") as afp:
             async for chunk in request:
                 length = length + await afp.write(chunk.buffer)
                 if not target_filename:
