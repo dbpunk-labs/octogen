@@ -7,7 +7,9 @@ db_path=/tmp/octopus.db
 llm_key=azure_openai
 openai_api_type=azure
 openai_api_version=2023-07-01-preview
+# tha api key
 openai_api_key=api_key
+# the azure api base
 openai_api_base=base_url
 # the deployment_name 
 openai_api_deployment=deployment_name
