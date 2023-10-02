@@ -92,9 +92,9 @@ Use /help for help
 
 ```
 
-* Use openai for development, just update the config in the `start_sandbox.sh` with the example of [openai-env.example](./env_sample/openai_env.sample)
-* Use azure openai for development, just update the config in the `start_sandbox.sh` with the example of [azure-env.example](./env_sample/azure_env.sample)
-* Use codellama for development, just update the config in the `start_sandbox.sh` with the example of [codellama-env.example](./env_sample/codellama_env.sample)
+* To use openai for development, just update the config in the `start_sandbox.sh` with the example of [openai-env.example](./env_sample/openai_env.sample)
+* To use azure openai for development, just update the config in the `start_sandbox.sh` with the example of [azure-env.example](./env_sample/azure_env.sample)
+* To use codellama for development, just update the config in the `start_sandbox.sh` with the example of [codellama-env.example](./env_sample/codellama_env.sample)
 
 ## Supported API Service
 
