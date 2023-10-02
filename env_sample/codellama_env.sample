@@ -1,0 +1,14 @@
+rpc_host=127.0.0.1
+rpc_port=9528
+admin_key=gennerate_admin_key
+max_file_size=202400000
+max_iterations=8
+# the sqlite db path
+db_path=/tmp/octogen.db
+llm_key=codellama
+# the llama cpp server
+llama_api_base=http://127.0.0.1:8080
+max_file_size=202400000
+max_iterations=8
+log_level=debug
+

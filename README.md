@@ -59,6 +59,42 @@ You can use /help to look for help
 
 [1]🎧>
 ```
+## Development
+
+
+Prepare the environment
+
+```
+git clone https://github.com/dbpunk-labs/octogen.git
+cd octogen
+python3 -m venv octogen_venv
+source octogen_venv/bin/activate
+pip install -r requirements.txt
+```
+
+Run the sandbox including Agent with mock model and Kernel
+
+```
+$ bash start_sandbox.sh
+$ og
+
+Welcome to use octogen❤️ . To ask a programming question, simply type your question and press esc + 
+enter
+Use /help for help
+
+[1]🎧>hello
+╭─ 🐙Octogen ─────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                                                                     │
+│  0 🧠 how can I help you today?                                                                     │
+│                                                                                                     │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────╯
+[2]🎧>
+
+```
+
+Use openai for development, just update the config in the `start_sandbox.sh` with the example of [openai-env.example](./env_sample/openai_env.sample)
+Use azure openai for development, just update the config in the `start_sandbox.sh` with the example of [azure-env.example](./env_sample/azure_env.sample)
+Use codellama for development, just update the config in the `start_sandbox.sh` with the example of [codellama-env.example](./env_sample/codellama_env.sample)
 
 ## Supported API Service
 
@@ -94,36 +130,4 @@ if you have any feature suggestion. please create a discuession to talk about it
 
 * [roadmap for v0.5.0](https://github.com/dbpunk-labs/octogen/issues/64)
 
-## Development
-
-
-Prepare the environment
-
-```
-git clone https://github.com/dbpunk-labs/octogen.git
-cd octogen
-python3 -m venv octogen_venv
-source octogen_venv/bin/activate
-pip install -r requirements.txt
-```
-
-Run the sandbox including Agent with mock model and Kernel
-
-```
-$ bash start_sandbox.sh
-$ og
-
-Welcome to use octogen❤️ . To ask a programming question, simply type your question and press esc + 
-enter
-Use /help for help
-
-[1]🎧>hello
-╭─ 🐙Octogen ─────────────────────────────────────────────────────────────────────────────────────────╮
-│                                                                                                     │
-│  0 🧠 how can I help you today?                                                                     │
-│                                                                                                     │
-╰─────────────────────────────────────────────────────────────────────────────────────────────────────╯
-[2]🎧>
-
-```
 

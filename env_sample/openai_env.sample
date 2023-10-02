@@ -5,7 +5,9 @@ max_file_size=10240000
 verbose=True
 db_path=/tmp/octopus.db
 llm_key=openai
+# the openai api mode name
 openai_api_model=model_nama
+# the openai api key
 openai_api_key=api_key
 max_iterations=10
 log_level=debug
