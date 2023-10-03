@@ -102,8 +102,13 @@ class KernelRpcServer(KernelServerNodeServicer):
             message="api key is required",
             details=[],
         )
-
         os.makedirs(config["config_root_path"], exist_ok=True)
+        os.makedirs(config["workspace"], exist_ok=True)
+        config_root_path = config["config_root_path"]
+        workspace = config["workspace"]
+        logger.info(
+            f"start kernel rpc with config root path {config_root_path} and workspace {workspace}"
+        )
 
     async def stop(
         self, request: kernel_server_pb2.StopKernelRequest, context: ServicerContext
@@ -142,9 +147,11 @@ class KernelRpcServer(KernelServerNodeServicer):
         """
         kernel_name = request.kernel_name if request.kernel_name else "python3"
         if kernel_name in self.kms and self.kms[kernel_name]:
-            logger.warning("the kernel has been started")
+            logger.warning(
+                "the request will be ignored for that the kernel has been started"
+            )
             return kernel_server_pb2.StartKernelResponse(
-                code=1, msg="the kernel has been started"
+                code=0, msg="the kernel has been started"
             )
         logging.info("create a new kernel with kernel_name %s" % kernel_name)
         connection_file = "%s/kernel-%s.json" % (
@@ -165,7 +172,9 @@ class KernelRpcServer(KernelServerNodeServicer):
         """
         download file
         """
-        target_filename = "%s/%s" % (config["workspace"], request.filename)
+        filename = request.filename
+        workspace = config["workspace"]
+        target_filename = f"{workspace}{os.sep}{filename}"
         if not await aio_os.path.exists(target_filename):
             await context.abort(10, "%s filename do not exist" % request.filename)
         async with aiofiles.open(target_filename, "rb") as afp:

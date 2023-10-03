@@ -11,6 +11,7 @@ import os
 import sys
 import pytest
 import tempfile
+import logging
 from rich.live import Live
 from rich.console import Console
 from og_up.up import run_with_realtime_print
@@ -19,7 +20,79 @@ from og_up.up import load_docker_image
 from og_up.up import get_latest_release_version
 from og_up.up import start_octogen_for_codellama
 from og_up.up import random_str
+from og_up.up import generate_agent_common, generate_agent_azure_openai, generate_agent_openai, generate_agent_codellama
+from og_up.up import generate_kernel_env
 from rich.console import Group
+from dotenv import dotenv_values
+
+logger = logging.getLogger(__name__)
+
+
+def test_generate_kernel_env():
+    console = Console()
+    segments = []
+    with Live(Group(*segments), console=console) as live:
+        temp_dir = tempfile.mkdtemp(prefix="octogen")
+        rpc_key = "rpc_key"
+        generate_kernel_env(live, segments, temp_dir, rpc_key)
+        fullpath = f"{temp_dir}/kernel/.env"
+        config = dotenv_values(fullpath)
+        assert config["rpc_key"] == rpc_key, "bad rpc key"
+        assert config["rpc_port"] == "9527", "bad rpc port"
+
+
+def test_generate_agent_codellama():
+    console = Console()
+    segments = []
+    with Live(Group(*segments), console=console) as live:
+        temp_dir = tempfile.mkdtemp(prefix="octogen")
+        admin_key = "admin_key"
+        generate_agent_codellama(live, segments, temp_dir, admin_key)
+        fullpath = f"{temp_dir}/agent/.env"
+        config = dotenv_values(fullpath)
+        assert config["llm_key"] == "codellama", "bad llm key"
+        assert (
+            config["llama_api_base"] == "http://127.0.0.1:8080"
+        ), "bad codellama server endpoint"
+        assert config["admin_key"] == admin_key, "bad admin key"
+
+
+def test_generate_agent_env_openai():
+    console = Console()
+    segments = []
+    with Live(Group(*segments), console=console) as live:
+        temp_dir = tempfile.mkdtemp(prefix="octogen")
+        admin_key = "admin_key"
+        openai_key = "openai_key"
+        model = "gpt-4-0613"
+        generate_agent_openai(live, segments, temp_dir, admin_key, openai_key, model)
+        fullpath = f"{temp_dir}/agent/.env"
+        config = dotenv_values(fullpath)
+        assert config["llm_key"] == "openai", "bad llm key"
+        assert config["openai_api_key"] == openai_key, "bad api key"
+        assert config["openai_api_model"] == model, "bad model"
+        assert config["admin_key"] == admin_key, "bad admin key"
+
+
+def test_generate_agent_env_azure_openai():
+    console = Console()
+    segments = []
+    with Live(Group(*segments), console=console) as live:
+        temp_dir = tempfile.mkdtemp(prefix="octogen")
+        admin_key = "admin_key"
+        openai_key = "openai_key"
+        deployment = "octogen"
+        api_base = "azure"
+        generate_agent_azure_openai(
+            live, segments, temp_dir, admin_key, openai_key, deployment, api_base
+        )
+        fullpath = f"{temp_dir}/agent/.env"
+        config = dotenv_values(fullpath)
+        assert config["llm_key"] == "azure_openai", "bad llm key"
+        assert config["openai_api_base"] == api_base, "bad api base"
+        assert config["openai_api_key"] == openai_key, "bad api key"
+        assert config["openai_api_deployment"] == deployment, "bad deployment"
+        assert config["admin_key"] == admin_key, "bad admin key"
 
 
 def test_run_print():

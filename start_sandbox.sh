@@ -50,3 +50,4 @@ cat <<EOF> ~/.octogen/config
 endpoint=127.0.0.1:9528
 api_key=${KERNEL_RPC_KEY}
 EOF
+og_ping

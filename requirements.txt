@@ -18,3 +18,5 @@ click==8.1.7
 discord.py==2.3.2
 openai==0.28.1
 build==1.0.3
+python-dotenv==1.0.0
+

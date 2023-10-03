@@ -15,12 +15,16 @@
 # limitations under the License.
 
 """ """
+import os
 import asyncio
 import pytest
 import logging
 import json
 from og_sdk.kernel_sdk import KernelSDK
+from og_sdk.utils import generate_async_chunk
 from og_proto.kernel_server_pb2 import ExecuteResponse
+import aiofiles
+from typing import AsyncIterable
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +54,34 @@ async def test_bad_sdk(bad_kernel_sdk):
         assert False
     except Exception as e:
         assert True
+
+
+@pytest.mark.asyncio
+async def test_upload_and_download_smoke_test(kernel_sdk):
+    kernel_sdk.connect()
+    path = os.path.abspath(__file__)
+    response = await kernel_sdk.upload_binary(
+        generate_async_chunk(path, "kernel_sdk_tests.py")
+    )
+    assert response
+    file_stats = os.stat(path)
+    assert response.length == file_stats.st_size, "bad upload file size"
+    length = 0
+    async for chunk in kernel_sdk.download_file("kernel_sdk_tests.py"):
+        length += len(chunk.buffer)
+    assert length == file_stats.st_size, "bad upload file size"
+
+
+@pytest.mark.asyncio
+async def test_stop_kernel(kernel_sdk):
+    kernel_sdk.connect()
+    assert kernel_sdk.stub is not None  # Check that stub is initialized
+    if not await kernel_sdk.is_alive():
+        await kernel_sdk.start()
+    assert await kernel_sdk.is_alive()
+    response = await kernel_sdk.stop()
+    assert response.code == 0
+    assert not await kernel_sdk.is_alive()
 
 
 @pytest.mark.asyncio
