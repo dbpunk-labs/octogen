@@ -67,7 +67,7 @@ async def test_upload_and_download_smoke_test(kernel_sdk):
     file_stats = os.stat(path)
     assert response.length == file_stats.st_size, "bad upload file size"
     length = 0
-    async for chunk in kernel_sdk.download("kernel_sdk_tests.py"):
+    async for chunk in kernel_sdk.download_file("kernel_sdk_tests.py"):
         length += len(chunk.buffer)
     assert length == file_stats.st_size, "bad upload file size"
 
