@@ -6,6 +6,7 @@ import re
 import string
 import random
 import aiofiles
+import logging
 from og_proto import agent_server_pb2, common_pb2
 from typing import AsyncIterable
 
