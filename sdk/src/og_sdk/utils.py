@@ -5,6 +5,37 @@
 import re
 import string
 import random
+import aiofiles
+from og_proto import agent_server_pb2, common_pb2
+from typing import AsyncIterable
+
+logger = logging.getLogger(__name__)
+
+
+def generate_chunk(filepath, filename) -> common_pb2.FileChunk:
+    try:
+        with open(filepath, "rb") as fp:
+            while True:
+                chunk = fp.read(1024 * 128)
+                if not chunk:
+                    break
+                yield common_pb2.FileChunk(buffer=chunk, filename=filename)
+    except Exception as ex:
+        logger.error("fail to read file %s" % ex)
+
+
+async def generate_async_chunk(
+    filepath, filename
+) -> AsyncIterable[common_pb2.FileChunk]:
+    try:
+        async with aiofiles.open(filepath, "rb") as afp:
+            while True:
+                chunk = await afp.read(1024 * 128)
+                if not chunk:
+                    break
+                yield common_pb2.FileChunk(buffer=chunk, filename=filename)
+    except Exception as ex:
+        logger.error("fail to read file %s", ex)
 
 
 def process_char_stream(stream):

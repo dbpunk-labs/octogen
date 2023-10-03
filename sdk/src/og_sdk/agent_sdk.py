@@ -11,6 +11,7 @@ from og_proto import agent_server_pb2, common_pb2
 from og_proto.agent_server_pb2_grpc import AgentServerStub
 import aiofiles
 from typing import AsyncIterable
+from .utils import generate_chunk, generate_async_chunk
 
 logger = logging.getLogger(__name__)
 
@@ -84,19 +85,9 @@ class AgentSyncSDK:
         """
 
         # TODO limit the file size
-        def generate_trunk(filepath, filename) -> common_pb2.FileChunk:
-            try:
-                with open(filepath, "rb") as fp:
-                    while True:
-                        chunk = fp.read(1024 * 128)
-                        if not chunk:
-                            break
-                        yield common_pb2.FileChunk(buffer=chunk, filename=filename)
-            except Exception as ex:
-                logger.error("fail to read file %s" % ex)
 
         return self.stub.upload(
-            generate_trunk(filepath, filename), metadata=self.metadata
+            generate_chunk(filepath, filename), metadata=self.metadata
         )
 
     def prompt(self, prompt, files=[]):
@@ -189,22 +180,8 @@ class AgentSDK:
         """
         upload file to agent
         """
-
         # TODO limit the file size
-        async def generate_trunk(
-            filepath, filename
-        ) -> AsyncIterable[common_pb2.FileChunk]:
-            try:
-                async with aiofiles.open(filepath, "rb") as afp:
-                    while True:
-                        chunk = await afp.read(1024 * 128)
-                        if not chunk:
-                            break
-                        yield common_pb2.FileChunk(buffer=chunk, filename=filename)
-            except Exception as ex:
-                logger.error("fail to read file %s", ex)
-
-        return await self.upload_binary(generate_trunk(filepath, filename))
+        return await self.upload_binary(generate_async_chunk(filepath, filename))
 
     def close(self):
         if self.channel:
