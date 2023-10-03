@@ -58,6 +58,7 @@ async def test_bad_sdk(bad_kernel_sdk):
 
 @pytest.mark.asyncio
 async def test_upload_and_download_smoke_test(kernel_sdk):
+    kernel_sdk.connect()
     path = os.path.abspath(__file__)
     response = await kernel_sdk.upload_binary(
         generate_async_chunk(path, "kernel_sdk_tests.py")

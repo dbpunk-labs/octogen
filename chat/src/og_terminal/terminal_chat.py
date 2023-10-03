@@ -82,7 +82,7 @@ def show_help(console):
 
 
 def gen_a_random_emoji():
-    index = random.randint(0, len(EMOJI_KEYS))
+    index = random.randint(0, len(EMOJI_KEYS) - 1)
     return EMOJI[EMOJI_KEYS[index]]
 
 
