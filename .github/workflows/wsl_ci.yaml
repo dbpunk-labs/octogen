@@ -35,6 +35,7 @@ jobs:
           apt-get update
           apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
           apt-get install -y python3-pip
+          pip install -r requirements.txt
           cd up
           pip install .
           pytest tests/*.py
