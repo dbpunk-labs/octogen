@@ -398,7 +398,7 @@ def start_octogen_for_openai(
         start_service(
             live,
             segments,
-            real_install_dir,
+            install_dir,
             image_name,
             version,
             is_codellama="0",
@@ -407,9 +407,12 @@ def start_octogen_for_openai(
     ):
         update_cli_config(live, segments, kernel_key, cli_install_dir)
         segments.append(("👍", "Setup octogen done", ""))
+        refresh(live, segments)
+        return True
     else:
         segments.append(("❌", "Setup octogen failed", ""))
-    refresh(live, segments)
+        refresh(live, segments)
+        return False
 
 
 def start_octogen_for_azure_openai(
@@ -441,9 +444,12 @@ def start_octogen_for_azure_openai(
     ):
         update_cli_config(live, segments, kernel_key, cli_install_dir)
         segments.append(("👍", "Setup octogen done", ""))
+        refresh(live, segments)
+        return True
     else:
         segments.append(("❌", "Setup octogen failed", ""))
-    refresh(live, segments)
+        refresh(live, segments)
+        return False
 
 
 def start_octogen_for_codellama(
