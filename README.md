@@ -14,7 +14,8 @@
 > an open-source code interpreter for developers
 
 <p align="center">
-<img width="1000px" src="https://github.com/dbpunk-labs/octogen/assets/8623385/8ec0a02b-20a9-47ec-9b15-1ede8fa94dbb" align="center"/>
+<img src="https://github.com/imotai/test_repos/blob/main/gifs/octogen_demo.gif?raw=true" align="center"/>
+
 
 |Supported OS|
 |----|
