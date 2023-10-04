@@ -19,6 +19,8 @@ from og_up.up import download_model
 from og_up.up import load_docker_image
 from og_up.up import get_latest_release_version
 from og_up.up import start_octogen_for_codellama
+from og_up.up import start_octogen_for_azure_openai
+from og_up.up import start_octogen_for_openai
 from og_up.up import random_str
 from og_up.up import generate_agent_common, generate_agent_azure_openai, generate_agent_openai, generate_agent_codellama
 from og_up.up import generate_kernel_env
@@ -128,6 +130,59 @@ def test_get_version():
 
 
 @pytest.mark.skipif(sys.platform.startswith("win"), reason="skip on windows")
+def test_start_azure_openai_smoketest():
+    console = Console()
+    segments = []
+    install_dir = tempfile.mkdtemp(prefix="octogen")
+    cli_install_dir = tempfile.mkdtemp(prefix="octogen")
+    admin_key = random_str(32)
+    kernel_key = random_str(32)
+    with Live(Group(*segments), console=console) as live:
+        code = load_docker_image("v0.4.27", "dbpunk/octogen", live, segments)
+        assert code == 0, "bad result code of loading docker image"
+        result = start_octogen_for_azure_openai(
+            live,
+            segments,
+            install_dir,
+            cli_install_dir,
+            admin_key,
+            kernel_key,
+            "dbpunk/octogen",
+            "v0.4.27",
+            "azure_open_api_key",
+            "test_deployment",
+            "https://azure_base",
+        )
+        assert result
+
+
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="skip on windows")
+def test_start_openai_smoketest():
+    console = Console()
+    segments = []
+    install_dir = tempfile.mkdtemp(prefix="octogen")
+    cli_install_dir = tempfile.mkdtemp(prefix="octogen")
+    admin_key = random_str(32)
+    kernel_key = random_str(32)
+    with Live(Group(*segments), console=console) as live:
+        code = load_docker_image("v0.4.27", "dbpunk/octogen", live, segments)
+        assert code == 0, "bad result code of loading docker image"
+        result = start_octogen_for_openai(
+            live,
+            segments,
+            install_dir,
+            cli_install_dir,
+            admin_key,
+            kernel_key,
+            "dbpunk/octogen",
+            "v0.4.27",
+            "openai_api_key",
+            "gpt-3.5-turbo",
+        )
+        assert result
+
+
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="skip on windows")
 def test_start_codellama_smoketest():
     console = Console()
     segments = []
@@ -136,7 +191,7 @@ def test_start_codellama_smoketest():
     admin_key = random_str(32)
     kernel_key = random_str(32)
     with Live(Group(*segments), console=console) as live:
-        code = load_docker_image("v0.4.26", "dbpunk/octogen", live, segments)
+        code = load_docker_image("v0.4.27", "dbpunk/octogen", live, segments)
         assert code == 0, "bad result code of loading docker image"
         result = start_octogen_for_codellama(
             live,
@@ -148,7 +203,7 @@ def test_start_codellama_smoketest():
             admin_key,
             kernel_key,
             "dbpunk/octogen",
-            "v0.4.26",
+            "v0.4.27",
         )
         assert result
 

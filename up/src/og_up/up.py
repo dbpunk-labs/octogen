@@ -144,7 +144,7 @@ def download_model(
     filename="codellama-7b-instruct.Q5_K_S.gguf",
 ):
     spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
-    step = "Download CodeLlama"
+    step = "Download codeLlama"
     output = ""
     segments.append((spinner, step, ""))
     refresh(live, segments)
@@ -182,7 +182,7 @@ def load_docker_image(version, image_name, live, segments, chunk_size=1024):
     """
     full_name = f"{image_name}:{version}"
     spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
-    step = "Pull Octogen Image"
+    step = "Pull octogen image"
     segments.append((spinner, step, ""))
     refresh(live, segments)
     return_code = 0
@@ -250,7 +250,7 @@ def generate_agent_azure_openai(
         fd.write("max_file_size=202400000\n")
         fd.write("max_iterations=8\n")
         fd.write("log_level=debug\n")
-    segments.append(("✅", "Generate Agent Config", f"{agent_dir}/.env"))
+    segments.append(("✅", "Generate agent config", f"{agent_dir}/.env"))
     refresh(live, segments)
 
 
@@ -381,6 +381,77 @@ def update_cli_config(live, segments, api_key, cli_dir, api_base="127.0.0.1:9528
     refresh(live, segments)
 
 
+def start_octogen_for_openai(
+    live,
+    segments,
+    install_dir,
+    cli_install_dir,
+    admin_key,
+    kernel_key,
+    image_name,
+    version,
+    api_key,
+    model,
+):
+    generate_agent_openai(live, segments, install_dir, admin_key, api_key, model)
+    if (
+        start_service(
+            live,
+            segments,
+            install_dir,
+            image_name,
+            version,
+            is_codellama="0",
+        )
+        == 0
+    ):
+        update_cli_config(live, segments, kernel_key, cli_install_dir)
+        segments.append(("👍", "Setup octogen done", ""))
+        refresh(live, segments)
+        return True
+    else:
+        segments.append(("❌", "Setup octogen failed", ""))
+        refresh(live, segments)
+        return False
+
+
+def start_octogen_for_azure_openai(
+    live,
+    segments,
+    install_dir,
+    cli_install_dir,
+    admin_key,
+    kernel_key,
+    image_name,
+    version,
+    api_key,
+    model,
+    api_base,
+):
+    generate_agent_azure_openai(
+        live, segments, install_dir, admin_key, api_key, model, api_base
+    )
+    if (
+        start_service(
+            live,
+            segments,
+            install_dir,
+            image_name,
+            version,
+            is_codellama="0",
+        )
+        == 0
+    ):
+        update_cli_config(live, segments, kernel_key, cli_install_dir)
+        segments.append(("👍", "Setup octogen done", ""))
+        refresh(live, segments)
+        return True
+    else:
+        segments.append(("❌", "Setup octogen failed", ""))
+        refresh(live, segments)
+        return False
+
+
 def start_octogen_for_codellama(
     live,
     segments,
@@ -471,6 +542,7 @@ def init_octogen(
     choice, key, model, api_base = choose_api_service(console)
     segments = []
     with Live(Group(*segments), console=console) as live:
+        run_install_cli(live, segments)
         if choice == "4":
             update_cli_config(live, segments, key, real_cli_dir, api_base)
             segments.append(("👍", "Setup octogen done", ""))
@@ -486,8 +558,8 @@ def init_octogen(
         kernel_key = random_str(32)
         admin_key = random_str(32)
         generate_kernel_env(live, segments, real_install_dir, kernel_key)
-        run_install_cli(live, segments)
         if choice == "3":
+            # start for codellama
             start_octogen_for_codellama(
                 live,
                 segments,
@@ -502,43 +574,29 @@ def init_octogen(
                 socks_proxy,
             )
         elif choice == "2":
-            generate_agent_azure_openai(
-                live, segments, real_install_dir, admin_key, key, model, api_base
+            # start azure openai
+            start_octogen_for_azure_openai(
+                live,
+                segments,
+                real_install_dir,
+                real_cli_dir,
+                admin_key,
+                kernel_key,
+                version,
+                key,
+                model,
+                api_base,
             )
-            if (
-                start_service(
-                    live,
-                    segments,
-                    real_install_dir,
-                    image_name,
-                    version,
-                    is_codellama="0",
-                )
-                == 0
-            ):
-                update_cli_config(live, segments, kernel_key, real_cli_dir)
-                segments.append(("👍", "Setup octogen done", ""))
-            else:
-                segments.append(("❌", "Setup octogen failed", ""))
-            refresh(live, segments)
-
         else:
-            generate_agent_openai(
-                live, segments, real_install_dir, admin_key, key, model
+            # start for openai
+            start_octogen_for_openai(
+                live,
+                segments,
+                real_install_dir,
+                real_cli_dir,
+                admin_key,
+                kernel_key,
+                version,
+                key,
+                model,
             )
-            if (
-                start_service(
-                    live,
-                    segments,
-                    real_install_dir,
-                    image_name,
-                    version,
-                    is_codellama="0",
-                )
-                == 0
-            ):
-                update_cli_config(live, segments, kernel_key, real_cli_dir)
-                segments.append(("👍", "Setup octogen done", ""))
-            else:
-                segments.append(("❌", "Setup octogen failed", ""))
-            refresh(live, segments)
