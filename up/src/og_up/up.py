@@ -117,6 +117,55 @@ def refresh(
     live.refresh()
 
 
+def check_the_env(live, segments, need_docker=True):
+    # check the python version
+    spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
+    step = "Check the environment"
+    segments.append((spinner, step, ""))
+    refresh(live, segments)
+    version_ctrl = sys.version.split(" ")[0].split(".")
+    if version_ctrl[0] != "3":
+        old_segment = segments.pop()
+        segments.append(("❌", "Check the environment", "Python3 is required"))
+        refresh(live, segments)
+        return False, "Python3 is required"
+    if int(version_ctrl[1]) < 10:
+        old_segment = segments.pop()
+        segments.append(("❌", "Check the environment", "Python3.10 is required"))
+        refresh(live, segments)
+        return False, "Python3.10 is required"
+    if need_docker:
+        command = ["docker", "version", "--help"]
+        all_output = ""
+        result_code = 0
+        for code, output in run_with_realtime_print(command):
+            result_code = code
+            all_output += output
+        if result_code != 0:
+            old_segment = segments.pop()
+            segments.append(("❌", "Check the environment", "Docker is required"))
+            refresh(live, segments)
+            return False, "Docker is required"
+        if all_output.find("json") < 0:
+            old_segment = segments.pop()
+            segments.append(("❌", "Check the environment", "Please upgrade the docker"))
+            refresh(live, segments)
+            return False, "Upgrade the docker"
+        command = ["docker", "ps"]
+        result_code = 0
+        for code, _ in run_with_realtime_print(command):
+            result_code = code
+        if result_code != 0:
+            old_segment = segments.pop()
+            segments.append(("❌", "Check the environment", "Docker is not running"))
+            refresh(live, segments)
+            return False, "Docker is not running"
+    old_segment = segments.pop()
+    segments.append(("✅", "Check the environment", ""))
+    refresh(live, segments)
+    return True, ""
+
+
 def get_latest_release_version(repo_name, live, segments):
     """
     get the latest release version
@@ -472,14 +521,25 @@ def init_octogen(
     segments = []
     with Live(Group(*segments), console=console) as live:
         if choice == "4":
+            check_result, _ = check_the_env(live, segments, need_docker=False)
+            if not check_result:
+                segments.append(("❌", "Setup octogen failed", ""))
+                refresh(live, segments)
+                return
             update_cli_config(live, segments, key, real_cli_dir, api_base)
             segments.append(("👍", "Setup octogen done", ""))
+            refresh(live, segments)
+            return
+        check_result, _ = check_the_env(live, segments, need_docker=True)
+        if not check_result:
+            segments.append(("❌", "Setup octogen failed", ""))
             refresh(live, segments)
             return
         if octogen_version:
             version = octogen_version
         else:
             version = get_latest_release_version(repo_name, live, segments)
+
         code = load_docker_image(version, image_name, live, segments)
         if code != 0:
             return
