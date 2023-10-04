@@ -106,12 +106,14 @@ def test_check_the_env():
         result, msg = check_the_env(live, segments)
         assert result
 
+
 def test_check_the_env_win():
     console = Console()
     segments = []
     with Live(Group(*segments), console=console) as live:
         result, msg = check_the_env(live, segments, need_docker=False)
         assert result
+
 
 def test_run_print():
     use_dir = os.path.expanduser("~")
