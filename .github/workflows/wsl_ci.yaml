@@ -10,6 +10,9 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    strategy:
+      matrix:
+        os: [Ubuntu-22.04, Ubuntu-20.04]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -17,8 +20,9 @@ jobs:
           submodules: recursive
       - uses: Vampire/setup-wsl@v2
         with:
-          distribution: Ubuntu-20.04
+          distribution: ${{ matrix.os }}
       - shell: wsl-bash -u root {0}
+        name: test the cli
         run: |
           # Add Docker's official GPG key:
           apt-get update
@@ -26,7 +30,6 @@ jobs:
           install -m 0755 -d /etc/apt/keyrings
           curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
           chmod a+r /etc/apt/keyrings/docker.gpg
-
           # Add the repository to Apt sources:
           echo \
             "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
