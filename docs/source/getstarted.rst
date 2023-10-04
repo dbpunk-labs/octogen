@@ -28,10 +28,10 @@ the second step, use ``og_up`` to setup the octopus service and cli::
 
 You have the option to select from 
 
-- OpenAI
-- Azure OpenAI
+- OpenAI, [apply](https://platform.openai.com/account/api-keys) the openai api key
+- Azure OpenAI, [apply](https://azure.microsoft.com/en-us/products/ai-services/openai-service) the azure api key
 - CodeLlama
-- Octogen(beta) agent services
+- Octogen(beta) agent services, [apply](https://www.octogen.dev/) the octogen agent service key
 
 If you opt for CodeLlama, Octogen will automatically download it from huggingface.co. 
 In case the installation of the Octogen Terminal CLI is taking longer than expected, 
