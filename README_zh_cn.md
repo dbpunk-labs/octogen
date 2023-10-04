@@ -12,14 +12,12 @@
 > 一款为开发者打造的开源的代码解释器
 
 <p align="center">
-<img width="1000px" src="https://github.com/dbpunk-labs/octogen/assets/8623385/8ec0a02b-20a9-47ec-9b15-1ede8fa94dbb" align="center"/>
+<img src="https://github.com/imotai/test_repos/blob/main/gifs/octogen_demo.gif?raw=true" align="center"/>
 
 
-|OS|Platform|
-|----|----------------|
-|<img  width="40px" src="https://github.com/dbpunk-labs/octogen/assets/8623385/31b907e9-3a6f-4e9e-b0c0-f01d1e758a21"/>| ✅ |
-|<img  width="40px" src="https://github.com/dbpunk-labs/octogen/assets/8623385/565d5f93-baac-4a77-ab1c-7d845e2fdb6d"/>|✅ |
-|<img  width="40px" src="https://github.com/dbpunk-labs/octogen/assets/8623385/acb7f919-ef09-446e-b1bc-0b50bc28de5a"/>|✅|
+|Supported OS|
+|----|
+|<img  width="40px" src="https://github.com/dbpunk-labs/octogen/assets/8623385/31b907e9-3a6f-4e9e-b0c0-f01d1e758a21"/> <img  width="40px" src="https://github.com/dbpunk-labs/octogen/assets/8623385/565d5f93-baac-4a77-ab1c-7d845e2fdb6d"/><img  width="40px" src="https://github.com/dbpunk-labs/octogen/assets/8623385/acb7f919-ef09-446e-b1bc-0b50bc28de5a"/>|
 
 
 ## 快速上手
