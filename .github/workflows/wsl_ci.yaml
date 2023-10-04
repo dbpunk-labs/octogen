@@ -16,7 +16,9 @@ jobs:
         with:
           submodules: recursive
       - uses: Vampire/setup-wsl@v2
-      - shell: wsl-bash_Ubuntu-20.04 -u root {0}
+        with:
+          distribution: Ubuntu-20.04
+      - shell: wsl-bash -u root {0}
         run: |
           # Add Docker's official GPG key:
           apt-get update
