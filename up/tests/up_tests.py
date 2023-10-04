@@ -96,15 +96,20 @@ def test_generate_agent_env_azure_openai():
         assert config["admin_key"] == admin_key, "bad admin key"
 
 
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="skip on windows")
 def test_check_the_env():
+    console = Console()
+    segments = []
+    with Live(Group(*segments), console=console) as live:
+        result, msg = check_the_env(live, segments)
+        assert result
+
+def test_check_the_env_win():
     console = Console()
     segments = []
     with Live(Group(*segments), console=console) as live:
         result, msg = check_the_env(live, segments, need_docker=False)
         assert result
-        result, msg = check_the_env(live, segments)
-        assert result
-
 
 def test_run_print():
     use_dir = os.path.expanduser("~")
