@@ -231,7 +231,7 @@ def load_docker_image(version, image_name, live, segments, chunk_size=1024):
     """
     full_name = f"{image_name}:{version}"
     spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
-    step = "Pull Octogen Image"
+    step = "Pull octogen image"
     segments.append((spinner, step, ""))
     refresh(live, segments)
     return_code = 0
@@ -299,7 +299,7 @@ def generate_agent_azure_openai(
         fd.write("max_file_size=202400000\n")
         fd.write("max_iterations=8\n")
         fd.write("log_level=debug\n")
-    segments.append(("✅", "Generate Agent Config", f"{agent_dir}/.env"))
+    segments.append(("✅", "Generate agent config", f"{agent_dir}/.env"))
     refresh(live, segments)
 
 
@@ -316,7 +316,7 @@ def generate_agent_openai(
         fd.write("max_file_size=202400000\n")
         fd.write("max_iterations=8\n")
         fd.write("log_level=debug\n")
-    segments.append(("✅", "Generate Agent Config", f"{agent_dir}/.env"))
+    segments.append(("✅", "Generate agent config", f"{agent_dir}/.env"))
     refresh(live, segments)
 
 
@@ -331,7 +331,7 @@ def generate_agent_codellama(live, segments, install_dir, admin_key):
         fd.write("max_file_size=202400000\n")
         fd.write("max_iterations=8\n")
         fd.write("log_level=debug\n")
-    segments.append(("✅", "Generate Agent Config", f"{agent_dir}/.env"))
+    segments.append(("✅", "Generate agent config", f"{agent_dir}/.env"))
     refresh(live, segments)
 
 
@@ -348,7 +348,7 @@ def generate_kernel_env(live, segments, install_dir, rpc_key):
         fd.write("rpc_host=127.0.0.1\n")
         fd.write("rpc_port=9527\n")
         fd.write(f"rpc_key={rpc_key}\n")
-    segments.append(("✅", "Generate Kernel Config", f"{kernel_dir}/.env"))
+    segments.append(("✅", "Generate kernel config", f"{kernel_dir}/.env"))
     refresh(live, segments)
 
 
