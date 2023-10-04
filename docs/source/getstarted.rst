@@ -11,7 +11,7 @@ Octopus requires the following enviroment
 
 - Python 3.10.0 and above.
 - `Pip <https://pip.pypa.io/en/stable/installation/>`_
-- `Docker Desktop <https://www.docker.com/products/docker-desktop/>`_ 
+- `Docker Desktop 24.0.0 and above <https://www.docker.com/products/docker-desktop/>`_  
 
 To use codellama, your host must have at least 8 CPUs and 16 GB of RAM
 

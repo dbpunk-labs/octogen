@@ -51,7 +51,6 @@ def random_str(n):
     res = "".join(random.choices(string.ascii_uppercase + string.digits, k=n))
     return str(res)
 
-
 def run_install_cli(live, segments):
     """
     Install the octogen chat cli
@@ -471,6 +470,7 @@ def init_octogen(
     choice, key, model, api_base = choose_api_service(console)
     segments = []
     with Live(Group(*segments), console=console) as live:
+        run_install_cli(live, segments)
         if choice == "4":
             update_cli_config(live, segments, key, real_cli_dir, api_base)
             segments.append(("👍", "Setup octogen done", ""))
@@ -486,7 +486,6 @@ def init_octogen(
         kernel_key = random_str(32)
         admin_key = random_str(32)
         generate_kernel_env(live, segments, real_install_dir, kernel_key)
-        run_install_cli(live, segments)
         if choice == "3":
             start_octogen_for_codellama(
                 live,
