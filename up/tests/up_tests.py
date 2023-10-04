@@ -24,6 +24,7 @@ from og_up.up import start_octogen_for_openai
 from og_up.up import random_str
 from og_up.up import generate_agent_common, generate_agent_azure_openai, generate_agent_openai, generate_agent_codellama
 from og_up.up import generate_kernel_env
+from og_up.up import check_the_env
 from rich.console import Group
 from dotenv import dotenv_values
 
@@ -96,6 +97,21 @@ def test_generate_agent_env_azure_openai():
         assert config["openai_api_deployment"] == deployment, "bad deployment"
         assert config["admin_key"] == admin_key, "bad admin key"
 
+
+@pytest.mark.skipif(sys.platform.startswith("win"), reason="skip on windows")
+def test_check_the_env():
+    console = Console()
+    segments = []
+    with Live(Group(*segments), console=console) as live:
+        result, msg = check_the_env(live, segments)
+        assert result
+
+def test_check_the_env_win():
+    console = Console()
+    segments = []
+    with Live(Group(*segments), console=console) as live:
+        result, msg = check_the_env(live, segments, need_docker=False)
+        assert result
 
 def test_run_print():
     use_dir = os.path.expanduser("~")
