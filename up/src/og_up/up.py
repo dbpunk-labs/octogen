@@ -51,6 +51,7 @@ def random_str(n):
     res = "".join(random.choices(string.ascii_uppercase + string.digits, k=n))
     return str(res)
 
+
 def run_install_cli(live, segments):
     """
     Install the octogen chat cli
@@ -380,6 +381,71 @@ def update_cli_config(live, segments, api_key, cli_dir, api_base="127.0.0.1:9528
     refresh(live, segments)
 
 
+def start_octogen_for_openai(
+    live,
+    segments,
+    install_dir,
+    cli_install_dir,
+    admin_key,
+    kernel_key,
+    image_name,
+    version,
+    api_key,
+    model,
+):
+    generate_agent_openai(live, segments, install_dir, admin_key, api_key, model)
+    if (
+        start_service(
+            live,
+            segments,
+            real_install_dir,
+            image_name,
+            version,
+            is_codellama="0",
+        )
+        == 0
+    ):
+        update_cli_config(live, segments, kernel_key, cli_install_dir)
+        segments.append(("👍", "Setup octogen done", ""))
+    else:
+        segments.append(("❌", "Setup octogen failed", ""))
+    refresh(live, segments)
+
+
+def start_octogen_for_azure_openai(
+    live,
+    segments,
+    install_dir,
+    cli_install_dir,
+    admin_key,
+    kernel_key,
+    image_name,
+    version,
+    api_key,
+    model,
+    api_base,
+):
+    generate_agent_azure_openai(
+        live, segments, install_dir, admin_key, api_key, model, api_base
+    )
+    if (
+        start_service(
+            live,
+            segments,
+            install_dir,
+            image_name,
+            version,
+            is_codellama="0",
+        )
+        == 0
+    ):
+        update_cli_config(live, segments, kernel_key, cli_install_dir)
+        segments.append(("👍", "Setup octogen done", ""))
+    else:
+        segments.append(("❌", "Setup octogen failed", ""))
+    refresh(live, segments)
+
+
 def start_octogen_for_codellama(
     live,
     segments,
@@ -487,6 +553,7 @@ def init_octogen(
         admin_key = random_str(32)
         generate_kernel_env(live, segments, real_install_dir, kernel_key)
         if choice == "3":
+            # start for codellama
             start_octogen_for_codellama(
                 live,
                 segments,
@@ -501,43 +568,29 @@ def init_octogen(
                 socks_proxy,
             )
         elif choice == "2":
-            generate_agent_azure_openai(
-                live, segments, real_install_dir, admin_key, key, model, api_base
+            # start azure openai
+            start_octogen_for_azure_openai(
+                live,
+                segments,
+                real_install_dir,
+                real_cli_dir,
+                admin_key,
+                kernel_key,
+                version,
+                key,
+                model,
+                api_base,
             )
-            if (
-                start_service(
-                    live,
-                    segments,
-                    real_install_dir,
-                    image_name,
-                    version,
-                    is_codellama="0",
-                )
-                == 0
-            ):
-                update_cli_config(live, segments, kernel_key, real_cli_dir)
-                segments.append(("👍", "Setup octogen done", ""))
-            else:
-                segments.append(("❌", "Setup octogen failed", ""))
-            refresh(live, segments)
-
         else:
-            generate_agent_openai(
-                live, segments, real_install_dir, admin_key, key, model
+            # start for openai
+            start_octogen_for_openai(
+                live,
+                segments,
+                real_install_dir,
+                real_cli_dir,
+                admin_key,
+                kernel_key,
+                version,
+                key,
+                model,
             )
-            if (
-                start_service(
-                    live,
-                    segments,
-                    real_install_dir,
-                    image_name,
-                    version,
-                    is_codellama="0",
-                )
-                == 0
-            ):
-                update_cli_config(live, segments, kernel_key, real_cli_dir)
-                segments.append(("👍", "Setup octogen done", ""))
-            else:
-                segments.append(("❌", "Setup octogen failed", ""))
-            refresh(live, segments)

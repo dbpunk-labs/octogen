@@ -20,5 +20,3 @@ def test_parse_number():
     numbers = parse_numbers(test_text)
     assert numbers
     assert numbers[0] == "0"
-
-
