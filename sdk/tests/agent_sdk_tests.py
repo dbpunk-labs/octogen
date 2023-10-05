@@ -118,6 +118,26 @@ async def test_run_code_test(agent_sdk):
 
 
 @pytest.mark.asyncio
+async def test_run_code_with_error(agent_sdk):
+    sdk = agent_sdk
+    await sdk.add_kernel(api_key, "127.0.0.1:9527")
+    try:
+        responds = []
+        async for respond in sdk.prompt("error function"):
+            responds.append(respond)
+        logger.debug(f"{responds}")
+        assert len(responds) > 0, "no responds for the prompt"
+        assert responds[len(responds) - 2].respond_type == TaskRespond.OnAgentActionEndType
+        assert responds[len(responds) - 2].on_agent_action_end.has_error, "bad has error result"
+        assert responds[len(responds) - 1].respond_type == TaskRespond.OnFinalAnswerType
+        assert (
+            responds[len(responds) - 1].final_respond.answer
+            == "this code prints 'hello world'"
+        )
+    except Exception as ex:
+        assert 0, str(ex)
+
+@pytest.mark.asyncio
 async def test_assemble_test(agent_sdk):
     sdk = agent_sdk
     await sdk.add_kernel(api_key, "127.0.0.1:9527")

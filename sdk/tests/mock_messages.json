@@ -12,6 +12,14 @@
         {
             "explanation": "this code prints 'hello world'"
         }
+    ],
+    "error function":[
+        {
+            "explanation": "this is a hello world code",
+            "code":"print(hello world')"
+        },
+        {
+            "explanation": "this code prints 'hello world'"
+        }
     ]
-
 }
