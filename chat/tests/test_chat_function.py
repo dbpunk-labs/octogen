@@ -33,7 +33,7 @@ def test_ok_handle_action_end():
         iteration=0,
         respond_type=agent_server_pb2.TaskRespond.OnAgentActionEndType,
         model_name="",
-        on_agent_action_end=OnAgentActionEnd(
+        on_agent_action_end=agent_server_pb2.OnAgentActionEnd(
             output="", output_files=[], has_error=False
         ),
     )
@@ -50,7 +50,7 @@ def test_error_handle_action_end():
         iteration=0,
         respond_type=agent_server_pb2.TaskRespond.OnAgentActionEndType,
         model_name="",
-        on_agent_action_end=OnAgentActionEnd(
+        on_agent_action_end=agent_server_pb2.OnAgentActionEnd(
             output="", output_files=[], has_error=True
         ),
     )
