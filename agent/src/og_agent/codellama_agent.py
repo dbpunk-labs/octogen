@@ -254,7 +254,7 @@ class CodellamaAgent(BaseAgent):
                     )
                     history.append("User:%s" % current_question)
                     history.append("Octogen:%s\n" % ("".join(response)))
-                    ins = "Check if the following output meets the goal. If it does, explain it and stop respond. Otherwise, try a new solution."
+                    ins = "the action output"
                     # TODO limit the output size
                     if function_result.has_result:
                         current_question = f"{ins} \n {function_result.console_stdout}"

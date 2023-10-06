@@ -33,7 +33,7 @@ class CodellamaClient(BaseStreamClient):
         self.grammar = grammar
         self.prefix = prefix
 
-    async def prompt(self, user_input, temperature=0, chat_history=""):
+    async def prompt(self, user_input, temperature=0.1, chat_history=""):
         prompt = f"""{self.prefix}
 {chat_history}
 {self.user_name}: {user_input}
@@ -46,7 +46,7 @@ class CodellamaClient(BaseStreamClient):
             "temperature": temperature,
             "stream": True,
             "repeat_last_n": 256,
-            "top_p": 0.5,
+            "top_p": 0.95,
             "stop": [
                 "</s>",
                 "\n",

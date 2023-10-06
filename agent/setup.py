@@ -44,6 +44,7 @@ setup(
         "openai",
         "aiohttp>=3.8.5",
         "pydantic",
+        "tiktoken"
     ],
     package_data={"og_agent": ["*.bnf"]},
     entry_points={
