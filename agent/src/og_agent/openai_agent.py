@@ -19,13 +19,15 @@ import openai
 import io
 import json
 import logging
+import time
 from pydantic import BaseModel, Field
 from og_proto.agent_server_pb2 import OnAgentAction, TaskRespond, OnAgentActionEnd, FinalRespond
-from .base_agent import BaseAgent, TypingState
+from .base_agent import BaseAgent, TypingState, TaskContext
 from .tokenizer import tokenize
+import tiktoken
 
 logger = logging.getLogger(__name__)
-
+encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
 OCTOGEN_FUNCTIONS = [
     {
         "name": "execute_python_code",
@@ -130,10 +132,18 @@ class OpenaiAgent(BaseAgent):
                     code_str = "".join(token)
         return (state, explanation_str, code_str)
 
-    async def call_openai(self, messages, queue, context):
+    async def call_openai(self, messages, queue, context, task_context):
         """
         call the openai api
         """
+        sent_token_count = 0
+        for message in messages:
+            if not message["content"]:
+                continue
+            sent_token_count += encoding.encode(message["content"])
+        task_context.sent_token_count += sent_token_count
+
+        start_time = time.time()
         if self.is_azure:
             response = await openai.ChatCompletion.acreate(
                 engine=self.model,
@@ -161,6 +171,7 @@ class OpenaiAgent(BaseAgent):
                 break
             if not chunk["choices"]:
                 continue
+
             delta = chunk["choices"][0]["delta"]
             logger.debug(f"{delta}")
             if not message:
@@ -169,6 +180,13 @@ class OpenaiAgent(BaseAgent):
                 if "function_call" in delta:
                     self._merge_delta_for_function_call(message, delta)
                     arguments = message["function_call"].get("arguments", "")
+                    task_context.generated_token_count += len(
+                        encoding.encode(arguments)
+                    )
+                    task_context.model_respond_duration += int(
+                        (time.time() - start_time) * 1000
+                    )
+                    start_time = time.time()
                     (
                         state,
                         explanation_str,
@@ -179,10 +197,8 @@ class OpenaiAgent(BaseAgent):
                         text_content = explanation_str
                         await queue.put(
                             TaskRespond(
-                                token_usage=0,
-                                iteration=0,
+                                state=task_context.to_task_state_proto(),
                                 respond_type=TaskRespond.OnAgentTextTyping,
-                                model_name="",
                                 typing_content=typed_chars,
                             )
                         )
@@ -191,10 +207,8 @@ class OpenaiAgent(BaseAgent):
                         code_content = code_str
                         await queue.put(
                             TaskRespond(
-                                token_usage=0,
-                                iteration=0,
+                                state=task_context.to_task_state_proto(),
                                 respond_type=TaskRespond.OnAgentCodeTyping,
-                                model_name="",
                                 typing_content=typed_chars,
                             )
                         )
@@ -203,21 +217,24 @@ class OpenaiAgent(BaseAgent):
                     )
                 else:
                     self._merge_delta_for_content(message, delta)
+                    task_context.model_respond_duration += int(
+                        (time.time() - start_time) * 1000
+                    )
+                    start_time = time.time()
                     if delta.get("content") != None:
+                        task_context.generated_token_count += len(
+                            encoding.encode(delta.get("content"))
+                        )
                         await queue.put(
                             TaskRespond(
-                                token_usage=0,
-                                iteration=0,
+                                state=task_context.to_task_state_proto(),
                                 respond_type=TaskRespond.OnAgentTextTyping,
-                                model_name="",
                                 typing_content=delta["content"],
                             )
                         )
         return message
 
-    async def handle_function(
-        self, message, queue, context, token_usage=0, iteration=0, model_name=""
-    ):
+    async def handle_function(self, message, queue, context, task_context):
         if "function_call" in message:
             if context.done():
                 logging.debug("the client has cancelled the request")
@@ -236,10 +253,8 @@ class OpenaiAgent(BaseAgent):
             # send the respond to client
             await queue.put(
                 TaskRespond(
-                    token_usage=token_usage,
-                    iteration=iteration,
+                    state=task_context.to_task_state_proto(),
                     respond_type=TaskRespond.OnAgentActionType,
-                    model_name=model_name,
                     on_agent_action=OnAgentAction(
                         input=tool_input, tool="execute_python_code"
                     ),
@@ -247,11 +262,7 @@ class OpenaiAgent(BaseAgent):
             )
             function_result = None
             async for (result, respond) in self.call_function(
-                code,
-                context,
-                iteration=iteration,
-                token_usage=token_usage,
-                model_name=model_name,
+                code, context, task_context
             ):
                 if context.done():
                     logger.debug("the client has cancelled the request")
@@ -270,15 +281,22 @@ class OpenaiAgent(BaseAgent):
             {"role": "user", "content": task},
         ]
         iterations = 0
-        token_usage = 0
-        model_name = ""
+        task_context = TaskContext(
+            start_time=time.time(),
+            generated_token_count=0,
+            sent_token_count=0,
+            model_name="codellama",
+            iteration_count=0,
+            model_respond_duration=0,
+        )
         try:
             while iterations < max_iteration and not context.cancelled():
                 iterations += 1
+                task_context.iteration_count = iterations
                 logger.debug(f" the input messages {messages}")
-                chat_message = await self.call_openai(messages, queue, context)
-                # model_name = response.get()"model"]
-                # token_usage += response["usage"]["total_tokens"]
+                chat_message = await self.call_openai(
+                    messages, queue, context, task_context
+                )
                 logger.debug(f"the response {chat_message}")
                 if "function_call" in chat_message:
                     chat_message["content"] = None
@@ -291,21 +309,13 @@ class OpenaiAgent(BaseAgent):
                             "content": "You can use the execute_python_code only",
                         })
                         continue
-                    # call function
                     function_result = await self.handle_function(
-                        chat_message,
-                        queue,
-                        context,
-                        token_usage,
-                        iterations,
-                        model_name,
+                        chat_message, queue, context, task_context
                     )
                     await queue.put(
                         TaskRespond(
-                            token_usage=token_usage,
-                            iteration=iterations,
+                            state=task_context.to_task_state_proto(),
                             respond_type=TaskRespond.OnAgentActionEndType,
-                            model_name=model_name,
                             on_agent_action_end=OnAgentActionEnd(
                                 output="",
                                 output_files=function_result.saved_filenames,
@@ -336,10 +346,8 @@ class OpenaiAgent(BaseAgent):
                     # end task
                     await queue.put(
                         TaskRespond(
-                            token_usage=token_usage,
-                            iteration=iterations,
+                            state=task_context.to_task_state_proto(),
                             respond_type=TaskRespond.OnFinalAnswerType,
-                            model_name=model_name,
                             final_respond=FinalRespond(answer=chat_message["content"]),
                         )
                     )

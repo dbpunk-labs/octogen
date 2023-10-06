@@ -316,8 +316,6 @@ def handle_action_start(segments, respond, images, values):
         )
         segments.append((len(values) - 1, spinner, syntax))
 
-        
-
 
 def find_code(content, segments, values):
     start_index = 0
