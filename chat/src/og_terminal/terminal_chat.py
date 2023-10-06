@@ -186,32 +186,39 @@ def handle_action_output(segments, respond, values):
         new_stderr += respond.console_stderr
         new_stderr = process_char_stream(new_stderr)
     values.append(("text", (new_stdout, new_stderr), []))
+    if new_stderr:
+        new_stdout += "\n" + new_stderr
     syntax = Syntax(
-        f"{new_stdout}\n{new_stderr}",
+        f"{new_stdout}",
         "text",
-        line_numbers=True,  # background_color="default"
+        line_numbers=True,
     )
     segments.append((len(values) - 1, segment[1], syntax))
 
 
 def handle_action_end(segments, respond, images, values):
+    """
+    Handles the end of an agent action.
+
+    Args:
+      segments: A list of segments in the current turn.
+      respond: The response from the agent.
+      images: A list of images to be displayed.
+      values: A list of values to be copied
+
+    Returns:
+      None.
+    """
     if respond.respond_type != agent_server_pb2.TaskRespond.OnAgentActionEndType:
         return
     output = respond.on_agent_action_end.output
-    has_error = "✅"
+    has_error = "✅" if not respond.on_agent_action_end.has_error else "❌"
+    old_value = values.pop()
     segment = segments.pop()
-    mk = segment[2].code
-    # simple to handle error
-    if mk.find("Traceback") >= 0:
-        has_error = "❌"
-    syntax = Syntax(
-        mk,
-        "text",
-        line_numbers=True,  # background_color="default"
-    )
     if not images:
         images.extend(respond.on_agent_action_end.output_files)
-    segments.append((len(values) - 1, has_error, syntax))
+    segments.append((len(values) - 1, has_error, segment[2]))
+
     # add the next steps loading
     spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
     values.append(("text", "", []))

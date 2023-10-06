@@ -33,6 +33,7 @@ message OnAgentAction {
 message OnAgentActionEnd {
   string output = 1;
   repeated string output_files = 2;
+  bool has_error = 3;
 }
 
 message FinalRespond {

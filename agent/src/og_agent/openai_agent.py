@@ -307,7 +307,9 @@ class OpenaiAgent(BaseAgent):
                             respond_type=TaskRespond.OnAgentActionEndType,
                             model_name=model_name,
                             on_agent_action_end=OnAgentActionEnd(
-                                output="", output_files=function_result.saved_filenames
+                                output="",
+                                output_files=function_result.saved_filenames,
+                                has_error=function_result.has_error,
                             ),
                         )
                     )

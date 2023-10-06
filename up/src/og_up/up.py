@@ -253,7 +253,7 @@ def choose_api_service(console):
     mk = """Choose your favourite LLM
 1. OpenAI, Kernel, Agent and Cli will be installed
 2. Azure OpenAI, Kernel, Agent and Cli will be installed
-3. Codellama, Model Server, Kernel, Agent and Cli will be installed
+3. Codellama, Llama.cpp Model Server, Kernel, Agent and Cli will be installed
 4. Octogen(beta), Only Cli will be installed
 """
     console.print(Markdown(mk))
