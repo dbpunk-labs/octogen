@@ -1,7 +1,7 @@
 #! /bin/sh
 # start_local.sh
 
-ps -ef | grep python3 | grep og |grep -v grep | awk '{print $2}' | while read line; do kill -9 $line; done
+ps -ef | grep python | grep og |grep -v grep | awk '{print $2}' | while read line; do kill -9 $line; done
 WORKDIR=`pwd`
 bash install_package.sh
 mkdir -p ${WORKDIR}/sandbox/kernel
@@ -33,11 +33,13 @@ cat <<EOF> .env
 rpc_host=127.0.0.1
 rpc_port=9528
 admin_key=${AGENT_RPC_KEY}
-llm_key=mock
+llm_key=codellama
+llama_api_base=http://127.0.0.1:8080
+llama_api_key=xxx
 max_file_size=10240000
 verbose=True
 db_path=/tmp/octopus_sandbox.db
-cases_path=${WORKDIR}/sdk/tests/mock_messages.json
+log_level=debug
 EOF
 
 og_agent_rpc_server > agent_rpc.log 2>&1 &

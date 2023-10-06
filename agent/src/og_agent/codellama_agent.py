@@ -38,6 +38,7 @@ class CodellamaAgent(BaseAgent):
             "Sorry, the LLM did return nothing, You can use a better performance model"
         )
 
+    
     def _format_output(self, json_response):
         """
         format the response and send it to the user
@@ -192,7 +193,6 @@ class CodellamaAgent(BaseAgent):
                 if context.done():
                     logger.debug("the client has cancelled the request")
                     break
-
                 iteration += 1
                 response = []
                 chat_history = "\n".join(history)
@@ -253,11 +253,22 @@ class CodellamaAgent(BaseAgent):
                         )
                     )
                     history.append("User:%s" % current_question)
-                    history.append("Octogen:%s\n" % ("".join(response)))
-                    ins = "the action output"
+                    history.append("Octogen:%s" % ("".join(response)))
+                    ins = "the output of execute_python_code:"
                     # TODO limit the output size
                     if function_result.has_result:
-                        current_question = f"{ins} \n {function_result.console_stdout}"
+                        if json_response.get('is_final_answer', False):
+                            await queue.put(
+                                TaskRespond(
+                                    token_usage=token_usage,
+                                    iteration=iteration,
+                                    respond_type=TaskRespond.OnFinalAnswerType,
+                                    model_name=model_name,
+                                    final_respond=FinalRespond(answer=""),
+                                )
+                            )
+                            break
+                        current_question = f"{ins}\n{function_result.console_stdout}"
                         logger.debug(
                             "continue to iterate with codellama with question %s"
                             % function_result.console_stdout
@@ -269,6 +280,17 @@ class CodellamaAgent(BaseAgent):
                             % function_result.console_stderr
                         )
                     else:
+                        if json_response.get('is_final_answer', False):
+                            await queue.put(
+                                TaskRespond(
+                                    token_usage=token_usage,
+                                    iteration=iteration,
+                                    respond_type=TaskRespond.OnFinalAnswerType,
+                                    model_name=model_name,
+                                    final_respond=FinalRespond(answer=""),
+                                )
+                            )
+                            break
                         current_question = f"{ins} \n {function_result.console_stdout}"
                         logger.debug(
                             "continue to iterate with codellama with question %s"
@@ -286,6 +308,5 @@ class CodellamaAgent(BaseAgent):
                         )
                     )
                     break
-
         finally:
             await queue.put(None)
