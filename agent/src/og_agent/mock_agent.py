@@ -37,7 +37,7 @@ class MockAgent(BaseAgent):
         super().__init__(sdk)
         self.messages = messages
 
-    async def call_ai(self, prompt, queue, task_context):
+    async def call_ai(self, prompt, queue, iteration, task_context):
         message = self.messages.get(prompt)[iteration]
         if message.get("explanation", None):
             await queue.put(
