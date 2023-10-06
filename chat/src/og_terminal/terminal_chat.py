@@ -144,11 +144,10 @@ def clean_code(code: str):
 def refresh(
     live,
     segments,
-    token_usage="0",
-    iteration="0",
-    model_name="",
-    title=OCTOGEN_TITLE,
+    title= OCTOGEN_TITLE,
+    task_state = None
 ):
+    speed = task_state.generated_token_count / (task_state.model_respond_duration/1000.0) if task_state else 0
     table = Table.grid(padding=1, pad_edge=True)
     table.add_column("Index", no_wrap=True, justify="center", style="bold red")
     table.add_column("Status", no_wrap=True, justify="center", style="bold red")
@@ -160,9 +159,7 @@ def refresh(
             table,
             title=title,
             title_align="left",
-            subtitle=f"[bold yellow]token:{token_usage} interation:{iteration} model:{model_name}"
-            if model_name
-            else "",
+            subtitle="[gray] %.1ft/s %s"%(speed, task_state.model_name) if task_state else "",
             subtitle_align="right",
         )
     )
@@ -381,35 +378,29 @@ def run_chat(
         spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
         values.append(("text", "", []))
         segments.append((len(values) - 1, spinner, ""))
-        refresh(live, segments, spinner)
+        refresh(live, segments)
+        task_state = None
         for respond in sdk.prompt(prompt):
             if not respond:
                 break
-            token_usage = respond.token_usage
-            iteration = respond.iteration
-            model_name = respond.model_name
             handle_typing(segments, respond, values)
             handle_action_start(segments, respond, images, values)
             handle_action_output(segments, respond, values)
             handle_action_end(segments, respond, images, values)
             handle_final_answer(segments, respond, values)
+            task_state = respond.state
             refresh(
                 live,
                 segments,
-                token_usage=token_usage,
-                iteration=iteration,
-                model_name=model_name,
+                task_state = respond.state
             )
         refresh(
             live,
             segments,
-            token_usage=token_usage,
-            iteration=iteration,
-            model_name=model_name,
+            task_state = task_state
         )
     # display the images
     render_image(images, sdk, filedir, console)
-
 
 def run_app(name, sdk, session, console, values, filedir=None):
     segments = []

@@ -258,9 +258,8 @@ class CodellamaAgent(BaseAgent):
                         json_response,
                         queue,
                         context,
-                        token_usage,
-                        iteration,
-                        model_name,
+                        task_context
+
                     )
                     logger.debug(f"the function result {function_result}")
                     await queue.put(

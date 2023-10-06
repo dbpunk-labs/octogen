@@ -285,7 +285,7 @@ class OpenaiAgent(BaseAgent):
             start_time=time.time(),
             generated_token_count=0,
             sent_token_count=0,
-            model_name="codellama",
+            model_name="openai",
             iteration_count=0,
             model_respond_duration=0,
         )
