@@ -51,4 +51,5 @@ def download(repo, filename, cache_dir, local_dir, socks_proxy):
         cache_dir=real_cache_dir,
         local_dir=real_local_dir,
         proxies=proxies,
+        resume_download=True,
     )
