@@ -38,7 +38,6 @@ class CodellamaAgent(BaseAgent):
             "Sorry, the LLM did return nothing, You can use a better performance model"
         )
 
-    
     def _format_output(self, json_response):
         """
         format the response and send it to the user
@@ -46,20 +45,16 @@ class CodellamaAgent(BaseAgent):
         answer = json_response["explanation"]
         if json_response["action"] == "no_action":
             return answer
-        elif json_response["action"] == "print_message":
-            if json_response["action_input"]:
-                return json_response["action_input"]
-            else:
-                return json_response["explanation"]
         else:
+            code = json_response.get("action_input", None)
             answer_code = """%s
 ```%s
 %s
 ```
 """ % (
                 answer,
-                json_response["language"],
-                json_response["action_input"],
+                json_response.get("language", "python"),
+                code if code else "",
             )
             return answer_code
 
@@ -194,7 +189,6 @@ class CodellamaAgent(BaseAgent):
                     logger.debug("the client has cancelled the request")
                     break
                 iteration += 1
-                response = []
                 chat_history = "\n".join(history)
                 (message, state) = await self.call_codellama(
                     current_question, chat_history, queue, context
@@ -255,11 +249,11 @@ class CodellamaAgent(BaseAgent):
                         )
                     )
                     history.append("User:%s" % current_question)
-                    history.append("Octogen:%s" % ("".join(response)))
+                    history.append("Octogen:%s" % message)
                     ins = "the output of execute_python_code:"
                     # TODO limit the output size
                     if function_result.has_result:
-                        if json_response.get('is_final_answer', False):
+                        if json_response.get("is_final_answer", False):
                             await queue.put(
                                 TaskRespond(
                                     token_usage=token_usage,
@@ -282,7 +276,7 @@ class CodellamaAgent(BaseAgent):
                             % function_result.console_stderr
                         )
                     else:
-                        if json_response.get('is_final_answer', False):
+                        if json_response.get("is_final_answer", False):
                             await queue.put(
                                 TaskRespond(
                                     token_usage=token_usage,
@@ -299,14 +293,14 @@ class CodellamaAgent(BaseAgent):
                             % function_result.console_stdout
                         )
                 else:
-                    result = self._format_output(json_response)
+                    # result = self._format_output(json_response)
                     await queue.put(
                         TaskRespond(
                             token_usage=token_usage,
                             iteration=iteration,
                             respond_type=TaskRespond.OnFinalAnswerType,
                             model_name=model_name,
-                            final_respond=FinalRespond(answer=result),
+                            final_respond=FinalRespond(answer=""),
                         )
                     )
                     break
