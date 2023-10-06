@@ -275,7 +275,7 @@ def handle_action_start(segments, respond, images, values):
     arguments = json.loads(action.input)
     value = values.pop()
     segment = segments.pop()
-    if action.tool == "execute_python_code":
+    if action.tool == "execute_python_code" or action.tool == "show_sample_code":
         images.extend(arguments.get("saved_filenames", []))
         if not value[1]:
             new_value = (
@@ -316,6 +316,8 @@ def handle_action_start(segments, respond, images, values):
         )
         segments.append((len(values) - 1, spinner, syntax))
 
+        
+
 
 def find_code(content, segments, values):
     start_index = 0
@@ -348,6 +350,8 @@ def handle_final_answer(segments, respond, values):
     answer = respond.final_respond.answer
     values.pop()
     segments.pop()
+    if not answer:
+        return
     find_code(answer, segments, values)
 
 

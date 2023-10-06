@@ -17,6 +17,7 @@ workspace=/tmp/ws1
 rpc_host=127.0.0.1
 rpc_port=9527
 rpc_key=${KERNEL_RPC_KEY}
+log_level=debug
 EOF
 
 echo "start kernel with endpoint 127.0.0.1:9527"

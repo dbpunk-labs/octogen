@@ -45,6 +45,8 @@ class CodellamaAgent(BaseAgent):
         answer = json_response["explanation"]
         if json_response["action"] == "no_action":
             return answer
+        elif json_response['action'] == "show_sample_code":
+            return ""
         else:
             code = json_response.get("action_input", None)
             answer_code = """%s
@@ -58,6 +60,26 @@ class CodellamaAgent(BaseAgent):
             )
             return answer_code
 
+    async def handle_show_sample_code(self, json_response, queue, context):
+        code = json_response["action_input"]
+        explanation = json_response["explanation"]
+        saved_filenames = json_response.get("saved_filenames", [])
+        tool_input = json.dumps({
+            "code": code,
+            "explanation": explanation,
+            "saved_filenames": saved_filenames,
+        })
+        await queue.put(
+            TaskRespond(
+                token_usage=0,
+                iteration=0,
+                respond_type=TaskRespond.OnAgentActionType,
+                model_name="",
+                on_agent_action=OnAgentAction(
+                    input=tool_input, tool="show_sample_code"
+                ),
+            )
+        )
     async def handle_function(
         self, json_response, queue, context, token_usage=0, iteration=0, model_name=""
     ):
@@ -253,17 +275,6 @@ class CodellamaAgent(BaseAgent):
                     ins = "the output of execute_python_code:"
                     # TODO limit the output size
                     if function_result.has_result:
-                        if json_response.get("is_final_answer", False):
-                            await queue.put(
-                                TaskRespond(
-                                    token_usage=token_usage,
-                                    iteration=iteration,
-                                    respond_type=TaskRespond.OnFinalAnswerType,
-                                    model_name=model_name,
-                                    final_respond=FinalRespond(answer=""),
-                                )
-                            )
-                            break
                         current_question = f"{ins}\n{function_result.console_stdout}"
                         logger.debug(
                             "continue to iterate with codellama with question %s"
@@ -276,31 +287,33 @@ class CodellamaAgent(BaseAgent):
                             % function_result.console_stderr
                         )
                     else:
-                        if json_response.get("is_final_answer", False):
-                            await queue.put(
-                                TaskRespond(
-                                    token_usage=token_usage,
-                                    iteration=iteration,
-                                    respond_type=TaskRespond.OnFinalAnswerType,
-                                    model_name=model_name,
-                                    final_respond=FinalRespond(answer=""),
-                                )
-                            )
-                            break
                         current_question = f"{ins} \n {function_result.console_stdout}"
                         logger.debug(
                             "continue to iterate with codellama with question %s"
                             % function_result.console_stdout
                         )
-                else:
-                    # result = self._format_output(json_response)
+                elif json_response['action'] == "show_sample_code" and json_response['action_input']:
+                    await self.handle_show_sample_code(json_response, queue, context)
+                    result = self._format_output(json_response)
                     await queue.put(
                         TaskRespond(
                             token_usage=token_usage,
                             iteration=iteration,
                             respond_type=TaskRespond.OnFinalAnswerType,
                             model_name=model_name,
-                            final_respond=FinalRespond(answer=""),
+                            final_respond=FinalRespond(answer=result),
+                        )
+                    )
+                    break
+                else:
+                    result = self._format_output(json_response)
+                    await queue.put(
+                        TaskRespond(
+                            token_usage=token_usage,
+                            iteration=iteration,
+                            respond_type=TaskRespond.OnFinalAnswerType,
+                            model_name=model_name,
+                            final_respond=FinalRespond(answer=result),
                         )
                     )
                     break
