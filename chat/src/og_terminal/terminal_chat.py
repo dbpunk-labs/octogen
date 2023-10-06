@@ -186,10 +186,12 @@ def handle_action_output(segments, respond, values):
         new_stderr += respond.console_stderr
         new_stderr = process_char_stream(new_stderr)
     values.append(("text", (new_stdout, new_stderr), []))
+    if new_stderr:
+        new_stdout += "\n" + new_stderr
     syntax = Syntax(
-        f"{new_stdout}\n{new_stderr}",
+        f"{new_stdout}",
         "text",
-        line_numbers=True,  # background_color="default"
+        line_numbers=True,
     )
     segments.append((len(values) - 1, segment[1], syntax))
 
