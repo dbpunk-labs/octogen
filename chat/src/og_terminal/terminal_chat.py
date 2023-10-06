@@ -141,13 +141,12 @@ def clean_code(code: str):
     return code
 
 
-def refresh(
-    live,
-    segments,
-    title= OCTOGEN_TITLE,
-    task_state = None
-):
-    speed = task_state.generated_token_count / (task_state.model_respond_duration/1000.0) if task_state else 0
+def refresh(live, segments, title=OCTOGEN_TITLE, task_state=None):
+    speed = (
+        task_state.generated_token_count / (task_state.model_respond_duration / 1000.0)
+        if task_state
+        else 0
+    )
     table = Table.grid(padding=1, pad_edge=True)
     table.add_column("Index", no_wrap=True, justify="center", style="bold red")
     table.add_column("Status", no_wrap=True, justify="center", style="bold red")
@@ -159,8 +158,10 @@ def refresh(
             table,
             title=title,
             title_align="left",
-            subtitle="[gray] %.1ft/s %s"%(speed, task_state.model_name) if task_state else "",
-            subtitle_align="right",
+            subtitle="[gray] %.1ft/s %s" % (speed, task_state.model_name)
+            if task_state
+            else "",
+            subtitle_align="left",
         )
     )
     live.refresh()
@@ -389,18 +390,11 @@ def run_chat(
             handle_action_end(segments, respond, images, values)
             handle_final_answer(segments, respond, values)
             task_state = respond.state
-            refresh(
-                live,
-                segments,
-                task_state = respond.state
-            )
-        refresh(
-            live,
-            segments,
-            task_state = task_state
-        )
+            refresh(live, segments, task_state=respond.state)
+        refresh(live, segments, task_state=task_state)
     # display the images
     render_image(images, sdk, filedir, console)
+
 
 def run_app(name, sdk, session, console, values, filedir=None):
     segments = []

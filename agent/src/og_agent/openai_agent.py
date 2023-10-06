@@ -140,7 +140,7 @@ class OpenaiAgent(BaseAgent):
         for message in messages:
             if not message["content"]:
                 continue
-            sent_token_count += encoding.encode(message["content"])
+            sent_token_count += len(encoding.encode(message["content"]))
         task_context.sent_token_count += sent_token_count
 
         start_time = time.time()

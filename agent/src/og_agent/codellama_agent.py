@@ -255,11 +255,7 @@ class CodellamaAgent(BaseAgent):
                     and json_response["action_input"]
                 ):
                     function_result = await self.handle_function(
-                        json_response,
-                        queue,
-                        context,
-                        task_context
-
+                        json_response, queue, context, task_context
                     )
                     logger.debug(f"the function result {function_result}")
                     await queue.put(

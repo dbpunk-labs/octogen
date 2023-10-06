@@ -58,9 +58,7 @@ class MockAgent(BaseAgent):
         return message
 
     async def handle_call_function(
-        self, code, queue, explanation, context, 
-        task_context,
-        saved_filenames=[]
+        self, code, queue, explanation, context, task_context, saved_filenames=[]
     ):
         tool_input = json.dumps({
             "code": code,
