@@ -128,10 +128,10 @@ async def test_run_code_with_error(agent_sdk):
         logger.debug(f"{responds}")
         assert len(responds) > 0, "no responds for the prompt"
         assert (
-            responds[len(responds) - 2].respond_type == TaskRespond.OnAgentActionEndType
+            responds[len(responds) - 3].respond_type == TaskRespond.OnAgentActionEndType
         )
         assert responds[
-            len(responds) - 2
+            len(responds) - 3
         ].on_agent_action_end.has_error, "bad has error result"
         assert responds[len(responds) - 1].respond_type == TaskRespond.OnFinalAnswerType
         assert (

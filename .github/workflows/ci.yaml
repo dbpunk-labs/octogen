@@ -26,6 +26,8 @@ jobs:
           pytest tests/*.py
           cd ${WS_DIR}/kernel
           pytest tests/*.py
+          cd ${WS_DIR}/chat
+          pytest tests/*.py
       - uses: actions/upload-artifact@v3
         if: failure()
         with:
