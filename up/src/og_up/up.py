@@ -725,7 +725,7 @@ def init_octogen(
                 refresh(live, segments)
                 return
             update_cli_config(live, segments, key, real_cli_dir, api_base)
-            if ping_agent_service(live, segments, kernel_key, api_base):
+            if ping_agent_service(live, segments, key, api_base):
                 segments.append(("👍", "Setup octogen cli done", ""))
             else:
                 segments.append(("❌", "Setup octogen cli failed", ""))
