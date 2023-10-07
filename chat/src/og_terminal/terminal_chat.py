@@ -19,6 +19,7 @@ from rich.syntax import Syntax
 from rich.console import Group
 from rich.panel import Panel
 from rich.table import Table
+from rich.text import Text
 from rich.progress import Progress
 from rich.rule import Rule
 from rich.live import Live
@@ -186,8 +187,9 @@ def handle_action_output(segments, respond, values):
     values.append(("text", (new_stdout, new_stderr), []))
     if new_stderr:
         new_stdout += "\n" + new_stderr
+    text = Text.from_ansi(new_stdout)
     syntax = Syntax(
-        f"{new_stdout}",
+        f"{text.plain}",
         "text",
         line_numbers=True,
     )

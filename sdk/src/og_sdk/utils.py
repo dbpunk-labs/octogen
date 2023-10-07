@@ -52,7 +52,7 @@ def process_char_stream(stream):
                     buf.pop() for _ in range(len(buf) - buf[::-1].index("\n") - 1)
                 ]
                 if "\n" in buf
-                else buf.clear(),  # carriage return
+                else buf,  # carriage return
             }
             escape_dict[c](buffer)
             i += 1
