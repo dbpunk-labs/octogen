@@ -18,4 +18,37 @@ def test_process_char_stream():
     output2 = process_char_stream(output1 + stream1)
     assert output1 == output2
 
+def test_empty_string():
+    assert process_char_stream("") == ""
+
+def test_single_character():
+    assert process_char_stream("a") == "a"
+
+def test_multiple_characters():
+    assert process_char_stream("abc") == "abc"
+
+def test_backspace():
+    assert process_char_stream("ab\b") == "a"
+
+def test_carriage_return():
+    assert process_char_stream("ab\r") == "ab"
+
+def test_carriage_return_with_newline():
+    assert process_char_stream("ab\r\n") == "ab\n"
+
+def test_backspace_and_carriage_return():
+    assert process_char_stream("ab\b\r") == "a"
+
+
+def test_carriage_return_and_backspace():
+    assert process_char_stream("ab\r\b") == "a"
+
+
+def test_mixed_escape_characters_and_regular_characters():
+    assert process_char_stream("ab\b\r\ncde") == "a\ncde"
+
+
+def test_special_characters():
+    assert process_char_stream("ab!@#$%^&*()_+{}|:\";'<>,.?/`~") == "ab!@#$%^&*()_+{}|:\";'<>,.?/`~"
+
 
