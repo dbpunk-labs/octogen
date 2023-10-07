@@ -309,7 +309,6 @@ def generate_agent_azure_openai(
         fd.write(f"openai_api_deployment={deployment}\n")
         fd.write("max_file_size=202400000\n")
         fd.write("max_iterations=8\n")
-        fd.write("log_level=debug\n")
     segments.append(("✅", "Generate agent config", f"{agent_dir}/.env"))
     refresh(live, segments)
 
@@ -326,7 +325,6 @@ def generate_agent_openai(
         fd.write(f"openai_api_model={openai_model}\n")
         fd.write("max_file_size=202400000\n")
         fd.write("max_iterations=8\n")
-        fd.write("log_level=debug\n")
     segments.append(("✅", "Generate agent config", f"{agent_dir}/.env"))
     refresh(live, segments)
 
@@ -341,7 +339,6 @@ def generate_agent_codellama(live, segments, install_dir, admin_key):
         fd.write("llama_api_key=xxx\n")
         fd.write("max_file_size=202400000\n")
         fd.write("max_iterations=8\n")
-        fd.write("log_level=debug\n")
     segments.append(("✅", "Generate agent config", f"{agent_dir}/.env"))
     refresh(live, segments)
 
@@ -452,6 +449,26 @@ def update_cli_config(live, segments, api_key, cli_dir, api_base="127.0.0.1:9528
     refresh(live, segments)
 
 
+def add_kernel_endpoint(live, segments, admin_key, kernel_endpoint, api_key, api_base):
+    spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
+    step = "Register the kernel endpoint"
+    segments.append((spinner, step, ""))
+    refresh(live, segments)
+    try:
+        sdk = AgentSyncSDK(api_base, admin_key)
+        sdk.add_kernel(api_key, kernel_endpoint)
+        segments.pop()
+        if response.code == 0:
+            segments.append(("✅", step, ""))
+            return True
+        else:
+            segments.append(("❌", step, response.msg))
+            return False
+    except Exception as ex:
+        segments.append(("❌", step, str(ex)))
+        return False
+
+
 def ping_agent_service(live, segments, api_key, api_base="127.0.0.1:9528"):
     spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
     step = "Ping octogen agent service"
@@ -471,6 +488,7 @@ def ping_agent_service(live, segments, api_key, api_base="127.0.0.1:9528"):
     except Exception as ex:
         segments.append(("❌", "Ping octogen agent service", str(ex)))
         return False
+
 
 def start_octogen_for_openai(
     live,
@@ -498,6 +516,12 @@ def start_octogen_for_openai(
         )
         == 0
     ):
+        if add_kernel_endpoint(
+            live, segments, admin_key, "127.0.0.1:9527", api_key, "127.0.0.1:9528"
+        ):
+            segments.append(("❌", "Setup octogen service failed", ""))
+            refresh(live, segments)
+            return False
         update_cli_config(live, segments, kernel_key, cli_install_dir)
         if ping_agent_service(live, segments, kernel_key):
             segments.append(("👍", "Setup octogen service done", ""))
@@ -541,6 +565,12 @@ def start_octogen_for_azure_openai(
         )
         == 0
     ):
+        if add_kernel_endpoint(
+            live, segments, admin_key, "127.0.0.1:9527", api_key, "127.0.0.1:9528"
+        ):
+            segments.append(("❌", "Setup octogen service failed", ""))
+            refresh(live, segments)
+            return False
         update_cli_config(live, segments, kernel_key, cli_install_dir)
         if ping_agent_service(live, segments, kernel_key):
             segments.append(("👍", "Setup octogen service done", ""))
@@ -592,6 +622,12 @@ def start_octogen_for_codellama(
         )
         == 0
     ):
+        if add_kernel_endpoint(
+            live, segments, admin_key, "127.0.0.1:9527", api_key, "127.0.0.1:9528"
+        ):
+            segments.append(("❌", "Setup octogen service failed", ""))
+            refresh(live, segments)
+            return False
         update_cli_config(live, segments, kernel_key, cli_install_dir)
         if ping_agent_service(live, segments, kernel_key):
             segments.append(("👍", "Setup octogen service done", ""))

@@ -30,18 +30,11 @@ fi
 echo "start kernel.."
 cd ${ROOT_DIR}/kernel && hap run -n octopus_kernel -- og_kernel_rpc_server
 
-echo "start agent"
+echo "start agent.."
 cd ${ROOT_DIR}/agent && hap run -n octopus_agent -- og_agent_rpc_server
-
-sleep 4
-
-AGENT_RPC_KEY=$(cat ${ROOT_DIR}/agent/.env | grep admin_key | tr -d '\r' | cut -d "=" -f 2)
-KERNEL_RPC_KEY=$(cat ${ROOT_DIR}/kernel/.env | grep rpc_key | tr -d '\r' | cut -d "=" -f 2)
-og_agent_setup --kernel_endpoint=127.0.0.1:9527 --kernel_api_key=${KERNEL_RPC_KEY} --agent_endpoint=127.0.0.1:9528 --admin_key=${AGENT_RPC_KEY}
 
 while true
 do
     hap status
     sleep 10
 done
-
