@@ -28,16 +28,16 @@ def test_ok_handle_action_end():
     segments = [(0, "", "")]
     images = []
     values = [()]
-    task_context = agent_server_pb2.TaskContext(
-        start_time=time.time(),
+    task_state = agent_server_pb2.TaskState(
         generated_token_count=10,
-        sent_token_count=10,
-        model_name="mock",
         iteration_count=1,
+        model_name="mock",
+        total_duration=1,
+        sent_token_count=10,
         model_respond_duration=1000,
     )
     respond = agent_server_pb2.TaskRespond(
-        state=task_context.to_task_state_proto(),
+        state=task_state,
         respond_type=agent_server_pb2.TaskRespond.OnAgentActionEndType,
         on_agent_action_end=agent_server_pb2.OnAgentActionEnd(
             output="", output_files=[], has_error=False
@@ -51,16 +51,16 @@ def test_error_handle_action_end():
     segments = [(0, "", "")]
     images = []
     values = [()]
-    task_context = agent_server_pb2.TaskContext(
-        start_time=time.time(),
+    task_state = agent_server_pb2.TaskState(
         generated_token_count=10,
-        sent_token_count=10,
-        model_name="mock",
         iteration_count=1,
+        model_name="mock",
+        total_duration=1,
+        sent_token_count=10,
         model_respond_duration=1000,
     )
     respond = agent_server_pb2.TaskRespond(
-        state=task_context.to_task_state_proto(),
+        state=task_state,
         respond_type=agent_server_pb2.TaskRespond.OnAgentActionEndType,
         on_agent_action_end=agent_server_pb2.OnAgentActionEnd(
             output="", output_files=[], has_error=True
