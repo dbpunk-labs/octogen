@@ -579,6 +579,7 @@ def start_octogen_for_azure_openai(
             image_name,
             version,
             is_codellama="0",
+            use_podman=use_podman,
         )
         == 0
     ):
@@ -636,6 +637,7 @@ def start_octogen_for_codellama(
             version,
             is_codellama="1",
             model_filename=model_filename,
+            use_podman=use_podman,
         )
         == 0
     ):
