@@ -40,10 +40,21 @@ message FinalRespond {
   string answer = 1;
 }
 
-message TaskRespond {
-  int32 token_usage = 1;
-  int32 iteration = 2;
+message TaskState {
+  // the generated token from model
+  int32 generated_token_count = 1;
+  int32 iteration_count = 2;
   string model_name = 3;
+  // the time(ms) of code execution and text generation
+  int32 total_duration = 4;
+  // the prompt token count
+  int32 sent_token_count = 5;
+  // the time(ms) that the model has been used
+  int32 model_respond_duration = 6;
+}
+
+message TaskRespond {
+  TaskState state = 1;
   enum RespondType {
     OnAgentActionType = 0;
     OnAgentActionStdout = 1;

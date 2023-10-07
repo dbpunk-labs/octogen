@@ -18,10 +18,11 @@
 import openai
 import json
 import logging
+import time
 from typing import Any, Dict, List, Optional, Sequence, Union, Type
 from pydantic import BaseModel, Field
 from og_proto.kernel_server_pb2 import ExecuteResponse
-from og_proto.agent_server_pb2 import OnAgentAction, TaskRespond, OnAgentActionEnd, FinalRespond
+from og_proto.agent_server_pb2 import OnAgentAction, TaskRespond, OnAgentActionEnd, FinalRespond, TaskState
 from og_sdk.utils import parse_image_filename, process_char_stream
 
 logger = logging.getLogger(__name__)
@@ -37,6 +38,27 @@ class FunctionResult(BaseModel):
     has_error: bool = False
 
 
+class TaskContext(BaseModel):
+    start_time: float = 0
+    generated_token_count: int = 0
+    sent_token_count: int = 0
+    model_name: str = ""
+    iteration_count: int = 0
+    model_respond_duration: int = 0
+
+    def to_task_state_proto(self):
+        # in ms
+        total_duration = int((time.time() - self.start_time) * 1000)
+        return TaskState(
+            generated_token_count=self.generated_token_count,
+            iteration_count=self.iteration_count,
+            model_name=self.model_name,
+            total_duration=total_duration,
+            sent_token_count=self.sent_token_count,
+            model_respond_duration=self.model_respond_duration,
+        )
+
+
 class TypingState:
     START = 0
     EXPLANATION = 1
@@ -48,9 +70,7 @@ class BaseAgent:
     def __init__(self, sdk):
         self.kernel_sdk = sdk
 
-    async def call_function(
-        self, code, context, iteration=1, token_usage=0, model_name=""
-    ):
+    async def call_function(self, code, context, task_context=None):
         """
         run code with kernel
         """
@@ -76,10 +96,10 @@ class BaseAgent:
                 yield (
                     None,
                     TaskRespond(
-                        token_usage=token_usage,
-                        iteration=iteration,
+                        state=task_context.to_task_state_proto()
+                        if task_context
+                        else None,
                         respond_type=TaskRespond.OnAgentActionStdout,
-                        model_name=model_name,
                         console_stdout=kernel_output,
                     ),
                 )
@@ -92,10 +112,10 @@ class BaseAgent:
                 yield (
                     None,
                     TaskRespond(
-                        token_usage=token_usage,
-                        iteration=iteration,
+                        state=task_context.to_task_state_proto()
+                        if task_context
+                        else None,
                         respond_type=TaskRespond.OnAgentActionStderr,
-                        model_name=model_name,
                         console_stderr=kernel_err,
                     ),
                 )
@@ -107,10 +127,10 @@ class BaseAgent:
                 yield (
                     None,
                     TaskRespond(
-                        token_usage=token_usage,
-                        iteration=iteration,
+                        state=task_context.to_task_state_proto()
+                        if task_context
+                        else None,
                         respond_type=TaskRespond.OnAgentActionStderr,
-                        model_name=model_name,
                         console_stderr=traceback,
                     ),
                 )
@@ -132,10 +152,10 @@ class BaseAgent:
                 yield (
                     None,
                     TaskRespond(
-                        token_usage=token_usage,
-                        iteration=iteration,
+                        state=task_context.to_task_state_proto()
+                        if task_context
+                        else None,
                         respond_type=TaskRespond.OnAgentActionStdout,
-                        model_name=model_name,
                         console_stdout=console_stdout,
                     ),
                 )

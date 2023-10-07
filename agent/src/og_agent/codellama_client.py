@@ -46,7 +46,7 @@ class CodellamaClient(BaseStreamClient):
             "temperature": temperature,
             "stream": True,
             "repeat_last_n": 256,
-            "top_p": 0.5,
+            "top_p": 0.9,
             "stop": [
                 "</s>",
                 "\n",

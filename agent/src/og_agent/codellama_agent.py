@@ -19,12 +19,15 @@
 import json
 import logging
 import io
+import time
 from .codellama_client import CodellamaClient
 from og_proto.agent_server_pb2 import OnAgentAction, TaskRespond, OnAgentActionEnd, FinalRespond
-from .base_agent import BaseAgent, TypingState
+from .base_agent import BaseAgent, TypingState, TaskContext
 from .tokenizer import tokenize
+import tiktoken
 
 logger = logging.getLogger(__name__)
+encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
 
 
 class CodellamaAgent(BaseAgent):
@@ -45,25 +48,23 @@ class CodellamaAgent(BaseAgent):
         answer = json_response["explanation"]
         if json_response["action"] == "no_action":
             return answer
-        elif json_response["action"] == "print_message":
-            if json_response["action_input"]:
-                return json_response["action_input"]
-            else:
-                return json_response["explanation"]
+        elif json_response["action"] == "show_sample_code":
+            return ""
         else:
+            code = json_response.get("action_input", None)
             answer_code = """%s
 ```%s
 %s
 ```
 """ % (
                 answer,
-                json_response["language"],
-                json_response["action_input"],
+                json_response.get("language", "python"),
+                code if code else "",
             )
             return answer_code
 
-    async def handle_function(
-        self, json_response, queue, context, token_usage=0, iteration=0, model_name=""
+    async def handle_show_sample_code(
+        self, json_response, queue, context, task_context
     ):
         code = json_response["action_input"]
         explanation = json_response["explanation"]
@@ -75,10 +76,27 @@ class CodellamaAgent(BaseAgent):
         })
         await queue.put(
             TaskRespond(
-                token_usage=token_usage,
-                iteration=iteration,
+                state=task_context.to_task_state_proto(),
                 respond_type=TaskRespond.OnAgentActionType,
-                model_name=model_name,
+                on_agent_action=OnAgentAction(
+                    input=tool_input, tool="show_sample_code"
+                ),
+            )
+        )
+
+    async def handle_function(self, json_response, queue, context, task_context):
+        code = json_response["action_input"]
+        explanation = json_response["explanation"]
+        saved_filenames = json_response.get("saved_filenames", [])
+        tool_input = json.dumps({
+            "code": code,
+            "explanation": explanation,
+            "saved_filenames": saved_filenames,
+        })
+        await queue.put(
+            TaskRespond(
+                state=task_context.to_task_state_proto(),
+                respond_type=TaskRespond.OnAgentActionType,
                 on_agent_action=OnAgentAction(
                     input=tool_input, tool="execute_python_code"
                 ),
@@ -86,21 +104,13 @@ class CodellamaAgent(BaseAgent):
         )
         function_result = None
 
-        async for (result, respond) in self.call_function(
-            code,
-            context,
-            iteration=iteration,
-            token_usage=token_usage,
-            model_name=model_name,
-        ):
+        async for (result, respond) in self.call_function(code, context, task_context):
             if context.done():
                 logger.debug("the client has cancelled the request")
                 break
-
             function_result = result
             if respond:
                 await queue.put(respond)
-
         return function_result
 
     def _get_argument_new_typing(self, message):
@@ -127,7 +137,15 @@ class CodellamaAgent(BaseAgent):
                     action_input_str = "".join(token)
         return (state, explanation_str, action_input_str)
 
-    async def call_codellama(self, question, chat_history, queue, context):
+    async def call_codellama(
+        self, question, chat_history, queue, context, task_context
+    ):
+        """
+        call codellama api
+        """
+        start_time = time.time()
+        num_tokens = len(encoding.encode(question)) + len(encoding.encode(chat_history))
+        task_context.sent_token_count += num_tokens
         state = None
         message = ""
         text_content = ""
@@ -139,6 +157,13 @@ class CodellamaAgent(BaseAgent):
                 logger.debug("the client has cancelled the request")
                 break
             respond = json.loads(line[6:])
+            task_context.generated_token_count += len(
+                encoding.encode(respond["content"])
+            )
+            task_context.model_respond_duration += int(
+                (time.time() - start_time) * 1000
+            )
+            start_time = time.time()
             message += respond["content"]
             logger.debug(f" message {message}")
             (
@@ -151,10 +176,8 @@ class CodellamaAgent(BaseAgent):
                 text_content = explanation_str
                 await queue.put(
                     TaskRespond(
-                        token_usage=0,
-                        iteration=0,
+                        state=task_context.to_task_state_proto(),
                         respond_type=TaskRespond.OnAgentTextTyping,
-                        model_name="",
                         typing_content=typed_chars,
                     )
                 )
@@ -163,10 +186,8 @@ class CodellamaAgent(BaseAgent):
                 code_content = action_input_str
                 await queue.put(
                     TaskRespond(
-                        token_usage=0,
-                        iteration=0,
+                        state=task_context.to_task_state_proto(),
                         respond_type=TaskRespond.OnAgentCodeTyping,
-                        model_name="",
                         typing_content=typed_chars,
                     )
                 )
@@ -175,6 +196,7 @@ class CodellamaAgent(BaseAgent):
             )
             if respond["stop"]:
                 state = respond
+
         return (message, state)
 
     async def arun(self, question, queue, context, max_iteration=5):
@@ -183,31 +205,33 @@ class CodellamaAgent(BaseAgent):
         """
         history = []
         current_question = question
-        # TODO Streaming and reason action
+        task_context = TaskContext(
+            start_time=time.time(),
+            generated_token_count=0,
+            sent_token_count=0,
+            model_name="codellama",
+            iteration_count=0,
+            model_respond_duration=0,
+        )
         iteration = 0
-        token_usage = 0
-        model_name = ""
         try:
             while iteration < max_iteration:
                 if context.done():
                     logger.debug("the client has cancelled the request")
                     break
-
                 iteration += 1
-                response = []
+                task_context.iteration_count = iteration
                 chat_history = "\n".join(history)
                 (message, state) = await self.call_codellama(
-                    current_question, chat_history, queue, context
+                    current_question, chat_history, queue, context, task_context
                 )
                 try:
                     json_response = json.loads(message)
                     if not json_response:
                         await queue.put(
                             TaskRespond(
-                                token_usage=token_usage,
-                                iteration=iteration,
+                                state=task_context.to_task_state_proto(),
                                 respond_type=TaskRespond.OnFinalAnswerType,
-                                model_name=model_name,
                                 final_respond=FinalRespond(
                                     answer=self._output_exception()
                                 ),
@@ -217,10 +241,8 @@ class CodellamaAgent(BaseAgent):
                 except Exception as ex:
                     await queue.put(
                         TaskRespond(
-                            token_usage=token_usage,
-                            iteration=iteration,
+                            state=task_context.to_task_state_proto(),
                             respond_type=TaskRespond.OnFinalAnswerType,
-                            model_name=model_name,
                             final_respond=FinalRespond(
                                 answer="The model made an invalid respone"
                             ),
@@ -233,20 +255,13 @@ class CodellamaAgent(BaseAgent):
                     and json_response["action_input"]
                 ):
                     function_result = await self.handle_function(
-                        json_response,
-                        queue,
-                        context,
-                        token_usage,
-                        iteration,
-                        model_name,
+                        json_response, queue, context, task_context
                     )
                     logger.debug(f"the function result {function_result}")
                     await queue.put(
                         TaskRespond(
-                            token_usage=token_usage,
-                            iteration=iteration,
+                            state=task_context.to_task_state_proto(),
                             respond_type=TaskRespond.OnAgentActionEndType,
-                            model_name=model_name,
                             on_agent_action_end=OnAgentActionEnd(
                                 output="",
                                 output_files=function_result.saved_filenames,
@@ -255,11 +270,11 @@ class CodellamaAgent(BaseAgent):
                         )
                     )
                     history.append("User:%s" % current_question)
-                    history.append("Octogen:%s\n" % ("".join(response)))
-                    ins = "Check if the following output meets the goal. If it does, explain it and stop respond. Otherwise, try a new solution."
+                    history.append("Octogen:%s" % message)
+                    ins = "the output of execute_python_code:"
                     # TODO limit the output size
                     if function_result.has_result:
-                        current_question = f"{ins} \n {function_result.console_stdout}"
+                        current_question = f"{ins}\n{function_result.console_stdout}"
                         logger.debug(
                             "continue to iterate with codellama with question %s"
                             % function_result.console_stdout
@@ -276,18 +291,31 @@ class CodellamaAgent(BaseAgent):
                             "continue to iterate with codellama with question %s"
                             % function_result.console_stdout
                         )
-                else:
+                elif (
+                    json_response["action"] == "show_sample_code"
+                    and json_response["action_input"]
+                ):
+                    await self.handle_show_sample_code(
+                        json_response, queue, context, task_context
+                    )
                     result = self._format_output(json_response)
                     await queue.put(
                         TaskRespond(
-                            token_usage=token_usage,
-                            iteration=iteration,
+                            state=task_context.to_task_state_proto(),
                             respond_type=TaskRespond.OnFinalAnswerType,
-                            model_name=model_name,
                             final_respond=FinalRespond(answer=result),
                         )
                     )
                     break
-
+                else:
+                    result = self._format_output(json_response)
+                    await queue.put(
+                        TaskRespond(
+                            state=task_context.to_task_state_proto(),
+                            respond_type=TaskRespond.OnFinalAnswerType,
+                            final_respond=FinalRespond(answer=result),
+                        )
+                    )
+                    break
         finally:
             await queue.put(None)
