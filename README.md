@@ -28,7 +28,7 @@
 Requirement
 * python 3.10 and above
 * pip
-* [docker](https://www.docker.com/products/docker-desktop/) 24.0.0 and above, docker desktop is recommended
+* [docker](https://www.docker.com/products/docker-desktop/) 24.0.0 and above, or [podman](https://podman.io/)
 
 > To deploy Octogen, the user needs permission to run Docker commands.   
 > To use codellama, your host must have at least 8 CPUs and 16 GB of RAM.
@@ -51,6 +51,8 @@ og_up
 > You have the option to select from OpenAI, Azure OpenAI, CodeLlama, and Octogen agent services.
 > If you opt for CodeLlama, Octogen will automatically download it from huggingface.co.
 > In case the installation of the Octogen Terminal CLI is taking longer than expected, you might want to consider switching to a different pip mirror.
+
+The default is using docker as container engine. use podman with flag `--use_podman` 
 
 3. Open your terminal and execute the command `og`, you will see the following output
 
