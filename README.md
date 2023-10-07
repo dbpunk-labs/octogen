@@ -47,10 +47,11 @@ pip install og_up
 ```
 og_up
 ```
-
-> You have the option to select from OpenAI, Azure OpenAI, CodeLlama, and Octogen agent services.
-> If you opt for CodeLlama, Octogen will automatically download it from huggingface.co.
-> In case the installation of the Octogen Terminal CLI is taking longer than expected, you might want to consider switching to a different pip mirror.
+You have the following options to select 
+* OpenAI , recommanded for daily use
+* Azure OpenAI
+* CodeLlama, not recommanded
+* Octogen agent services powered by GPT4 and Codellama 34B
 
 The default is using docker as container engine. use podman with flag `--use_podman` 
 
