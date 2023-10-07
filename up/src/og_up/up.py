@@ -38,6 +38,7 @@ from rich.live import Live
 from rich.spinner import Spinner
 from rich.console import Group
 from og_sdk.utils import process_char_stream
+from og_sdk.agent_sdk import AgentSyncSDK
 
 OCTOGEN_TITLE = "🐙[bold red]Octogen Up"
 USE_SHELL = sys.platform.startswith("win")
@@ -451,26 +452,25 @@ def update_cli_config(live, segments, api_key, cli_dir, api_base="127.0.0.1:9528
     refresh(live, segments)
 
 
-def ping_agent_service(live, segments):
+def ping_agent_service(live, segments, api_key, api_base="127.0.0.1:9528"):
     spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
     step = "Ping octogen agent service"
     segments.append((spinner, step, ""))
     refresh(live, segments)
-    command = ["og_ping"]
-    result_code = 0
-    output = ""
-    for code, chunk in run_with_realtime_print(command=command):
-        result_code = code
-        output += chunk
-        pass
-    segments.pop()
-    if result_code == 0:
-        segments.append(("✅", "Ping octogen agent service", ""))
-        return True
-    else:
-        segments.append(("❌", "Ping octogen agent service", output))
+    try:
+        sdk = AgentSyncSDK(api_base, api_key)
+        sdk.connect()
+        response = sdk.ping()
+        segments.pop()
+        if response.code == 0:
+            segments.append(("✅", "Ping octogen agent service", ""))
+            return True
+        else:
+            segments.append(("❌", "Ping octogen agent service", response.msg))
+            return False
+    except Exception as ex:
+        segments.append(("❌", "Ping octogen agent service", str(ex)))
         return False
-
 
 def start_octogen_for_openai(
     live,
@@ -499,7 +499,7 @@ def start_octogen_for_openai(
         == 0
     ):
         update_cli_config(live, segments, kernel_key, cli_install_dir)
-        if ping_agent_service(live, segments):
+        if ping_agent_service(live, segments, kernel_key):
             segments.append(("👍", "Setup octogen service done", ""))
             refresh(live, segments)
             return True
@@ -542,7 +542,7 @@ def start_octogen_for_azure_openai(
         == 0
     ):
         update_cli_config(live, segments, kernel_key, cli_install_dir)
-        if ping_agent_service(live, segments):
+        if ping_agent_service(live, segments, kernel_key):
             segments.append(("👍", "Setup octogen service done", ""))
             refresh(live, segments)
             return True
@@ -593,7 +593,7 @@ def start_octogen_for_codellama(
         == 0
     ):
         update_cli_config(live, segments, kernel_key, cli_install_dir)
-        if ping_agent_service(live, segments):
+        if ping_agent_service(live, segments, kernel_key):
             segments.append(("👍", "Setup octogen service done", ""))
             refresh(live, segments)
             return True
@@ -666,7 +666,7 @@ def init_octogen(
                 refresh(live, segments)
                 return
             update_cli_config(live, segments, key, real_cli_dir, api_base)
-            if ping_agent_service(live, segments):
+            if ping_agent_service(live, segments, kernel_key, api_base):
                 segments.append(("👍", "Setup octogen cli done", ""))
             else:
                 segments.append(("❌", "Setup octogen cli failed", ""))
