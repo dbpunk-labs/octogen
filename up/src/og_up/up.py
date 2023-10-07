@@ -72,10 +72,13 @@ def run_install_cli(live, segments):
     if result_code == 0:
         segments.pop()
         segments.append(("✅", "Install octogen terminal cli", ""))
+        refresh(live, segments)
+        return True
     else:
         segments.pop()
         segments.append(("❌", "Install octogen terminal cli", outputs))
-    refresh(live, segments)
+        refresh(live, segments)
+        return False
 
 
 def run_with_realtime_print(
