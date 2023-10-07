@@ -65,16 +65,20 @@ def run_install_cli(live, segments):
     result_code = 0
     refresh(live, segments)
     outputs = ""
-    for code, output in run_with_realtime_print(command=["pip", "install", "og_chat"]):
+    for code, output in run_with_realtime_print(command=["pip", "install", "-U", "og_proto",
+        "og_sdk", "og_chat"]):
         outputs += output
         result_code = code
     if result_code == 0:
         segments.pop()
         segments.append(("✅", "Install octogen terminal cli", ""))
+        refresh(live, segments)
+        return True
     else:
         segments.pop()
         segments.append(("❌", "Install octogen terminal cli", outputs))
-    refresh(live, segments)
+        refresh(live, segments)
+        return False
 
 
 def run_with_realtime_print(
@@ -680,7 +684,7 @@ def start_octogen_for_codellama(
 )
 @click.option(
     "--model_filename",
-    default="codellama-7b-instruct.Q5_K_S.gguf",
+    default="codellama-7b-instruct.Q5_K_M.gguf",
     help="the model filename in model repo",
 )
 @click.option(
@@ -721,7 +725,7 @@ def init_octogen(
                 refresh(live, segments)
                 return
             update_cli_config(live, segments, key, real_cli_dir, api_base)
-            if ping_agent_service(live, segments, kernel_key, api_base):
+            if ping_agent_service(live, segments, key, api_base):
                 segments.append(("👍", "Setup octogen cli done", ""))
             else:
                 segments.append(("❌", "Setup octogen cli failed", ""))

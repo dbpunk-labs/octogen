@@ -25,6 +25,7 @@ from og_up.up import random_str
 from og_up.up import generate_agent_common, generate_agent_azure_openai, generate_agent_openai, generate_agent_codellama
 from og_up.up import generate_kernel_env
 from og_up.up import check_the_env
+from og_up.up import run_install_cli
 from rich.console import Group
 from dotenv import dotenv_values
 
@@ -146,6 +147,12 @@ def test_get_version():
         version = get_latest_release_version(repo, live, segments)
         assert "v0.1.0" == version
 
+
+def test_install_cli():
+    console = Console()
+    segments = []
+    with Live(Group(*segments), console=console) as live:
+        assert run_install_cli(live, segments)
 
 @pytest.mark.skipif(sys.platform.startswith("win"), reason="skip on windows")
 def test_start_azure_openai_smoketest():
