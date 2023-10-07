@@ -156,6 +156,7 @@ def test_start_azure_openai_smoketest():
     admin_key = random_str(32)
     kernel_key = random_str(32)
     with Live(Group(*segments), console=console) as live:
+        generate_kernel_env(live, segments, install_dir, kernel_key)
         code = load_docker_image("v0.4.27", "dbpunk/octogen", live, segments)
         assert code == 0, "bad result code of loading docker image"
         result = start_octogen_for_azure_openai(
@@ -183,6 +184,7 @@ def test_start_openai_smoketest():
     admin_key = random_str(32)
     kernel_key = random_str(32)
     with Live(Group(*segments), console=console) as live:
+        generate_kernel_env(live, segments, install_dir, kernel_key)
         code = load_docker_image("v0.4.27", "dbpunk/octogen", live, segments)
         assert code == 0, "bad result code of loading docker image"
         result = start_octogen_for_openai(
@@ -209,6 +211,7 @@ def test_start_codellama_smoketest():
     admin_key = random_str(32)
     kernel_key = random_str(32)
     with Live(Group(*segments), console=console) as live:
+        generate_kernel_env(live, segments, install_dir, kernel_key)
         code = load_docker_image("v0.4.27", "dbpunk/octogen", live, segments)
         assert code == 0, "bad result code of loading docker image"
         result = start_octogen_for_codellama(
