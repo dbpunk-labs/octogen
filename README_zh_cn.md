@@ -12,8 +12,7 @@
 > 一款为开发者打造的开源的代码解释器
 
 <p align="center">
-<img src="https://github.com/imotai/test_repos/blob/main/gifs/octogen_demo.gif?raw=true" align="center"/>
-
+https://github.com/dbpunk-labs/octogen/assets/8623385/7445cc4d-567e-4d1a-bedc-b5b566329c41
 
 |Supported OS|
 |----|
@@ -27,7 +26,7 @@
 本地环境要求
 * python 3.10 and above
 * pip
-* [docker](https://www.docker.com/products/docker-desktop/) 24.0.0 and above, docker desktop is recommendedr
+* [docker](https://www.docker.com/products/docker-desktop/) 24.0.0 and above or [Podman](https://podman.io/)
 
 
 安装octogen启动器
