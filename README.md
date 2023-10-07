@@ -1,4 +1,4 @@
-![octogen-internal](https://github.com/dbpunk-labs/octogen/assets/8623385/81b67a44-4e21-4684-8cce-1d2e9d625bd4)<p align="center">
+<p align="center">
 <img  width="200px" src="https://github.com/dbpunk-labs/octogen/assets/8623385/86af130f-7d0d-4cfb-9410-fc338426938e" align="center"/>
 
 
