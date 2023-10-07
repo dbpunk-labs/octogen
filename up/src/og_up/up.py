@@ -455,6 +455,7 @@ def add_kernel_endpoint(live, segments, admin_key, kernel_endpoint, api_key, api
     refresh(live, segments)
     try:
         sdk = AgentSyncSDK(api_base, admin_key)
+        sdk.connect()
         sdk.add_kernel(api_key, kernel_endpoint)
         segments.pop()
         if response.code == 0:
@@ -464,9 +465,9 @@ def add_kernel_endpoint(live, segments, admin_key, kernel_endpoint, api_key, api
             segments.append(("❌", step, response.msg))
             return False
     except Exception as ex:
+        segments.pop()
         segments.append(("❌", step, str(ex)))
         return False
-
 
 def ping_agent_service(live, segments, api_key, api_base="127.0.0.1:9528"):
     spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
