@@ -65,7 +65,8 @@ def run_install_cli(live, segments):
     result_code = 0
     refresh(live, segments)
     outputs = ""
-    for code, output in run_with_realtime_print(command=["pip", "install", "og_chat"]):
+    for code, output in run_with_realtime_print(command=["pip", "install", "-U", "og_proto",
+        "og_sdk", "og_chat"]):
         outputs += output
         result_code = code
     if result_code == 0:
