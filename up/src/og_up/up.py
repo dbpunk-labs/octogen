@@ -24,6 +24,7 @@ import os
 import subprocess
 import sys
 import io
+import time
 from pathlib import Path
 from tqdm import tqdm
 from tempfile import gettempdir
@@ -431,6 +432,7 @@ def start_service(
         result_code = code
         output += chunk
         pass
+    time.sleep(4)
     segments.pop()
     if result_code == 0:
         segments.append(("✅", "Start octogen service", ""))
@@ -447,6 +449,27 @@ def update_cli_config(live, segments, api_key, cli_dir, api_base="127.0.0.1:9528
         fd.write(f"api_key={api_key}\n")
     segments.append(("✅", "Update cli config", ""))
     refresh(live, segments)
+
+
+def ping_agent_service(live, segments):
+    spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
+    step = "Ping octogen agent service"
+    segments.append((spinner, step, ""))
+    refresh(live, segments)
+    command = ["og_ping"]
+    result_code = 0
+    output = ""
+    for code, chunk in run_with_realtime_print(command=command):
+        result_code = code
+        output += chunk
+        pass
+    segments.pop()
+    if result_code == 0:
+        segments.append(("✅", "Ping octogen agent service", ""))
+        return True
+    else:
+        segments.append(("❌", "Ping octogen agent service", output))
+        return False
 
 
 def start_octogen_for_openai(
@@ -476,9 +499,14 @@ def start_octogen_for_openai(
         == 0
     ):
         update_cli_config(live, segments, kernel_key, cli_install_dir)
-        segments.append(("👍", "Setup octogen done", ""))
-        refresh(live, segments)
-        return True
+        if ping_agent_service(live, segments):
+            segments.append(("👍", "Setup octogen service done", ""))
+            refresh(live, segments)
+            return True
+        else:
+            segments.append(("❌", "Setup octogen service failed", ""))
+            refresh(live, segments)
+            return False
     else:
         segments.append(("❌", "Setup octogen failed", ""))
         refresh(live, segments)
@@ -514,9 +542,14 @@ def start_octogen_for_azure_openai(
         == 0
     ):
         update_cli_config(live, segments, kernel_key, cli_install_dir)
-        segments.append(("👍", "Setup octogen done", ""))
-        refresh(live, segments)
-        return True
+        if ping_agent_service(live, segments):
+            segments.append(("👍", "Setup octogen service done", ""))
+            refresh(live, segments)
+            return True
+        else:
+            segments.append(("❌", "Setup octogen service failed", ""))
+            refresh(live, segments)
+            return False
     else:
         segments.append(("❌", "Setup octogen failed", ""))
         refresh(live, segments)
@@ -560,9 +593,14 @@ def start_octogen_for_codellama(
         == 0
     ):
         update_cli_config(live, segments, kernel_key, cli_install_dir)
-        segments.append(("👍", "Setup octogen service done", ""))
-        refresh(live, segments)
-        return True
+        if ping_agent_service(live, segments):
+            segments.append(("👍", "Setup octogen service done", ""))
+            refresh(live, segments)
+            return True
+        else:
+            segments.append(("❌", "Setup octogen service failed", ""))
+            refresh(live, segments)
+            return False
     else:
         segments.append(("❌", "Setup octogen service failed", ""))
         refresh(live, segments)
@@ -624,18 +662,21 @@ def init_octogen(
         if choice == "4":
             check_result, _ = check_the_env(live, segments, need_container=False)
             if not check_result:
-                segments.append(("❌", "Setup octogen failed", ""))
+                segments.append(("❌", "Setup octogen cli failed", ""))
                 refresh(live, segments)
                 return
             update_cli_config(live, segments, key, real_cli_dir, api_base)
-            segments.append(("👍", "Setup octogen done", ""))
+            if ping_agent_service(live, segments):
+                segments.append(("👍", "Setup octogen cli done", ""))
+            else:
+                segments.append(("❌", "Setup octogen cli failed", ""))
             refresh(live, segments)
             return
         check_result, _ = check_the_env(
             live, segments, need_container=True, use_podman=use_podman
         )
         if not check_result:
-            segments.append(("❌", "Setup octogen failed", ""))
+            segments.append(("❌", "Setup octogen agent service failed", ""))
             refresh(live, segments)
             return
         if octogen_version:

@@ -54,3 +54,4 @@ def app(octogen_dir):
         console.print(
             f"❌ please check your config {octogen_dir}/config with error {ex}"
         )
+        sys.exit(1)
