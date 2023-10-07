@@ -185,9 +185,10 @@ def handle_action_output(segments, respond, values):
         new_stderr += respond.console_stderr
         new_stderr = process_char_stream(new_stderr)
     values.append(("text", (new_stdout, new_stderr), []))
+    total_output = new_stdout
     if new_stderr:
-        new_stdout += "\n" + new_stderr
-    text = Text.from_ansi(new_stdout)
+        total_output = new_stdout + "\n" + new_stderr
+    text = Text.from_ansi(total_output)
     syntax = Syntax(
         f"{text.plain}",
         "text",

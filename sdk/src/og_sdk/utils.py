@@ -42,17 +42,20 @@ async def generate_async_chunk(
 def process_char_stream(stream):
     buffer = []
     i = 0
+
+    def carriage_return(buf):
+        if "\n" in buf:
+            pop_buf = []
+            for _ in range(buf[::-1].index("\n")):
+                pop_buf.append(buf.pop())
+
     while i < len(stream):
         c = stream[i]
         if c in ["\b", "\r"]:
             # Handle escape characters
             escape_dict = {
                 "\b": lambda buf: buf.pop() if buf else None,  # backspace
-                "\r": lambda buf: [
-                    buf.pop() for _ in range(len(buf) - buf[::-1].index("\n") - 1)
-                ]
-                if "\n" in buf
-                else buf,  # carriage return
+                "\r": carriage_return,
             }
             escape_dict[c](buffer)
             i += 1
