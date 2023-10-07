@@ -53,7 +53,7 @@ You have the following options to select
 
 The default is using docker as container engine. use podman with flag `--use_podman` 
 
-3. Open your terminal and execute the command `og`, you will see the following output
+3. Execute the command `og`, you will see the following output
 
 ```
 Welcome to use octogen❤️ . To ask a programming question, simply type your question and press esc + enter
