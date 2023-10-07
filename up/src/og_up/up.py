@@ -680,7 +680,7 @@ def start_octogen_for_codellama(
 )
 @click.option(
     "--model_filename",
-    default="codellama-7b-instruct.Q5_K_S.gguf",
+    default="codellama-7b-instruct.Q5_K_M.gguf",
     help="the model filename in model repo",
 )
 @click.option(
