@@ -13,8 +13,7 @@
 > ## Octogen
 > an open-source code interpreter for developers
 
-<p align="center">
-<img src="https://github.com/imotai/test_repos/blob/main/gifs/octogen_demo.gif?raw=true" align="center"/>
+https://github.com/dbpunk-labs/octogen/assets/8623385/7445cc4d-567e-4d1a-bedc-b5b566329c41
 
 
 |Supported OS|
