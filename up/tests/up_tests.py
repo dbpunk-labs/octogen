@@ -154,6 +154,7 @@ def test_install_cli():
     with Live(Group(*segments), console=console) as live:
         assert run_install_cli(live, segments)
 
+
 @pytest.mark.skipif(sys.platform.startswith("win"), reason="skip on windows")
 def test_start_azure_openai_smoketest():
     console = Console()
