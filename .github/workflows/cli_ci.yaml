@@ -34,7 +34,7 @@ jobs:
       - name: Run cli tests
         shell: bash
         run: |
-          bash build_package.sh
+          bash install_package.sh
           cd up
           pip install .
           pytest tests/*.py
