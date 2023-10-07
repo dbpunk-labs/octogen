@@ -1,4 +1,4 @@
-<p align="center">
+![octogen-internal](https://github.com/dbpunk-labs/octogen/assets/8623385/81b67a44-4e21-4684-8cce-1d2e9d625bd4)<p align="center">
 <img  width="200px" src="https://github.com/dbpunk-labs/octogen/assets/8623385/86af130f-7d0d-4cfb-9410-fc338426938e" align="center"/>
 
 
@@ -112,7 +112,7 @@ Use /help for help
 
 ## The internal of local deployment
 
-![octogen-internal drawio](https://github.com/dbpunk-labs/octogen/assets/8623385/95dd6f84-6de8-476a-9c66-9ab591ed9b0e)
+![octogen-internal](https://github.com/dbpunk-labs/octogen/assets/8623385/08c366eb-a8a7-41d9-b915-739d77fb19d0)
 
 * Octogen Kernel: The code execution engine, based on notebook kernels.
 * Octogen Agent: Manages client requests, uses ReAct to process complex tasks, and stores user-assembled applications.
