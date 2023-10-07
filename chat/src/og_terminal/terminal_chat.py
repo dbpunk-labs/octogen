@@ -213,10 +213,10 @@ def handle_action_end(segments, respond, images, values):
     has_error = "✅" if not respond.on_agent_action_end.has_error else "❌"
     old_value = values.pop()
     segment = segments.pop()
-    if not images:
+    if not images and not has_error:
         images.extend(respond.on_agent_action_end.output_files)
+    values.append(old_value)
     segments.append((len(values) - 1, has_error, segment[2]))
-
     # add the next steps loading
     spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
     values.append(("text", "", []))
