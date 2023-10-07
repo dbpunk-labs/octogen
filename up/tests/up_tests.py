@@ -111,7 +111,7 @@ def test_check_the_env_win():
     console = Console()
     segments = []
     with Live(Group(*segments), console=console) as live:
-        result, msg = check_the_env(live, segments, need_docker=False)
+        result, msg = check_the_env(live, segments, need_container=False)
         assert result
 
 
