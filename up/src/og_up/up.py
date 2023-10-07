@@ -405,7 +405,11 @@ def start_service(
     segments.append((spinner, step, ""))
     refresh(live, segments)
     stop_service("octogen", use_podman=use_podman)
-    full_name = f"{image_name}:{version}" if not use_podman else f"docker.io/{image_name}:{version}"
+    full_name = (
+        f"{image_name}:{version}"
+        if not use_podman
+        else f"docker.io/{image_name}:{version}"
+    )
     command = [
         vender,
         "run",
@@ -429,7 +433,7 @@ def start_service(
         result_code = code
         output += chunk
         pass
-    time.sleep(4)
+    time.sleep(8)
     segments.pop()
     if result_code == 0:
         segments.append(("✅", "Start octogen service", ""))
@@ -453,21 +457,34 @@ def add_kernel_endpoint(live, segments, admin_key, kernel_endpoint, api_key, api
     step = "Register the kernel endpoint"
     segments.append((spinner, step, ""))
     refresh(live, segments)
-    try:
-        sdk = AgentSyncSDK(api_base, admin_key)
-        sdk.connect()
-        sdk.add_kernel(api_key, kernel_endpoint)
-        segments.pop()
-        if response.code == 0:
-            segments.append(("✅", step, ""))
-            return True
-        else:
-            segments.append(("❌", step, response.msg))
-            return False
-    except Exception as ex:
-        segments.pop()
-        segments.append(("❌", step, str(ex)))
+    retry_count = 0
+    result_code = 0
+    msg = ""
+    while retry_count <= 3:
+        retry_count += 1
+        try:
+            sdk = AgentSyncSDK(api_base, admin_key)
+            sdk.connect()
+            response = sdk.add_kernel(api_key, kernel_endpoint)
+            result_code = response.code
+            if result_code == 0:
+                break
+            msg = response.msg
+            time.sleep(2)
+        except Exception as ex:
+            result_code = 1
+            msg = str(ex)
+            time.sleep(2)
+    segments.pop()
+    if result_code == 0:
+        segments.append(("✅", step, ""))
+        refresh(live, segments)
+        return True
+    else:
+        segments.append(("❌", step, msg))
+        refresh(live, segments)
         return False
+
 
 def ping_agent_service(live, segments, api_key, api_base="127.0.0.1:9528"):
     spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
@@ -516,7 +533,7 @@ def start_octogen_for_openai(
         )
         == 0
     ):
-        if add_kernel_endpoint(
+        if not add_kernel_endpoint(
             live, segments, admin_key, "127.0.0.1:9527", kernel_key, "127.0.0.1:9528"
         ):
             segments.append(("❌", "Setup octogen service failed", ""))
@@ -565,7 +582,7 @@ def start_octogen_for_azure_openai(
         )
         == 0
     ):
-        if add_kernel_endpoint(
+        if not add_kernel_endpoint(
             live, segments, admin_key, "127.0.0.1:9527", kernel_key, "127.0.0.1:9528"
         ):
             segments.append(("❌", "Setup octogen service failed", ""))
@@ -622,7 +639,7 @@ def start_octogen_for_codellama(
         )
         == 0
     ):
-        if add_kernel_endpoint(
+        if not add_kernel_endpoint(
             live, segments, admin_key, "127.0.0.1:9527", kernel_key, "127.0.0.1:9528"
         ):
             segments.append(("❌", "Setup octogen service failed", ""))
