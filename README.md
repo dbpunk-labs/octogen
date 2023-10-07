@@ -39,7 +39,6 @@ Install the octogen on your local computer
 ```bash
 pip install og_up
 ```
-> try to change the pip mirror if the step install octopus terminal cli takes a lot of time
 
 2. Set up the Octogen service
    
