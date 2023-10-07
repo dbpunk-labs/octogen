@@ -117,7 +117,28 @@ def refresh(
     live.refresh()
 
 
-def check_the_env(live, segments, need_docker=True):
+def check_container_vender(vender):
+    command = [vender, "version", "--help"]
+    all_output = ""
+    result_code = 0
+    for code, output in run_with_realtime_print(command):
+        result_code = code
+        all_output += output
+    if result_code != 0:
+        return False, f"{vender} is required"
+    if all_output.lower().find("json") < 0:
+        return False, f"Upgrade the {vender} to support json format"
+    # check alive
+    command = [vender, "ps"]
+    result_code = 0
+    for code, _ in run_with_realtime_print(command):
+        result_code = code
+    if result_code != 0:
+        return False, f"{vender} is not running"
+    return True, "ok"
+
+
+def check_the_env(live, segments, need_container=True, use_podman=False):
     # check the python version
     spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
     step = "Check the environment"
@@ -134,32 +155,14 @@ def check_the_env(live, segments, need_docker=True):
         segments.append(("❌", "Check the environment", "Python3.10 is required"))
         refresh(live, segments)
         return False, "Python3.10 is required"
-    if need_docker:
-        command = ["docker", "version", "--help"]
-        all_output = ""
-        result_code = 0
-        for code, output in run_with_realtime_print(command):
-            result_code = code
-            all_output += output
-        if result_code != 0:
+    if need_container:
+        vender = "docker" if not use_podman else "podman"
+        result, msg = check_container_vender(vender)
+        if not result:
             old_segment = segments.pop()
-            segments.append(("❌", "Check the environment", "Docker is required"))
+            segments.append(("❌", "Check the environment", msg))
             refresh(live, segments)
-            return False, "Docker is required"
-        if all_output.find("json") < 0:
-            old_segment = segments.pop()
-            segments.append(("❌", "Check the environment", "Please upgrade the docker"))
-            refresh(live, segments)
-            return False, "Upgrade the docker"
-        command = ["docker", "ps"]
-        result_code = 0
-        for code, _ in run_with_realtime_print(command):
-            result_code = code
-        if result_code != 0:
-            old_segment = segments.pop()
-            segments.append(("❌", "Check the environment", "Docker is not running"))
-            refresh(live, segments)
-            return False, "Docker is not running"
+            return False, msg
     old_segment = segments.pop()
     segments.append(("✅", "Check the environment", ""))
     refresh(live, segments)
@@ -225,21 +228,27 @@ def download_model(
     return result_code
 
 
-def load_docker_image(version, image_name, live, segments, chunk_size=1024):
+def load_docker_image(
+    version, image_name, live, segments, chunk_size=1024, use_podman=False
+):
     """
     download the image file and load it into docker
     """
-    full_name = f"{image_name}:{version}"
+    full_name = (
+        f"{image_name}:{version}"
+        if not use_podman
+        else f"docker.io/{image_name}:{version}"
+    )
     spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
     step = "Pull octogen image"
     segments.append((spinner, step, ""))
     refresh(live, segments)
     return_code = 0
     output = ""
-    for code, msg in run_with_realtime_print(command=["docker", "pull", full_name]):
+    vender = "docker" if not use_podman else "podman"
+    for code, msg in run_with_realtime_print(command=[vender, "pull", full_name]):
         return_code = code
         output += msg
-
     old_segment = segments.pop()
     if return_code == 0:
         segments.append(("✅", old_segment[1], full_name))
@@ -250,7 +259,7 @@ def load_docker_image(version, image_name, live, segments, chunk_size=1024):
 
 
 def choose_api_service(console):
-    mk = """Choose your favourite LLM
+    mk = """Choose your favourite Large Language Model
 1. OpenAI, Kernel, Agent and Cli will be installed
 2. Azure OpenAI, Kernel, Agent and Cli will be installed
 3. Codellama, Llama.cpp Model Server, Kernel, Agent and Cli will be installed
@@ -352,22 +361,30 @@ def generate_kernel_env(live, segments, install_dir, rpc_key):
     refresh(live, segments)
 
 
-def stop_service(name):
-    command = ["docker", "ps", "-f", f"name={name}", "--format", "json"]
+def stop_service(name, use_podman=False):
+    vender = "docker" if not use_podman else "podman"
+    command = [vender, "ps", "-f", f"name={name}", "--format", "json"]
     output = ""
     for _, chunk in run_with_realtime_print(command=command):
         output += chunk
         pass
-    if output:
+    if use_podman and output:
+        rows = json.loads(output.strip())
+        for row in rows:
+            id = row["Id"]
+            command = [vender, "kill", id]
+            for _, chunk in run_with_realtime_print(command=command):
+                pass
+    elif output:
         for line in output.split(os.linesep):
             if not line:
                 break
             row = json.loads(line.strip())
             id = row["ID"]
-            command = ["docker", "kill", id]
+            command = [vender, "kill", id]
             for _, chunk in run_with_realtime_print(command=command):
                 pass
-    command = ["docker", "container", "rm", name]
+    command = [vender, "container", "rm", name]
     for _, chunk in run_with_realtime_print(command=command):
         pass
 
@@ -380,17 +397,19 @@ def start_service(
     version,
     is_codellama="1",
     model_filename="",
+    use_podman=False,
 ):
     spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
     step = "Start octogen service"
     output = ""
+    vender = "docker" if not use_podman else "podman"
     segments.append((spinner, step, ""))
     refresh(live, segments)
-    stop_service("octogen")
+    stop_service("octogen", use_podman=use_podman)
     # TODO stop the exist service
     full_name = f"{image_name}:{version}"
     command = [
-        "docker",
+        vender,
         "run",
         "--name",
         "octogen",
@@ -441,6 +460,7 @@ def start_octogen_for_openai(
     version,
     api_key,
     model,
+    use_podman=False,
 ):
     generate_agent_openai(live, segments, install_dir, admin_key, api_key, model)
     if (
@@ -451,6 +471,7 @@ def start_octogen_for_openai(
             image_name,
             version,
             is_codellama="0",
+            use_podman=use_podman,
         )
         == 0
     ):
@@ -476,6 +497,7 @@ def start_octogen_for_azure_openai(
     api_key,
     model,
     api_base,
+    use_podman=False,
 ):
     generate_agent_azure_openai(
         live, segments, install_dir, admin_key, api_key, model, api_base
@@ -513,6 +535,7 @@ def start_octogen_for_codellama(
     image_name,
     version,
     socks_proxy="",
+    use_podman=False,
 ):
     """
     start the octogen service for codellama
@@ -567,6 +590,11 @@ def start_octogen_for_codellama(
     default="codellama-7b-instruct.Q5_K_S.gguf",
     help="the model filename in model repo",
 )
+@click.option(
+    "--use_podman",
+    is_flag=True,
+    help="use podman as the container engine",
+)
 def init_octogen(
     image_name,
     repo_name,
@@ -576,6 +604,7 @@ def init_octogen(
     socks_proxy,
     codellama_repo,
     model_filename,
+    use_podman,
 ):
     if cli_dir.find("~") == 0:
         real_cli_dir = cli_dir.replace("~", os.path.expanduser("~"))
@@ -593,7 +622,7 @@ def init_octogen(
     with Live(Group(*segments), console=console) as live:
         run_install_cli(live, segments)
         if choice == "4":
-            check_result, _ = check_the_env(live, segments, need_docker=False)
+            check_result, _ = check_the_env(live, segments, need_container=False)
             if not check_result:
                 segments.append(("❌", "Setup octogen failed", ""))
                 refresh(live, segments)
@@ -602,7 +631,9 @@ def init_octogen(
             segments.append(("👍", "Setup octogen done", ""))
             refresh(live, segments)
             return
-        check_result, _ = check_the_env(live, segments, need_docker=True)
+        check_result, _ = check_the_env(
+            live, segments, need_container=True, use_podman=use_podman
+        )
         if not check_result:
             segments.append(("❌", "Setup octogen failed", ""))
             refresh(live, segments)
@@ -612,7 +643,9 @@ def init_octogen(
         else:
             version = get_latest_release_version(repo_name, live, segments)
 
-        code = load_docker_image(version, image_name, live, segments)
+        code = load_docker_image(
+            version, image_name, live, segments, use_podman=use_podman
+        )
         if code != 0:
             return
         kernel_key = random_str(32)
@@ -632,6 +665,7 @@ def init_octogen(
                 image_name,
                 version,
                 socks_proxy,
+                use_podman=use_podman,
             )
         elif choice == "2":
             # start azure openai
@@ -647,6 +681,7 @@ def init_octogen(
                 key,
                 model,
                 api_base,
+                use_podman=use_podman,
             )
         else:
             # start for openai
@@ -661,4 +696,5 @@ def init_octogen(
                 version,
                 key,
                 model,
+                use_podman=use_podman,
             )

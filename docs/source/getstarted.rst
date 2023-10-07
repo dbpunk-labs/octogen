@@ -11,7 +11,7 @@ Octopus requires the following enviroment
 
 - Python 3.10.0 and above.
 - `Pip <https://pip.pypa.io/en/stable/installation/>`_
-- `Docker Desktop 24.0.0 and above <https://www.docker.com/products/docker-desktop/>`_  
+- `Docker Desktop 24.0.0 and above <https://www.docker.com/products/docker-desktop/>`_  or `Podman <https://podman.io/docs/installation>`_
 
 To use codellama, your host must have at least 8 CPUs and 16 GB of RAM
 
@@ -28,10 +28,12 @@ the second step, use ``og_up`` to setup the octopus service and cli::
 
 You have the option to select from 
 
-- OpenAI, [apply](https://platform.openai.com/account/api-keys) the openai api key
-- Azure OpenAI, [apply](https://azure.microsoft.com/en-us/products/ai-services/openai-service) the azure api key
+- OpenAI, `apply <https://platform.openai.com/account/api-keys>`_ the openai api key
+- Azure OpenAI, `apply <https://azure.microsoft.com/en-us/products/ai-services/openai-service>`_ the azure api key
 - CodeLlama
-- Octogen(beta) agent services, [apply](https://www.octogen.dev/) the octogen agent service key
+- Octogen(beta) agent services, `apply <https://www.octogen.dev/>`_ the octogen agent service key
+
+the default is using docker as container engine, use podman with flag ``--use_podman``
 
 If you opt for CodeLlama, Octogen will automatically download it from huggingface.co. 
 In case the installation of the Octogen Terminal CLI is taking longer than expected, 
