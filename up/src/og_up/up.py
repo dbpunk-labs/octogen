@@ -405,8 +405,7 @@ def start_service(
     segments.append((spinner, step, ""))
     refresh(live, segments)
     stop_service("octogen", use_podman=use_podman)
-    # TODO stop the exist service
-    full_name = f"{image_name}:{version}"
+    full_name = f"{image_name}:{version}" if not use_podman else f"docker.io/{image_name}:{version}"
     command = [
         vender,
         "run",
@@ -517,7 +516,7 @@ def start_octogen_for_openai(
         == 0
     ):
         if add_kernel_endpoint(
-            live, segments, admin_key, "127.0.0.1:9527", api_key, "127.0.0.1:9528"
+            live, segments, admin_key, "127.0.0.1:9527", kernel_key, "127.0.0.1:9528"
         ):
             segments.append(("❌", "Setup octogen service failed", ""))
             refresh(live, segments)
@@ -566,7 +565,7 @@ def start_octogen_for_azure_openai(
         == 0
     ):
         if add_kernel_endpoint(
-            live, segments, admin_key, "127.0.0.1:9527", api_key, "127.0.0.1:9528"
+            live, segments, admin_key, "127.0.0.1:9527", kernel_key, "127.0.0.1:9528"
         ):
             segments.append(("❌", "Setup octogen service failed", ""))
             refresh(live, segments)
@@ -623,7 +622,7 @@ def start_octogen_for_codellama(
         == 0
     ):
         if add_kernel_endpoint(
-            live, segments, admin_key, "127.0.0.1:9527", api_key, "127.0.0.1:9528"
+            live, segments, admin_key, "127.0.0.1:9527", kernel_key, "127.0.0.1:9528"
         ):
             segments.append(("❌", "Setup octogen service failed", ""))
             refresh(live, segments)
