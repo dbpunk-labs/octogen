@@ -48,7 +48,11 @@ def process_char_stream(stream):
         if "\n" in buf:
             for _ in range(buf[::-1].index("\n")):
                 pop_buf.append(buf.pop())
-        return pop_buf[::-1]
+            return pop_buf[::-1]
+        else:
+            pop_buf.extend(buf)
+            buf.clear()
+            return pop_buf
 
     last_pop_buf = []
     while i < len(stream):
@@ -56,6 +60,7 @@ def process_char_stream(stream):
         if c == "\b":
             if buffer:
                 buffer.pop()
+            last_pop_buf = []
         elif c == "\r":
             last_pop_buf = carriage_return(buffer)
         elif c == "\n":
@@ -64,8 +69,11 @@ def process_char_stream(stream):
                 last_pop_buf = []
             buffer.append(c)
         else:
+            last_pop_buf = []
             buffer.append(c)
         i += 1
+    if last_pop_buf:
+        buffer.extend(last_pop_buf)
     return "".join(buffer)
 
 
