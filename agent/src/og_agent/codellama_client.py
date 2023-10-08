@@ -40,7 +40,7 @@ class CodellamaClient(BaseStreamClient):
 {self.ai_name}:"""
         logging.info(f"{prompt}")
         data = {
-            "n_predict": 500,
+            "n_predict": 1024,
             "grammar": self.grammar,
             "prompt": prompt,
             "temperature": temperature,

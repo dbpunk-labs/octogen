@@ -1,7 +1,7 @@
 #! /bin/sh
 #
 # start_all.sh
-# Copyright (C) 2023 ubuntu <ubuntu@ip-172-31-29-132>
+# Copyright (C) 2023 imotai
 #
 # Distributed under terms of the MIT license.
 #
@@ -11,9 +11,10 @@ then
   echo "No arguments supplied"
   exit 1
 fi
-
 ROOT_DIR=$1
 
+chown octogen:octogen -R ${ROOT_DIR}
+cat <<EOF> /bin/start_service.sh
 if [ "$2" -eq 1 ]
 then
     if [ -z "$3" ]
@@ -38,3 +39,5 @@ do
     hap status
     sleep 10
 done
+EOF
+su - octogen -c "bash /bin/start_service.sh"

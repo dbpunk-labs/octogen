@@ -17,24 +17,37 @@ def test_process_char_stream():
     output1 = process_char_stream(stream0 + stream1)
     output2 = process_char_stream(output1 + stream1)
     assert output1 == output2
+    final_stream = "\r1.1 MB 100%\r\n"
+    output3 = process_char_stream(output2 + final_stream)
+    final_ouput_expected = (
+        "  Downloading pyfiglet-1.0.2-py3-none-any.whl (1.1 MB)\n1.1 MB 100%\n"
+    )
+    assert final_ouput_expected == output3
+
 
 def test_empty_string():
     assert process_char_stream("") == ""
 
+
 def test_single_character():
     assert process_char_stream("a") == "a"
+
 
 def test_multiple_characters():
     assert process_char_stream("abc") == "abc"
 
+
 def test_backspace():
     assert process_char_stream("ab\b") == "a"
+
 
 def test_carriage_return():
     assert process_char_stream("ab\r") == "ab"
 
+
 def test_carriage_return_with_newline():
     assert process_char_stream("ab\r\n") == "ab\n"
+
 
 def test_backspace_and_carriage_return():
     assert process_char_stream("ab\b\r") == "a"
@@ -49,6 +62,7 @@ def test_mixed_escape_characters_and_regular_characters():
 
 
 def test_special_characters():
-    assert process_char_stream("ab!@#$%^&*()_+{}|:\";'<>,.?/`~") == "ab!@#$%^&*()_+{}|:\";'<>,.?/`~"
-
-
+    assert (
+        process_char_stream("ab!@#$%^&*()_+{}|:\";'<>,.?/`~")
+        == "ab!@#$%^&*()_+{}|:\";'<>,.?/`~"
+    )
