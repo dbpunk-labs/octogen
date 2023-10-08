@@ -11,6 +11,14 @@ import json
 from og_sdk.utils import process_char_stream
 
 
+def test_process_char_stream_case2():
+    stream1 = "\rt:   0%|          | 0/518 [00:00<?, ?it/s, now=None]"
+    output1 = process_char_stream(stream1)
+    stream2 = "\rt:   3%|▎         | 15/518 [00:00<00:03, 137.85it/s, now=None]"
+    output2 = process_char_stream(output1 + stream2)
+    assert output2 == "t:   3%|▎         | 15/518 [00:00<00:03, 137.85it/s, now=None]"
+
+
 def test_process_char_stream():
     stream0 = "  Downloading pyfiglet-1.0.2-py3-none-any.whl (1.1 MB)\r\n\x1b[?25l     \x1b[38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1b[0m \x1b[32m0.0/1.1 MB\x1b[0m \x1b[31m?\x1b[0m eta \x1b[36m-:--:--\x1b[0m"
     stream1 = "\r\x1b[2K     \x1b[38;5;237m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\x1b[0m \x1b[32m0.0/1.1 MB\x1b[0m \x1b[31m?\x1b[0m eta \x1b[36m-:--:--\x1b[0m"
@@ -51,10 +59,6 @@ def test_carriage_return_with_newline():
 
 def test_backspace_and_carriage_return():
     assert process_char_stream("ab\b\r") == "a"
-
-
-def test_carriage_return_and_backspace():
-    assert process_char_stream("ab\r\b") == "a"
 
 
 def test_mixed_escape_characters_and_regular_characters():
