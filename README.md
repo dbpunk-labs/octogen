@@ -48,7 +48,7 @@ og_up
 You have the following options to select 
 * OpenAI , recommanded for daily use
 * Azure OpenAI
-* CodeLlama, not recommanded
+* CodeLlama, 
 * Octogen agent services powered by GPT4 and Codellama 34B
 
 The default is using docker as container engine. use podman with flag `--use_podman` 
