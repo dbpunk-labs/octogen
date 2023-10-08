@@ -111,7 +111,7 @@ Use /help for help
 
 ## The internal of local deployment
 
-![octogen-internal](https://github.com/dbpunk-labs/octogen/assets/8623385/08c366eb-a8a7-41d9-b915-739d77fb19d0)
+![octogen-internal](https://github.com/dbpunk-labs/octogen/assets/8623385/fc396ba3-bd90-4b6a-87be-cfe7c1f187c5)
 
 * Octogen Kernel: The code execution engine, based on notebook kernels.
 * Octogen Agent: Manages client requests, uses ReAct to process complex tasks, and stores user-assembled applications.
