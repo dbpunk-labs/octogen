@@ -64,5 +64,9 @@ jobs:
           ROOT_DIR=`pwd`
           RELEASE_NAME=${GITHUB_REF/refs\/tags\//}
           cd ${ROOT_DIR}/docker && docker build -f Dockerfile --no-cache -t dbpunk/octogen:${RELEASE_NAME} .
+          cd ${ROOT_DIR}/docker && docker build -f Dockerfile_chrome -t dbpunk/octogen_chrome:${RELEASE_NAME} .
           docker push dbpunk/octogen:${RELEASE_NAME}
+          docker push dbpunk/octogen_chrome:${RELEASE_NAME}
           echo "the new images version $RELEASE_NAME"
+
+
