@@ -44,24 +44,28 @@ def process_char_stream(stream):
     i = 0
 
     def carriage_return(buf):
+        pop_buf = []
         if "\n" in buf:
-            pop_buf = []
             for _ in range(buf[::-1].index("\n")):
                 pop_buf.append(buf.pop())
+        return pop_buf[::-1]
 
+    last_pop_buf = []
     while i < len(stream):
         c = stream[i]
-        if c in ["\b", "\r"]:
-            # Handle escape characters
-            escape_dict = {
-                "\b": lambda buf: buf.pop() if buf else None,  # backspace
-                "\r": carriage_return,
-            }
-            escape_dict[c](buffer)
-            i += 1
+        if c == "\b":
+            if buffer:
+                buffer.pop()
+        elif c == "\r":
+            last_pop_buf = carriage_return(buffer)
+        elif c == "\n":
+            if last_pop_buf:
+                buffer.extend(last_pop_buf)
+                last_pop_buf = []
+            buffer.append(c)
         else:
             buffer.append(c)
-            i += 1
+        i += 1
     return "".join(buffer)
 
 

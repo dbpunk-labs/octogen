@@ -84,6 +84,35 @@ class CodellamaAgent(BaseAgent):
             )
         )
 
+    async def handle_install_package(self, json_response, queue, context, task_context):
+        package = json_response["action_input"]
+        code = f"!pip install {package}"
+        explanation = json_response["explanation"]
+        saved_filenames = json_response.get("saved_filenames", [])
+        tool_input = json.dumps({
+            "code": code,
+            "explanation": explanation,
+            "saved_filenames": saved_filenames,
+        })
+        await queue.put(
+            TaskRespond(
+                state=task_context.to_task_state_proto(),
+                respond_type=TaskRespond.OnAgentActionType,
+                on_agent_action=OnAgentAction(
+                    input=tool_input, tool="execute_python_code"
+                ),
+            )
+        )
+        function_result = None
+        async for (result, respond) in self.call_function(code, context, task_context):
+            if context.done():
+                logger.debug("the client has cancelled the request")
+                break
+            function_result = result
+            if respond:
+                await queue.put(respond)
+        return function_result
+
     async def handle_function(self, json_response, queue, context, task_context):
         code = json_response["action_input"]
         explanation = json_response["explanation"]
@@ -239,6 +268,7 @@ class CodellamaAgent(BaseAgent):
                         )
                         break
                 except Exception as ex:
+                    logger.exception(f"fail to load message the message is {message}")
                     await queue.put(
                         TaskRespond(
                             state=task_context.to_task_state_proto(),
@@ -307,6 +337,48 @@ class CodellamaAgent(BaseAgent):
                         )
                     )
                     break
+                elif (
+                    json_response["action"] == "install_python_package"
+                    and json_response["action_input"]
+                ):
+                    function_result = await self.handle_install_package(
+                        json_response, queue, context, task_context
+                    )
+                    logger.debug(f"the function result {function_result}")
+                    await queue.put(
+                        TaskRespond(
+                            state=task_context.to_task_state_proto(),
+                            respond_type=TaskRespond.OnAgentActionEndType,
+                            on_agent_action_end=OnAgentActionEnd(
+                                output="",
+                                output_files=function_result.saved_filenames,
+                                has_error=function_result.has_error,
+                            ),
+                        )
+                    )
+                    history.append("User:%s" % current_question)
+                    history.append("Octogen:%s" % message)
+                    ins = "the output of install_python_package:"
+                    # TODO limit the output size
+                    if function_result.has_result:
+                        current_question = f"{ins}\n{function_result.console_stdout}"
+                        logger.debug(
+                            "continue to iterate with codellama with question %s"
+                            % function_result.console_stdout
+                        )
+                    elif function_result.has_error:
+                        current_question = f"{ins} \n {function_result.console_stderr}"
+                        logger.debug(
+                            "continue to iterate with codellama with question %s"
+                            % function_result.console_stderr
+                        )
+                    else:
+                        current_question = f"{ins} \n {function_result.console_stdout}"
+                        logger.debug(
+                            "continue to iterate with codellama with question %s"
+                            % function_result.console_stdout
+                        )
+
                 else:
                     result = self._format_output(json_response)
                     await queue.put(

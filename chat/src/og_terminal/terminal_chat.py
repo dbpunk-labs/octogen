@@ -189,11 +189,7 @@ def handle_action_output(segments, respond, values):
     if new_stderr:
         total_output = new_stdout + "\n" + new_stderr
     text = Text.from_ansi(total_output)
-    syntax = Syntax(
-        f"{text.plain}",
-        "text",
-        line_numbers=True,
-    )
+    syntax = Syntax(f"{text.plain}", "text")
     segments.append((len(values) - 1, segment[1], syntax))
 
 
