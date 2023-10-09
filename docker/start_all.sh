@@ -13,7 +13,7 @@ then
 fi
 ROOT_DIR=$1
 
-chown octogen:octogen -R ${ROOT_DIR}
+chown  -R 777 ${ROOT_DIR}
 cat <<EOF> /bin/start_service.sh
 if [ "$2" -eq 1 ]
 then
