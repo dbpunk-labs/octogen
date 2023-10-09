@@ -175,7 +175,7 @@ def test_start_azure_openai_smoketest():
             admin_key,
             kernel_key,
             "dbpunk/octogen",
-            "v0.4.27",
+            "v0.4.41",
             "azure_open_api_key",
             "test_deployment",
             "https://azure_base",
@@ -203,7 +203,7 @@ def test_start_openai_smoketest():
             admin_key,
             kernel_key,
             "dbpunk/octogen",
-            "v0.4.27",
+            "v0.4.41",
             "openai_api_key",
             "gpt-3.5-turbo",
         )
@@ -232,7 +232,7 @@ def test_start_codellama_smoketest():
             admin_key,
             kernel_key,
             "dbpunk/octogen",
-            "v0.4.27",
+            "v0.4.41",
         )
         assert result
 
