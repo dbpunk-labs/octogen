@@ -39,8 +39,6 @@ from prompt_toolkit.completion import Completer, Completion
 from .utils import parse_file_path
 from .markdown import CodeBlock
 import clipboard
-from PIL import Image
-from term_image.image import AutoImage
 
 Markdown.elements["fence"] = CodeBlock
 Markdown.elements["code_block"] = CodeBlock
@@ -351,16 +349,25 @@ def handle_final_answer(segments, respond, values):
 
 
 def render_image(images, sdk, image_dir, console):
-    image_set = set(images)
-    for image in image_set:
-        try:
-            sdk.download_file(image, image_dir)
-            fullpath = "%s/%s" % (image_dir, image)
-            pil_image = Image.open(fullpath)
-            auto_image = AutoImage(image=pil_image, width=int(pil_image.size[0] / 15))
-            print(f"{auto_image:1.1#}")
-        except Exception as ex:
-            pass
+    try:
+        from PIL import Image
+        from term_image.image import AutoImage
+
+        image_set = set(images)
+        for image in image_set:
+            try:
+                sdk.download_file(image, image_dir)
+                fullpath = "%s/%s" % (image_dir, image)
+                pil_image = Image.open(fullpath)
+                auto_image = AutoImage(
+                    image=pil_image, width=int(pil_image.size[0] / 15)
+                )
+                print(f"{auto_image:1.1#}")
+                return True
+            except Exception as ex:
+                return False
+    except Exception as ex:
+        return False
 
 
 def run_chat(

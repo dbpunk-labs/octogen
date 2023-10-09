@@ -13,7 +13,13 @@ then
 fi
 ROOT_DIR=$1
 
-chown octogen:octogen -R ${ROOT_DIR}
+mkdir -p ${ROOT_DIR}/kernel/ws
+mkdir -p ${ROOT_DIR}/agent/db
+mkdir -p ${ROOT_DIR}/kernel/config
+chown -R octogen:octogen ${ROOT_DIR}/kernel/ws
+chown -R octogen:octogen ${ROOT_DIR}/kernel/config
+chown -R octogen:octogen ${ROOT_DIR}/agent/db
+
 cat <<EOF> /bin/start_service.sh
 if [ "$2" -eq 1 ]
 then
