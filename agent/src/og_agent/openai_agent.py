@@ -52,29 +52,6 @@ OCTOGEN_FUNCTIONS = [
             "required": ["explanation", "code"],
         },
     },
-    {
-        "name": "python",
-        "description": "You must not call this function",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "explanation": {
-                    "type": "string",
-                    "description": "the explanation about the python code",
-                },
-                "code": {
-                    "type": "string",
-                    "description": "the python code to be executed",
-                },
-                "saved_filenames": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "A list of filenames that were created by the code",
-                },
-            },
-            "required": ["explanation", "code"],
-        },
-    },
 ]
 
 
@@ -108,6 +85,9 @@ class OpenaiAgent(BaseAgent):
             message["content"] = content + delta["content"]
 
     def _get_function_call_argument_new_typing(self, message):
+        if message['function_call']['name'] == 'python':
+            return TypingState.CODE, "", message["function_call"].get("arguments", "")
+
         arguments = message["function_call"].get("arguments", "")
         state = TypingState.START
         explanation_str = ""
@@ -240,11 +220,18 @@ class OpenaiAgent(BaseAgent):
                 logging.debug("the client has cancelled the request")
                 return
             function_name = message["function_call"]["name"]
-            arguments = json.loads(message["function_call"]["arguments"])
-            logger.debug(f"call function {function_name} with args {arguments}")
-            code = arguments["code"]
-            explanation = arguments["explanation"]
-            saved_filenames = arguments.get("saved_filenames", [])
+            code = ""
+            explanation = ""
+            saved_filenames = []
+            if function_name == 'python':
+                code = message["function_call"]["arguments"]
+                logger.debug(f"call function {function_name} with args {code}")
+            else:
+                arguments = json.loads(message["function_call"]["arguments"])
+                logger.debug(f"call function {function_name} with args {arguments}")
+                code = arguments["code"]
+                explanation = arguments["explanation"]
+                saved_filenames = arguments.get("saved_filenames", [])
             tool_input = json.dumps({
                 "code": code,
                 "explanation": explanation,
@@ -299,7 +286,8 @@ class OpenaiAgent(BaseAgent):
                 )
                 logger.debug(f"the response {chat_message}")
                 if "function_call" in chat_message:
-                    chat_message["content"] = None
+                    if 'content' not in chat_message:
+                        chat_message["content"] = None
                     messages.append(chat_message)
                     function_name = chat_message["function_call"]["name"]
                     if function_name not in ["execute_python_code", "python"]:
