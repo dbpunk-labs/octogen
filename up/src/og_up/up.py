@@ -296,7 +296,7 @@ def generate_agent_common(fd, rpc_key):
     fd.write(f"admin_key={rpc_key}\n")
     fd.write("max_file_size=202400000\n")
     fd.write("max_iterations=8\n")
-    fd.write("db_path=/app/agent/octogen.db\n")
+    fd.write("db_path=/app/agent/db/octogen.db\n")
 
 
 def generate_agent_azure_openai(
