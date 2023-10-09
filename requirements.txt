@@ -7,7 +7,7 @@ grpcio-tools==1.59.0
 pytest-asyncio==0.21.1
 grpc-google-iam-v1==0.12.6
 matplotlib
-pydantic==2.4.0
+pydantic==2.4.2
 aiosqlite==0.19.0
 rich==13.6.0
 prompt_toolkit==3.0.39
