@@ -54,7 +54,7 @@ OCTOGEN_FUNCTIONS = [
     },
     {
         "name": "python",
-        "description": "this function must not be used",
+        "description": "You must not call this function",
         "parameters": {
             "type": "object",
             "properties": {
