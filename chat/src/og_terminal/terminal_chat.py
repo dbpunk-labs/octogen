@@ -348,7 +348,7 @@ def handle_final_answer(segments, respond, values):
     find_code(answer, segments, values)
 
 
-dey render_image(images, sdk, image_dir, console):
+def render_image(images, sdk, image_dir, console):
     try:
         from PIL import Image
         from term_image.image import AutoImage
