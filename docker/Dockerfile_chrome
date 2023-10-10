@@ -5,6 +5,7 @@ RUN pip install -U og_proto og_sdk og_agent og_kernel hapless
 RUN adduser octogen
 ADD server /bin/
 ADD start_all.sh /bin/
+ADD start_kernel.sh /bin/
 ADD add_endpoint.sh /bin/
 RUN apt install -y wget
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -

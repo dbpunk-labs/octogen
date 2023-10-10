@@ -15,10 +15,16 @@ ROOT_DIR=$1
 
 mkdir -p ${ROOT_DIR}/kernel/ws
 mkdir -p ${ROOT_DIR}/agent/db
+mkdir -p ${ROOT_DIR}/agent/logs
 mkdir -p ${ROOT_DIR}/kernel/config
+mkdir -p ${ROOT_DIR}/kernel/logs
+mkdir -p ${ROOT_DIR}/model_server/logs
 chown -R octogen:octogen ${ROOT_DIR}/kernel/ws
 chown -R octogen:octogen ${ROOT_DIR}/kernel/config
 chown -R octogen:octogen ${ROOT_DIR}/agent/db
+chown -R octogen:octogen ${ROOT_DIR}/agent/logs
+chown -R octogen:octogen ${ROOT_DIR}/kernel/logs
+chown -R octogen:octogen ${ROOT_DIR}/model_server/logs
 
 cat <<EOF> /bin/start_service.sh
 if [ "$2" -eq 1 ]
@@ -30,15 +36,15 @@ then
     else
         echo "start codellama with model name $3"
         mkdir -p ${ROOT_DIR}/model_server
-        cd ${ROOT_DIR}/model_server && hap run -n codellama -- server -m ../model/$3  --alias codellama --host 127.0.0.1 --port 8080
+        cd ${ROOT_DIR}/model_server && hap run -n codellama -- server -m ../model/$3  --alias codellama --host 127.0.0.1 --port 8080 >> ${ROOT_DIR}/model_server/logs/server.log 2>&1 
     fi
 fi
 
 echo "start kernel.."
-cd ${ROOT_DIR}/kernel && hap run -n octopus_kernel -- og_kernel_rpc_server
+cd ${ROOT_DIR}/kernel && hap run -n octopus_kernel -- og_kernel_rpc_server >> ${ROOT_DIR}/logs/kernel_rpc.log  2>&1
 
 echo "start agent.."
-cd ${ROOT_DIR}/agent && hap run -n octopus_agent -- og_agent_rpc_server
+cd ${ROOT_DIR}/agent && hap run -n octopus_agent -- og_agent_rpc_server >> ${ROOT_DIR}/logs/agent_rpc.log 2>&1
 
 while true
 do

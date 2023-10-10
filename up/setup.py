@@ -36,6 +36,7 @@ setup(
     entry_points={
         "console_scripts": [
             "og_up = og_up.up:init_octogen",
+            "og_kernel_up = og_up.kernel_up:init_kernel",
             "og_download = og_up.model_downloader:download",
         ]
     },

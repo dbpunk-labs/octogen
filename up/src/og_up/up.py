@@ -23,7 +23,6 @@ import string
 import os
 import subprocess
 import sys
-import io
 import time
 from pathlib import Path
 from tqdm import tqdm
@@ -39,9 +38,9 @@ from rich.spinner import Spinner
 from rich.console import Group
 from og_sdk.utils import process_char_stream
 from og_sdk.agent_sdk import AgentSyncSDK
+from .utils import run_with_realtime_print
 
 OCTOGEN_TITLE = "🐙[bold red]Octogen Up"
-USE_SHELL = sys.platform.startswith("win")
 OCTOGEN_GITHUB_REPOS = "dbpunk-labs/octogen"
 Welcome = f"""
 Welcome to use {OCTOGEN_TITLE}
@@ -80,32 +79,6 @@ def run_install_cli(live, segments):
         segments.append(("❌", "Install octogen terminal cli", outputs))
         refresh(live, segments)
         return False
-
-
-def run_with_realtime_print(
-    command, universal_newlines=True, useshell=USE_SHELL, env=os.environ
-):
-    try:
-        p = subprocess.Popen(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            shell=useshell,
-            env=env,
-        )
-
-        text_fd = io.TextIOWrapper(
-            p.stdout, encoding="utf-8", newline=os.linesep, errors="replace"
-        )
-        while True:
-            chunk = text_fd.read(40)
-            if not chunk:
-                break
-            yield 0, chunk
-        p.wait()
-        yield p.returncode, ""
-    except Exception as ex:
-        yield -1, str(ex)
 
 
 def refresh(
@@ -348,7 +321,9 @@ def generate_agent_codellama(live, segments, install_dir, admin_key):
     refresh(live, segments)
 
 
-def generate_kernel_env(live, segments, install_dir, rpc_key):
+def generate_kernel_env(
+    live, segments, install_dir, rpc_key, rpc_port=9527, rpc_host="127.0.0.1"
+):
     kernel_dir = f"{install_dir}/kernel"
     kernel_ws_dir = f"{install_dir}/kernel/ws"
     kernel_config_dir = f"{install_dir}/kernel/config"
@@ -358,8 +333,8 @@ def generate_kernel_env(live, segments, install_dir, rpc_key):
     with open(f"{kernel_dir}/.env", "w+") as fd:
         fd.write("config_root_path=/app/kernel/config\n")
         fd.write("workspace=/app/kernel/ws\n")
-        fd.write("rpc_host=127.0.0.1\n")
-        fd.write("rpc_port=9527\n")
+        fd.write(f"rpc_host={rpc_host}\n")
+        fd.write(f"rpc_port={rpc_port}\n")
         fd.write(f"rpc_key={rpc_key}\n")
     segments.append(("✅", "Generate kernel config", f"{kernel_dir}/.env"))
     refresh(live, segments)
