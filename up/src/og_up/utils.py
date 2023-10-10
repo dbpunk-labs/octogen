@@ -5,13 +5,13 @@
 #
 # Distributed under terms of the MIT license.
 
-"""
-
-"""
+""" """
 import subprocess
 import os
 
 USE_SHELL = sys.platform.startswith("win")
+
+
 def run_with_realtime_print(
     command, universal_newlines=True, useshell=USE_SHELL, env=os.environ
 ):
@@ -36,5 +36,3 @@ def run_with_realtime_print(
         yield p.returncode, ""
     except Exception as ex:
         yield -1, str(ex)
-
-

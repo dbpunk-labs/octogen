@@ -82,6 +82,7 @@ def run_install_cli(live, segments):
         refresh(live, segments)
         return False
 
+
 def refresh(
     live,
     segments,
@@ -322,7 +323,7 @@ def generate_agent_codellama(live, segments, install_dir, admin_key):
     refresh(live, segments)
 
 
-def generate_kernel_env(live, segments, install_dir, rpc_key):
+def generate_kernel_env(live, segments, install_dir, rpc_key, rpc_port=9527):
     kernel_dir = f"{install_dir}/kernel"
     kernel_ws_dir = f"{install_dir}/kernel/ws"
     kernel_config_dir = f"{install_dir}/kernel/config"
@@ -333,7 +334,7 @@ def generate_kernel_env(live, segments, install_dir, rpc_key):
         fd.write("config_root_path=/app/kernel/config\n")
         fd.write("workspace=/app/kernel/ws\n")
         fd.write("rpc_host=127.0.0.1\n")
-        fd.write("rpc_port=9527\n")
+        fd.write("rpc_port={rpc_port}\n")
         fd.write(f"rpc_key={rpc_key}\n")
     segments.append(("✅", "Generate kernel config", f"{kernel_dir}/.env"))
     refresh(live, segments)
