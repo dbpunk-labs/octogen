@@ -11,7 +11,8 @@
 [中文](./README_zh_cn.md)
 
 > ## Octogen
-> an open-source code interpreter for developers
+> an open-source code interpreter
+> 一款开源可本地部署的代码解释器
 
 https://github.com/dbpunk-labs/octogen/assets/8623385/7445cc4d-567e-4d1a-bedc-b5b566329c41
 
