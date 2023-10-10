@@ -85,7 +85,7 @@ class OpenaiAgent(BaseAgent):
             message["content"] = content + delta["content"]
 
     def _get_function_call_argument_new_typing(self, message):
-        if message['function_call']['name'] == 'python':
+        if message["function_call"]["name"] == "python":
             return TypingState.CODE, "", message["function_call"].get("arguments", "")
 
         arguments = message["function_call"].get("arguments", "")
@@ -223,7 +223,7 @@ class OpenaiAgent(BaseAgent):
             code = ""
             explanation = ""
             saved_filenames = []
-            if function_name == 'python':
+            if function_name == "python":
                 code = message["function_call"]["arguments"]
                 logger.debug(f"call function {function_name} with args {code}")
             else:
@@ -286,7 +286,7 @@ class OpenaiAgent(BaseAgent):
                 )
                 logger.debug(f"the response {chat_message}")
                 if "function_call" in chat_message:
-                    if 'content' not in chat_message:
+                    if "content" not in chat_message:
                         chat_message["content"] = None
                     messages.append(chat_message)
                     function_name = chat_message["function_call"]["name"]

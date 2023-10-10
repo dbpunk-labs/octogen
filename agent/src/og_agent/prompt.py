@@ -67,4 +67,3 @@ Fourthly, the output format must be a JSON format with the following fields:
 * language (string): The programming language used to execute the action.
 * is_final_answer (boolean): Whether this is the final answer to the question. If it is, the value of this field should be true. Otherwise, the value should be false.
 """
-

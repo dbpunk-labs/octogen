@@ -39,6 +39,7 @@ from rich.spinner import Spinner
 from rich.console import Group
 from og_sdk.utils import process_char_stream
 from og_sdk.agent_sdk import AgentSyncSDK
+from .utils import run_with_realtime_print
 
 OCTOGEN_TITLE = "🐙[bold red]Octogen Up"
 USE_SHELL = sys.platform.startswith("win")
@@ -80,33 +81,6 @@ def run_install_cli(live, segments):
         segments.append(("❌", "Install octogen terminal cli", outputs))
         refresh(live, segments)
         return False
-
-
-def run_with_realtime_print(
-    command, universal_newlines=True, useshell=USE_SHELL, env=os.environ
-):
-    try:
-        p = subprocess.Popen(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            shell=useshell,
-            env=env,
-        )
-
-        text_fd = io.TextIOWrapper(
-            p.stdout, encoding="utf-8", newline=os.linesep, errors="replace"
-        )
-        while True:
-            chunk = text_fd.read(40)
-            if not chunk:
-                break
-            yield 0, chunk
-        p.wait()
-        yield p.returncode, ""
-    except Exception as ex:
-        yield -1, str(ex)
-
 
 def refresh(
     live,
