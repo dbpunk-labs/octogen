@@ -23,7 +23,6 @@ import string
 import os
 import subprocess
 import sys
-import io
 import time
 from pathlib import Path
 from tqdm import tqdm
@@ -42,7 +41,6 @@ from og_sdk.agent_sdk import AgentSyncSDK
 from .utils import run_with_realtime_print
 
 OCTOGEN_TITLE = "🐙[bold red]Octogen Up"
-USE_SHELL = sys.platform.startswith("win")
 OCTOGEN_GITHUB_REPOS = "dbpunk-labs/octogen"
 Welcome = f"""
 Welcome to use {OCTOGEN_TITLE}
@@ -323,7 +321,9 @@ def generate_agent_codellama(live, segments, install_dir, admin_key):
     refresh(live, segments)
 
 
-def generate_kernel_env(live, segments, install_dir, rpc_key, rpc_port=9527):
+def generate_kernel_env(
+    live, segments, install_dir, rpc_key, rpc_port=9527, rpc_host="127.0.0.1"
+):
     kernel_dir = f"{install_dir}/kernel"
     kernel_ws_dir = f"{install_dir}/kernel/ws"
     kernel_config_dir = f"{install_dir}/kernel/config"
@@ -333,8 +333,8 @@ def generate_kernel_env(live, segments, install_dir, rpc_key, rpc_port=9527):
     with open(f"{kernel_dir}/.env", "w+") as fd:
         fd.write("config_root_path=/app/kernel/config\n")
         fd.write("workspace=/app/kernel/ws\n")
-        fd.write("rpc_host=127.0.0.1\n")
-        fd.write("rpc_port={rpc_port}\n")
+        fd.write(f"rpc_host={rpc_host}\n")
+        fd.write(f"rpc_port={rpc_port}\n")
         fd.write(f"rpc_key={rpc_key}\n")
     segments.append(("✅", "Generate kernel config", f"{kernel_dir}/.env"))
     refresh(live, segments)

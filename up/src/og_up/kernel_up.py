@@ -7,6 +7,8 @@
 
 """ """
 import click
+import os
+import time
 from .utils import run_with_realtime_print
 from .up import check_the_env
 from .up import load_docker_image
@@ -15,14 +17,21 @@ from .up import ping_agent_service
 from .up import stop_service
 from .up import generate_kernel_env
 from .up import random_str
+from .up import refresh
+from .up import add_kernel_endpoint
+from rich.live import Live
 from rich.spinner import Spinner
 from rich.console import Group
+from rich.console import Console
+from rich.markdown import Markdown
+from rich.prompt import Prompt
 from dotenv import dotenv_values
 from og_sdk.agent_sdk import AgentSyncSDK
 
+Welcome = "welcome to use og_kernel_up"
+
 
 def get_config(console):
-    console.print(Markdown(mk))
     key = Prompt.ask("Agent Key", password=True)
     endpoint = Prompt.ask("Agent Endpoint")
     name = Prompt.ask("Kernel Name")
@@ -40,16 +49,12 @@ def start_kernel_service(
     segments.append((spinner, step, ""))
     refresh(live, segments)
     stop_service(kernel_name)
-    full_name = (
-        f"{image_name}:{version}"
-        if not use_podman
-        else f"docker.io/{image_name}:{version}"
-    )
+    full_name = f"{image_name}:{version}"
     command = [
         vender,
         "run",
         "--name",
-        "octogen",
+        kernel_name,
         "-p",
         f"127.0.0.1:{kernel_port}:{kernel_port}",
         "-v",
@@ -87,10 +92,6 @@ def init_kernel(
     install_dir,
     octogen_version,
 ):
-    if cli_dir.find("~") == 0:
-        real_cli_dir = cli_dir.replace("~", os.path.expanduser("~"))
-    else:
-        real_cli_dir = cli_dir
     if install_dir.find("~") == 0:
         real_install_dir = install_dir.replace("~", os.path.expanduser("~"))
     else:
@@ -99,7 +100,7 @@ def init_kernel(
     console = Console()
     console.print(Welcome)
     key, agent_endpoint, kernel_name, kernel_port = get_config(console)
-    kernel_dir = "/".join[real_install_dir, kernel_name]
+    kernel_dir = "/".join([real_install_dir, kernel_name])
     os.makedirs(kernel_dir, exist_ok=True)
     segments = []
     with Live(Group(*segments), console=console) as live:
@@ -107,17 +108,25 @@ def init_kernel(
             version = octogen_version
         else:
             version = get_latest_release_version(repo_name, live, segments)
-        check_result, _ = check_the_env(live, segments, need_container=True)
+        check_result, _ = check_the_env(live, segments)
         if not check_result:
             segments.append(("❌", "Setup kernel service failed", ""))
             refresh(live, segments)
+            return
         code = load_docker_image(version, image_name, live, segments)
         if code != 0:
             return
         kernel_key = random_str(32)
         env_path = kernel_dir + "/kernel/" + ".env"
-        if not os.path.exits(env_path):
-            generate_kernel_env(live, segments, kernel_dir, kernel_key, kernel_port)
+        if not os.path.exists(env_path):
+            generate_kernel_env(
+                live,
+                segments,
+                kernel_dir,
+                kernel_key,
+                rpc_port=kernel_port,
+                rpc_host="0.0.0.0",
+            )
         else:
             config = dotenv_values(env_path)
             kernel_key = config.get("rpc_key", "")
@@ -135,11 +144,11 @@ def init_kernel(
         if code != 0:
             return
         if not add_kernel_endpoint(
-            live, segments, key, agent_endpoint, kernel_key, f"127.0.0.1:{kernel_port}"
+            live, segments, key, f"127.0.0.1:{kernel_port}", kernel_key, agent_endpoint
         ):
             segments.append(("❌", "Setup kernel service failed", ""))
             refresh(live, segments)
-            return 
+            return
 
         if ping_agent_service(live, segments, kernel_key, api_base=agent_endpoint):
             segments.append(("👍", "Setup kernel service done", ""))
@@ -147,5 +156,3 @@ def init_kernel(
         else:
             segments.append(("❌", "Setup kernel service failed", ""))
             refresh(live, segments)
-
-

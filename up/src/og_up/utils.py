@@ -8,6 +8,8 @@
 """ """
 import subprocess
 import os
+import sys
+import io
 
 USE_SHELL = sys.platform.startswith("win")
 
