@@ -438,7 +438,7 @@ def start_service(
         result_code = code
         output += chunk
         pass
-    time.sleep(4)
+    time.sleep(6)
     segments.pop()
     if result_code == 0:
         segments.append(("✅", "Start octogen service", ""))

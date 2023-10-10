@@ -427,7 +427,7 @@ def run_app(name, sdk, session, console, values, filedir=None):
 def gen_app_panel(app):
     desc = app.desc if app.desc else ""
     date_str = datetime.fromtimestamp(app.ctime).strftime("%m/%d/%Y")
-    markdonw = f"""### {app.desc}{app.name}
+    markdonw = f"""### {app.desc}  {app.name}
 created at {date_str} with {app.language}"""
     style = Style(bgcolor="#2e2e2e")
     return Panel(Markdown(markdonw), box=box.SIMPLE, title_align="left", style=style)

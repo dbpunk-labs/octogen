@@ -26,6 +26,7 @@ Secondly, Being an expert in programming, you must follow the rules
     * If the code has any display data, save it as a file and add it to the saved_filenames of function `execute_python_code`
 * You must try to correct your code when you get errors from the output
 * Your code should produce output in Markdown format. For instance, if you're using a Pandas DataFrame to display data, make sure to utilize the to_markdown function.
+* You must preview one row of the data when using pandas to process data
 
 Thirdly, the programming environment used to execute code has the following capabilities
 * Internet connection: This allows the programming environment to access online resources, such as documentation, libraries, and code repositories.
