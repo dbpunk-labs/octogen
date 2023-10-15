@@ -165,7 +165,7 @@ def test_start_azure_openai_smoketest():
     kernel_key = random_str(32)
     with Live(Group(*segments), console=console) as live:
         generate_kernel_env(live, segments, install_dir, kernel_key)
-        code = load_docker_image("v0.4.41", "dbpunk/octogen", live, segments)
+        code = load_docker_image("v0.4.43", "dbpunk/octogen", live, segments)
         assert code == 0, "bad result code of loading docker image"
         result = start_octogen_for_azure_openai(
             live,
@@ -175,7 +175,7 @@ def test_start_azure_openai_smoketest():
             admin_key,
             kernel_key,
             "dbpunk/octogen",
-            "v0.4.41",
+            "v0.4.43",
             "azure_open_api_key",
             "test_deployment",
             "https://azure_base",
@@ -193,7 +193,7 @@ def test_start_openai_smoketest():
     kernel_key = random_str(32)
     with Live(Group(*segments), console=console) as live:
         generate_kernel_env(live, segments, install_dir, kernel_key)
-        code = load_docker_image("v0.4.41", "dbpunk/octogen", live, segments)
+        code = load_docker_image("v0.4.43", "dbpunk/octogen", live, segments)
         assert code == 0, "bad result code of loading docker image"
         result = start_octogen_for_openai(
             live,
@@ -203,7 +203,7 @@ def test_start_openai_smoketest():
             admin_key,
             kernel_key,
             "dbpunk/octogen",
-            "v0.4.41",
+            "v0.4.43",
             "openai_api_key",
             "gpt-3.5-turbo",
         )
@@ -220,7 +220,7 @@ def test_start_codellama_smoketest():
     kernel_key = random_str(32)
     with Live(Group(*segments), console=console) as live:
         generate_kernel_env(live, segments, install_dir, kernel_key)
-        code = load_docker_image("v0.4.41", "dbpunk/octogen", live, segments)
+        code = load_docker_image("v0.4.43", "dbpunk/octogen", live, segments)
         assert code == 0, "bad result code of loading docker image"
         result = start_octogen_for_codellama(
             live,
@@ -232,7 +232,7 @@ def test_start_codellama_smoketest():
             admin_key,
             kernel_key,
             "dbpunk/octogen",
-            "v0.4.41",
+            "v0.4.43",
         )
         assert result
 
@@ -251,5 +251,5 @@ def test_load_valid_docker_image():
     console = Console()
     segments = []
     with Live(Group(*segments), console=console) as live:
-        code = load_docker_image("v0.4.41", "dbpunk/octogen", live, segments)
+        code = load_docker_image("v0.4.43", "dbpunk/octogen", live, segments)
         assert code == 0, "loading image should be ok"
