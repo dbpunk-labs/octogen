@@ -453,7 +453,7 @@ def add_kernel_endpoint(live, segments, admin_key, kernel_endpoint, api_key, api
             time.sleep(2)
         except Exception as ex:
             result_code = 1
-            msg = str(ex)
+            msg = f"connect to {api_base} failed "
             time.sleep(2)
     segments.pop()
     if result_code == 0:
