@@ -359,17 +359,18 @@ def render_image(images, sdk, image_dir, console):
 
         image_set = set(images)
         for image in image_set:
-            try:
-                sdk.download_file(image, image_dir)
-                fullpath = "%s/%s" % (image_dir, image)
-                pil_image = Image.open(fullpath)
-                auto_image = AutoImage(
-                    image=pil_image, width=int(pil_image.size[0] / 15)
-                )
-                print(f"{auto_image:1.1#}")
-                return True
-            except Exception as ex:
-                return False
+            if image.endswith("jpg") or image.endswith("png") or image.endswith("gif"):
+                try:
+                    sdk.download_file(image, image_dir)
+                    fullpath = "%s/%s" % (image_dir, image)
+                    pil_image = Image.open(fullpath)
+                    auto_image = AutoImage(
+                        image=pil_image, width=int(pil_image.size[0] / 15)
+                    )
+                    print(f"{auto_image:1.1#}")
+                    return True
+                except Exception as ex:
+                    return False
     except Exception as ex:
         return False
 
