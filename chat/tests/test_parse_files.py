@@ -1,9 +1,10 @@
 #! /usr/bin/env python3
-# vim:fenc=utf-8
-#
+
 # Copyright © 2023 imotai <imotai@imotai-ub>
+# SPDX-FileCopyrightText: 2023 imotai <jackwang@octogen.dev>
+# SPDX-FileContributor: imotai
 #
-# Distributed under terms of the MIT license.
+# SPDX-License-Identifier: Elastic-2.0
 
 """ """
 

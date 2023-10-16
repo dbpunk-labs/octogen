@@ -1,6 +1,8 @@
-# vim:fenc=utf-8
-#
 # Copyright (C) 2023 dbpunk.com Author imotai <codego.me@gmail.com>
+# SPDX-FileCopyrightText: 2023 imotai <jackwang@octogen.dev>
+# SPDX-FileContributor: imotai
+#
+# SPDX-License-Identifier: Elastic-2.0
 
 import re
 import string

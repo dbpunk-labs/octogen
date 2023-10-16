@@ -1,3 +1,8 @@
+# SPDX-FileCopyrightText: 2023 imotai <jackwang@octogen.dev>
+# SPDX-FileContributor: imotai
+#
+# SPDX-License-Identifier: Elastic-2.0
+
 #
 # Makefile
 # jackwang, 2023-08-25 12:24
