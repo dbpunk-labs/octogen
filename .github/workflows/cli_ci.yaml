@@ -11,7 +11,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [self-hosted, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ["3.11"]
     runs-on: ${{ matrix.os }}
     steps:
