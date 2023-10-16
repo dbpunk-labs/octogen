@@ -1,7 +1,7 @@
-# vim:fenc=utf-8
+# SPDX-FileCopyrightText: 2023 imotai <jackwang@octogen.dev>
+# SPDX-FileContributor: imotai
 #
-# Copyright (C) 2023 dbpunk.com Author imotai <codego.me@gmail.com>
-
+# SPDX-License-Identifier: Elastic-2.0
 
 """ """
 import logging
