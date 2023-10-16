@@ -440,7 +440,7 @@ def add_kernel_endpoint(live, segments, admin_key, kernel_endpoint, api_key, api
     retry_count = 0
     result_code = 0
     msg = ""
-    while retry_count <= 3:
+    while retry_count <= 10:
         retry_count += 1
         try:
             sdk = AgentSyncSDK(api_base, admin_key)
@@ -450,11 +450,11 @@ def add_kernel_endpoint(live, segments, admin_key, kernel_endpoint, api_key, api
             if result_code == 0:
                 break
             msg = response.msg
-            time.sleep(2)
+            time.sleep(3)
         except Exception as ex:
             result_code = 1
-            msg = str(ex)
-            time.sleep(2)
+            msg = f"connect to {api_base} failed "
+            time.sleep(3)
     segments.pop()
     if result_code == 0:
         segments.append(("✅", step, ""))

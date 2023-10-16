@@ -11,8 +11,7 @@ jobs:
   build:
     strategy:
       matrix:
-        #os: [ubuntu-latest, windows-latest, macos-latest]
-        os: [ubuntu-latest, windows-latest]
+        os: [self-hosted, windows-latest, macos-latest]
         python-version: ["3.11"]
     runs-on: ${{ matrix.os }}
     steps:
@@ -36,6 +35,4 @@ jobs:
         shell: bash
         run: |
           bash install_package.sh
-          cd up
-          pip install .
-          pytest tests/*.py
+          pytest up/tests/*.py
