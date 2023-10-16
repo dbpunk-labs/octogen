@@ -1,4 +1,3 @@
-# Copyright (C) 2023 dbpunk.com Author imotai <codego.me@gmail.com>
 # SPDX-FileCopyrightText: 2023 imotai <jackwang@octogen.dev>
 # SPDX-FileContributor: imotai
 #

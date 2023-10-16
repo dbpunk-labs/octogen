@@ -1,6 +1,3 @@
-#! /usr/bin/env python3
-
-# Copyright © 2023 imotai <imotai@imotai-ub>
 # SPDX-FileCopyrightText: 2023 imotai <jackwang@octogen.dev>
 # SPDX-FileContributor: imotai
 #
