@@ -26,13 +26,11 @@ config = dotenv_values(".env")
 
 app = FastAPI()
 # the agent endpoint
-listen_addr = "%s:%s" % (config["rpc_host"], config["rpc_port"])
-if config["rpc_host"] == "0.0.0.0":
-    listen_addr = "127.0.0.1:%s" % config["rpc_port"]
-
+listen_addr = "%s:%s" % (config.get("rpc_host", "127.0.0.1"), config.get("rpc_port", "9528") )
+if config.get("rpc_host", "") == "0.0.0.0":
+    listen_addr = "127.0.0.1:%s" % config.get("rpc_port", "9528")
 logger.info(f"connect the agent server at {listen_addr}")
 agent_sdk = AgentProxySDK(listen_addr)
-
 
 class StepResponseType(str, Enum):
     OnStepActionStart = "OnStepActionStart"
@@ -185,8 +183,8 @@ async def process_task(
 
 
 async def run_server():
-    port = int(config["rpc_port"]) + 1
-    server_config = uvicorn.Config(app, host=config["rpc_host"], port=port)
+    port = int(config.get("rpc_port", "9528")) + 1
+    server_config = uvicorn.Config(app, host=config.get("rpc_host", "127.0.0.1"), port=port)
     server = uvicorn.Server(server_config)
     await server.serve()
 
