@@ -2,8 +2,6 @@
 <img  width="200px" src="https://github.com/dbpunk-labs/octogen/assets/8623385/86af130f-7d0d-4cfb-9410-fc338426938e" align="center"/>
 
 ![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/dbpunk-labs/octogen/ci.yaml)
-[![Discord](https://badgen.net/badge/icon/discord?icon=discord&label)](https://discord.gg/UjSHsjaz66)
-[![Twitter Follow](https://img.shields.io/twitter/follow/OCopilot7817?style=flat-square)](https://twitter.com/OCopilot7817)
 [![PyPI - Version](https://img.shields.io/pypi/v/og_chat)](https://pypi.org/project/og-chat/)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/og_chat?logo=pypi)
 
