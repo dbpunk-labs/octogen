@@ -160,6 +160,7 @@ class TaskRequest(BaseModel):
     input_files: List[str]
     context_id: str
 
+
 async def run_task(task: TaskRequest, key):
     index = 0
     async for respond in agent_sdk.prompt(task.prompt, key, files=task.input_files):
@@ -182,11 +183,13 @@ async def process_task(
     agent_sdk.connect()
     return StreamingResponse(run_task(task, api_token))
 
+
 async def run_server():
     port = int(config["rpc_port"]) + 1
     server_config = uvicorn.Config(app, host=config["rpc_host"], port=port)
     server = uvicorn.Server(server_config)
     await server.serve()
+
 
 def run_app():
     asyncio.run(run_server())

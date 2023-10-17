@@ -38,7 +38,6 @@ class AgentBaseSDK:
             self.channel = grpc.insecure_channel(self.endpoint)
         self.stub = AgentServerStub(self.channel)
 
-
     def connect_async(self):
         """
         Connect the agent service with async mode
@@ -146,7 +145,6 @@ class AgentProxySDK(AgentBaseSDK):
         request = agent_server_pb2.AddKernelRequest(endpoint=endpoint, key=key)
         response = await self.stub.add_kernel(request, metadata=metadata)
         return response
-
 
     async def prompt(self, prompt, api_key, files=[]):
         metadata = aio.Metadata(

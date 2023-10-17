@@ -74,9 +74,9 @@ class CodellamaAgent(BaseAgent):
             )
         )
 
-    async def handle_install_package(self, json_response, queue, context, task_context):
-        package = json_response["action_input"]
-        code = f"!pip install {package}"
+    async def handle_bash_code(self, json_response, queue, context, task_context):
+        commands = json_response["action_input"]
+        code = f"%%bash\n {commands}"
         explanation = json_response["explanation"]
         saved_filenames = json_response.get("saved_filenames", [])
         tool_input = json.dumps({
@@ -271,10 +271,15 @@ class CodellamaAgent(BaseAgent):
                     break
                 logger.debug(f" codellama response {json_response}")
                 if (
-                    json_response["action"] == "execute_python_code"
+                    json_response["action"]
+                    in ["execute_python_code", "execute_bash_code"]
                     and json_response["action_input"]
                 ):
-                    function_result = await self.handle_function(
+                    tools_mapping = {
+                        "execute_python_code": self.handle_function,
+                        "execute_bash_code": self.handle_bash_code,
+                    }
+                    function_result = await tools_mapping[json_response["action"]](
                         json_response, queue, context, task_context
                     )
                     logger.debug(f"the function result {function_result}")
@@ -290,12 +295,12 @@ class CodellamaAgent(BaseAgent):
                         )
                     )
                     history.append("User:%s" % current_question)
-                    action_output = "the output of execute_python_code:"
+                    action_output = "the output of %s:" % json_response["action"]
+                    current_question = "Give me the final answer summary if the above output of action  meets the goal Otherwise try a new step"
                     # TODO limit the output size
                     if function_result.has_result:
                         octogen_response = f"Octogen:{message}\n{action_output}\n{function_result.console_stdout}"
                         history.append(octogen_response)
-                        current_question = "Give me the final answer summary if the above output of action  meets the goal Otherwise try a new step"
                         logger.debug(
                             "continue to iterate with codellama with question %s"
                             % function_result.console_stdout
@@ -308,15 +313,14 @@ class CodellamaAgent(BaseAgent):
                             "continue to iterate with codellama with question %s"
                             % function_result.console_stderr
                         )
+
                     else:
                         octogen_response = f"Octogen:{message}\n{action_output}\n{function_result.console_stdout}"
                         history.append(octogen_response)
-                        current_question = "Give me the final answer summary if the above output of action  meets the goal Otherwise try a new step"
                         logger.debug(
                             "continue to iterate with codellama with question %s"
                             % function_result.console_stdout
                         )
-
                 elif (
                     json_response["action"] == "show_sample_code"
                     and json_response["action_input"]
@@ -333,48 +337,6 @@ class CodellamaAgent(BaseAgent):
                         )
                     )
                     break
-                elif (
-                    json_response["action"] == "install_python_package"
-                    and json_response["action_input"]
-                ):
-                    function_result = await self.handle_install_package(
-                        json_response, queue, context, task_context
-                    )
-                    logger.debug(f"the function result {function_result}")
-                    await queue.put(
-                        TaskRespond(
-                            state=task_context.to_task_state_proto(),
-                            respond_type=TaskRespond.OnAgentActionEndType,
-                            on_agent_action_end=OnAgentActionEnd(
-                                output="",
-                                output_files=function_result.saved_filenames,
-                                has_error=function_result.has_error,
-                            ),
-                        )
-                    )
-                    history.append("User:%s" % current_question)
-                    history.append("Octogen:%s" % message)
-                    ins = "the output of install_python_package:"
-                    # TODO limit the output size
-                    if function_result.has_result:
-                        current_question = f"{ins}\n{function_result.console_stdout}"
-                        logger.debug(
-                            "continue to iterate with codellama with question %s"
-                            % function_result.console_stdout
-                        )
-                    elif function_result.has_error:
-                        current_question = f"{ins} \n {function_result.console_stderr}"
-                        logger.debug(
-                            "continue to iterate with codellama with question %s"
-                            % function_result.console_stderr
-                        )
-                    else:
-                        current_question = f"{ins} \n {function_result.console_stdout}"
-                        logger.debug(
-                            "continue to iterate with codellama with question %s"
-                            % function_result.console_stdout
-                        )
-
                 else:
                     result = self._format_output(json_response)
                     await queue.put(
