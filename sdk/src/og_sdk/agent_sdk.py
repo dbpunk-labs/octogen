@@ -165,6 +165,9 @@ class AgentSDK(AgentBaseSDK):
             ("api_key", api_key),
         )
 
+    def connect(self):
+        self.connect_async()
+
     async def ping(self):
         request = agent_server_pb2.PingRequest()
         response = await self.stub.ping(request, metadata=self.metadata)
