@@ -63,6 +63,7 @@ class CodellamaAgent(BaseAgent):
             "code": code,
             "explanation": explanation,
             "saved_filenames": saved_filenames,
+            "language": json_response.get("language", "text"),
         })
         await queue.put(
             TaskRespond(
@@ -80,9 +81,10 @@ class CodellamaAgent(BaseAgent):
         explanation = json_response["explanation"]
         saved_filenames = json_response.get("saved_filenames", [])
         tool_input = json.dumps({
-            "code": code,
+            "code": commands,
             "explanation": explanation,
             "saved_filenames": saved_filenames,
+            "language": json_response.get("language", "text"),
         })
         await queue.put(
             TaskRespond(
@@ -111,6 +113,7 @@ class CodellamaAgent(BaseAgent):
             "code": code,
             "explanation": explanation,
             "saved_filenames": saved_filenames,
+            "language": json_response.get("language", "text"),
         })
         await queue.put(
             TaskRespond(
