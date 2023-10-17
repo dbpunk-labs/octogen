@@ -18,3 +18,5 @@ openai==0.28.1
 build==1.0.3
 python-dotenv==1.0.0
 tiktoken
+fastapi
+

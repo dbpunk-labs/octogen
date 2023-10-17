@@ -41,6 +41,7 @@ setup(
         "console_scripts": [
             "og_agent_rpc_server = og_agent.agent_server:server_main",
             "og_agent_setup = og_agent.agent_setup:setup",
+            "og_agent_http_server = og_agent.agent_api_server:run_app",
         ]
     },
 )

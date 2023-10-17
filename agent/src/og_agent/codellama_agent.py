@@ -290,27 +290,33 @@ class CodellamaAgent(BaseAgent):
                         )
                     )
                     history.append("User:%s" % current_question)
-                    history.append("Octogen:%s" % message)
-                    ins = "the output of execute_python_code:"
+                    action_output = "the output of execute_python_code:"
                     # TODO limit the output size
                     if function_result.has_result:
-                        current_question = f"{ins}\n{function_result.console_stdout}"
+                        octogen_response = f"Octogen:{message}\n{action_output}\n{function_result.console_stdout}"
+                        history.append(octogen_response)
+                        current_question = "Give me the final answer summary if the above output of action  meets the goal Otherwise try a new step"
                         logger.debug(
                             "continue to iterate with codellama with question %s"
                             % function_result.console_stdout
                         )
                     elif function_result.has_error:
-                        current_question = f"{ins} \n {function_result.console_stderr}"
+                        octogen_response = f"Octogen:{message}\n{action_output}\n{function_result.console_stderr}"
+                        history.append(octogen_response)
+                        current_question = f"Generate a new step to fix the above error"
                         logger.debug(
                             "continue to iterate with codellama with question %s"
                             % function_result.console_stderr
                         )
                     else:
-                        current_question = f"{ins} \n {function_result.console_stdout}"
+                        octogen_response = f"Octogen:{message}\n{action_output}\n{function_result.console_stdout}"
+                        history.append(octogen_response)
+                        current_question = "Give me the final answer summary if the above output of action  meets the goal Otherwise try a new step"
                         logger.debug(
                             "continue to iterate with codellama with question %s"
                             % function_result.console_stdout
                         )
+
                 elif (
                     json_response["action"] == "show_sample_code"
                     and json_response["action_input"]

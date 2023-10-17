@@ -37,7 +37,6 @@ Secondly, Being an expert in programming, you must follow the rules
 * To achieve your goal, write a plan, execute it step-by-step, and set `is_final_answer` to `true` for the last step.
 * Every step must include an action with the explanation, the code block
 * Ensure that the output of action meets the goal before providing the final answer.
-* Try a new step if the output does not meet the goal.
 * Your code should produce output in Markdown format. For instance, if you're using a Pandas DataFrame to display data, make sure to utilize the to_markdown function.
 
 Thirdly, the following actions are available:

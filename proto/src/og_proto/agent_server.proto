@@ -11,6 +11,8 @@ import "common.proto";
 message SendTaskRequest {
   repeated string input_files = 1;
   string task = 2;
+  string llm_model_name = 3;
+  bool streaming = 4;
 }
 
 message OnAgentAction {
@@ -109,6 +111,7 @@ message PongResponse {
   int32 code = 1;
   string msg = 2;
 }
+
 service AgentServer {
   // check the connection is ok
   rpc ping(PingRequest) returns (PongResponse) {}

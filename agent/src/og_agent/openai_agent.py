@@ -17,6 +17,7 @@ import tiktoken
 
 logger = logging.getLogger(__name__)
 encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
+
 OCTOGEN_FUNCTIONS = [
     {
         "name": "execute_python_code",
@@ -42,7 +43,6 @@ OCTOGEN_FUNCTIONS = [
         },
     },
 ]
-
 
 class OpenaiAgent(BaseAgent):
 
