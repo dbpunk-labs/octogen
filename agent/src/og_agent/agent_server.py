@@ -39,9 +39,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[logging.StreamHandler(sys.stdout)],
 )
-
 logger = logging.getLogger(__name__)
-
 # the database instance for agent
 database = databases.Database("sqlite:///%s" % config["db_path"])
 models = orm.ModelRegistry(database=database)
@@ -88,117 +86,6 @@ class AgentRpcServer(AgentServerServicer):
                 code=0, msg="Connect to Octopus Agent Ok!"
             )
 
-    async def assemble(
-        self, request: agent_server_pb2.AssembleAppRequest, context: ServicerContext
-    ) -> agent_server_pb2.AssembleAppResponse:
-        metadata = dict(context.invocation_metadata())
-        if (
-            "api_key" not in metadata
-            or metadata["api_key"] not in self.agents
-            or not self.agents[metadata["api_key"]]
-        ):
-            await context.abort(10, "invalid api key")
-        key = metadata["api_key"]
-        key_hash = hashlib.sha256(key.encode("UTF-8")).hexdigest()
-        if await LiteApp.objects.filter(key_hash=key_hash, name=request.name).first():
-            await context.abort(10, f"the app name {request.name} exist")
-
-        logger.debug(
-            f"the code {request.code} key {key_hash}, language {request.language}"
-        )
-        await LiteApp.objects.create(
-            key_hash=key_hash,
-            name=request.name,
-            language=request.language,
-            code=request.code,
-            time=datetime.now(),
-            desc=request.desc,
-            saved_filenames=",".join(request.saved_filenames)
-            if request.saved_filenames
-            else "",
-        )
-        return agent_server_pb2.AssembleAppResponse(code=0, msg="ok")
-
-    async def run(
-        self, request: agent_server_pb2.RunAppRequest, context
-    ) -> AsyncIterable[agent_server_pb2.TaskRespond]:
-        metadata = dict(context.invocation_metadata())
-        if (
-            "api_key" not in metadata
-            or metadata["api_key"] not in self.agents
-            or not self.agents[metadata["api_key"]]
-        ):
-            logger.debug("invalid api key")
-            await context.abort(10, "invalid api key")
-        logger.debug(f"run application {request.name}")
-        key = metadata["api_key"]
-        key_hash = hashlib.sha256(key.encode("UTF-8")).hexdigest()
-        lite_app = await LiteApp.objects.filter(
-            key_hash=key_hash, name=request.name
-        ).first()
-        if not lite_app:
-            await context.abort(10, f"no application with name {request.name}")
-        agent = self.agents[metadata["api_key"]]["agent"]
-        tool_input = json.dumps({
-            "code": lite_app.code,
-            "explanation": "",
-            "saved_filenames": lite_app.saved_filenames.split(",")
-            if lite_app.saved_filenames
-            else [],
-        })
-        yield agent_server_pb2.TaskRespond(
-            respond_type=agent_server_pb2.TaskRespond.OnAgentActionType,
-            on_agent_action=agent_server_pb2.OnAgentAction(
-                input=tool_input, tool="execute_python_code"
-            ),
-        )
-        function_result = None
-        async for (result, respond) in agent.call_function(lite_app.code, context):
-            if context.cancelled():
-                break
-            function_result = result
-            if respond:
-                logger.debug(f"the respond {respond}")
-                yield respond
-        output_files = (
-            function_result.saved_filenames
-            if function_result and function_result.saved_filenames
-            else []
-        )
-        yield agent_server_pb2.TaskRespond(
-            respond_type=agent_server_pb2.TaskRespond.OnAgentActionEndType,
-            on_agent_action_end=agent_server_pb2.OnAgentActionEnd(
-                output="", output_files=output_files
-            ),
-        )
-
-    async def query_apps(
-        self, request: agent_server_pb2.QueryAppsRequest, context: ServicerContext
-    ) -> agent_server_pb2.QueryAppsResponse:
-        metadata = dict(context.invocation_metadata())
-        if (
-            "api_key" not in metadata
-            or metadata["api_key"] not in self.agents
-            or not self.agents[metadata["api_key"]]
-        ):
-            logger.debug("invalid api key")
-            await context.abort(10, "invalid api key")
-        key = metadata["api_key"]
-        key_hash = hashlib.sha256(key.encode("UTF-8")).hexdigest()
-        lite_apps = (
-            await LiteApp.objects.filter(key_hash=key_hash).order_by("-time").all()
-        )
-        apps = [
-            agent_server_pb2.AppInfo(
-                name=lite_app.name,
-                language=lite_app.language,
-                ctime=int(lite_app.time.timestamp()),
-                desc=lite_app.desc,
-            )
-            for lite_app in lite_apps
-        ]
-        return agent_server_pb2.QueryAppsResponse(apps=apps)
-
     async def add_kernel(
         self, request: agent_server_pb2.AddKernelRequest, context: ServicerContext
     ) -> agent_server_pb2.AddKernelResponse:
@@ -238,8 +125,8 @@ class AgentRpcServer(AgentServerServicer):
             self.agents[request.key] = {"sdk": sdk, "agent": agent}
         return agent_server_pb2.AddKernelResponse(code=0, msg="ok")
 
-    async def send_task(
-        self, request: agent_server_pb2.SendTaskRequest, context
+    async def process_task(
+        self, request: agent_server_pb2.ProcessTaskRequest, context
     ) -> AsyncIterable[agent_server_pb2.TaskRespond]:
         """
         process the task from the client
@@ -253,6 +140,7 @@ class AgentRpcServer(AgentServerServicer):
         ):
             logger.debug("invalid api key")
             await context.abort(10, "invalid api key")
+
         agent = self.agents[metadata["api_key"]]["agent"]
         sdk = self.agents[metadata["api_key"]]["sdk"]
         queue = asyncio.Queue()

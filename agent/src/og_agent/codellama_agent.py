@@ -115,6 +115,7 @@ class CodellamaAgent(BaseAgent):
             "saved_filenames": saved_filenames,
             "language": json_response.get("language", "text"),
         })
+
         await queue.put(
             TaskRespond(
                 state=task_context.to_task_state_proto(),
@@ -125,7 +126,6 @@ class CodellamaAgent(BaseAgent):
             )
         )
         function_result = None
-
         async for (result, respond) in self.call_function(code, context, task_context):
             if context.done():
                 logger.debug("the client has cancelled the request")
