@@ -5,6 +5,7 @@
 ![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/dbpunk-labs/octogen/ci.yaml)
 [![PyPI - Version](https://img.shields.io/pypi/v/og_chat)](https://pypi.org/project/og-chat/)
 ![PyPI - Downloads](https://img.shields.io/pypi/dm/og_chat?logo=pypi)
+[![Gitter](https://img.shields.io/gitter/room/octogen/%20)](https://matrix.to/#/#octogen:gitter.im)
 
 [中文](./README_zh_cn.md)
 
