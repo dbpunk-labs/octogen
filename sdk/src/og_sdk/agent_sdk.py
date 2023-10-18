@@ -16,17 +16,17 @@ from .utils import generate_chunk, generate_async_chunk
 logger = logging.getLogger(__name__)
 
 
-class AgentSyncSDK:
+class AgentBaseSDK:
 
-    def __init__(self, endpoint, api_key):
+    def __init__(self, endpoint):
         self.endpoint = endpoint
         self.stub = None
-        self.metadata = aio.Metadata(
-            ("api_key", api_key),
-        )
         self.channel = None
 
-    def connect(self):
+    def connect_sync(self):
+        """
+        Connect the agent service with sync mode
+        """
         if self.channel:
             return
         if self.endpoint.startswith("https"):
@@ -37,6 +37,33 @@ class AgentSyncSDK:
         else:
             self.channel = grpc.insecure_channel(self.endpoint)
         self.stub = AgentServerStub(self.channel)
+
+    def connect_async(self):
+        """
+        Connect the agent service with async mode
+        """
+        if self.channel:
+            return
+        if self.endpoint.startswith("https"):
+            channel_credential = grpc.ssl_channel_credentials()
+            self.channel = aio.secure_channel(
+                self.endpoint.replace("https://", ""), channel_credential
+            )
+        else:
+            self.channel = aio.insecure_channel(self.endpoint)
+        self.stub = AgentServerStub(self.channel)
+
+
+class AgentSyncSDK(AgentBaseSDK):
+
+    def __init__(self, endpoint, api_key):
+        super().__init__(endpoint)
+        self.metadata = aio.Metadata(
+            ("api_key", api_key),
+        )
+
+    def connect(self):
+        self.connect_sync()
 
     def assemble(self, name, code, language, desc="", saved_filenames=[]):
         request = agent_server_pb2.AssembleAppRequest(
@@ -99,26 +126,45 @@ class AgentSyncSDK:
             yield respond
 
 
-class AgentSDK:
+class AgentProxySDK(AgentBaseSDK):
+
+    def __init__(self, endpoint):
+        super().__init__(endpoint)
+        self.endpoint = endpoint
+
+    def connect(self):
+        self.connect_async()
+
+    async def add_kernel(self, key, endpoint, api_key):
+        """
+        add kernel instance to the agent and only admin can call this method
+        """
+        metadata = aio.Metadata(
+            ("api_key", api_key),
+        )
+        request = agent_server_pb2.AddKernelRequest(endpoint=endpoint, key=key)
+        response = await self.stub.add_kernel(request, metadata=metadata)
+        return response
+
+    async def prompt(self, prompt, api_key, files=[]):
+        metadata = aio.Metadata(
+            ("api_key", api_key),
+        )
+        request = agent_server_pb2.SendTaskRequest(task=prompt, input_files=files)
+        async for respond in self.stub.send_task(request, metadata=metadata):
+            yield respond
+
+
+class AgentSDK(AgentBaseSDK):
 
     def __init__(self, endpoint, api_key):
-        self.endpoint = endpoint
-        self.stub = None
+        super().__init__(endpoint)
         self.metadata = aio.Metadata(
             ("api_key", api_key),
         )
-        self.channel = None
 
     def connect(self):
-        """
-        Connect the agent service
-        """
-        if self.channel:
-            return
-
-        channel = aio.insecure_channel(self.endpoint)
-        self.channel = channel
-        self.stub = AgentServerStub(channel)
+        self.connect_async()
 
     async def ping(self):
         request = agent_server_pb2.PingRequest()

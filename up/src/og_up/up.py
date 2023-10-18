@@ -386,6 +386,8 @@ def start_service(
         "octogen",
         "-p",
         "127.0.0.1:9528:9528",
+        "-p",
+        "127.0.0.1:9529:9529",
         "-v",
         f"{install_dir}:/app",
         "-dt",
