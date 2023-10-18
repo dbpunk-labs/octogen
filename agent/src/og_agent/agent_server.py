@@ -30,6 +30,7 @@ import orm
 from datetime import datetime
 
 config = dotenv_values(".env")
+
 LOG_LEVEL = (
     logging.DEBUG if config.get("log_level", "info") == "debug" else logging.INFO
 )
@@ -127,11 +128,10 @@ class AgentRpcServer(AgentServerServicer):
 
     async def process_task(
         self, request: agent_server_pb2.ProcessTaskRequest, context
-    ) -> AsyncIterable[agent_server_pb2.TaskRespond]:
+    ) -> AsyncIterable[agent_server_pb2.TaskResponse]:
         """
         process the task from the client
         """
-        logger.debug("receive the task %s ", request.task)
         metadata = dict(context.invocation_metadata())
         if (
             "api_key" not in metadata
@@ -141,54 +141,44 @@ class AgentRpcServer(AgentServerServicer):
             logger.debug("invalid api key")
             await context.abort(10, "invalid api key")
 
+        logger.debug("receive the task %s ", request.task)
         agent = self.agents[metadata["api_key"]]["agent"]
         sdk = self.agents[metadata["api_key"]]["sdk"]
         queue = asyncio.Queue()
 
-        async def worker(task, agent, queue, context):
+        async def worker(task, agent, queue, context, task_opt):
             try:
-                return await agent.arun(task, queue, context)
+                return await agent.arun(task, queue, context, task_opt)
             except Exception as ex:
                 logger.exception("fail to run agent")
                 result = str(ex)
                 return result
 
         logger.debug("create the agent task")
-        task = asyncio.create_task(worker(request.task, agent, queue, context))
-        try:
-            while True:
-                try:
-                    logger.debug("start wait the queue message")
-                    # TODO add timeout
-                    respond = await queue.get()
-                    if not respond:
-                        logger.debug("exit the queue")
-                        break
-                    logger.debug(f"respond {respond}")
-                    queue.task_done()
-                    yield respond
-                except Exception as ex:
-                    logger.error(f"fail to get respond for {ex}")
+        task = asyncio.create_task(
+            worker(request.task, agent, queue, context, request.options)
+        )
+
+        while True:
+            try:
+                logger.debug("start wait the queue message")
+                # TODO add timeout
+                respond = await queue.get()
+                if not respond:
+                    logger.debug("exit the queue")
                     break
-            await task
-        except Exception as ex:
-            respond = agent_server_pb2.TaskRespond(
-                token_usage=0,
-                model_name="",
-                iteration=1,
-                respond_type=agent_server_pb2.TaskRespond.OnFinalAnswerType,
-                final_respond=agent_server_pb2.FinalRespond(answer=str(ex)),
-            )
-            yield respond
-        finally:
-            is_cancelled = context.cancelled()
-            logger.debug(f" the context is cancelled {is_cancelled}")
-            if context.cancelled():
-                try:
-                    logger.warning("cancel the request by stop kernel")
-                    await sdk.stop()
-                except Exception as ex:
-                    pass
+                logger.debug(f"respond {respond}")
+                queue.task_done()
+                yield respond
+            except Exception as ex:
+                response = agent_server_pb2.TaskResponse(
+                    response_type=agent_server_pb2.TaskResponse.OnSystemError,
+                    error_msg=str(ex),
+                )
+                yield response
+                logger.error(f"fail to get respond for {ex}")
+                break
+        await task
 
     async def download(
         self, request: common_pb2.DownloadRequest, context: ServicerContext

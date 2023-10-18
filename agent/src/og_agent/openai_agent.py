@@ -126,6 +126,15 @@ class OpenaiAgent(BaseAgent):
                     code_str = "".join(token)
         return (state, explanation_str, code_str)
 
+    def _get_message_token_count(self, message):
+        response_token_count = 0
+        if "function_call" in message and message["function_call"]:
+            arguments = message["function_call"].get("arguments", "")
+            response_token_count += len(encoding.encode(arguments))
+        if "content" in message and message["content"]:
+            response_token_count += len(encoding.encode(message.get("content")))
+        return response_token_count
+
     async def call_openai(self, messages, queue, context, task_context, task_opt):
         """
         call the openai api
@@ -158,18 +167,22 @@ class OpenaiAgent(BaseAgent):
         message = {}
         text_content = ""
         code_content = ""
+        context_output_token_count = task_context.output_token_count
         async for chunk in response:
             if context.done():
                 logger.debug("the client has cancelled the request")
                 break
             if not chunk["choices"]:
                 continue
+            task_context.llm_name = chunk.get("model", "")
+            self.model_name = chunk.get("model", "")
             delta = chunk["choices"][0]["delta"]
-            logger.debug(f"{delta}")
             if "function_call" in delta:
                 self._merge_delta_for_function_call(message, delta)
-                arguments = message["function_call"].get("arguments", "")
-                task_context.output_token_count += len(encoding.encode(arguments))
+                response_token_count = self._get_message_token_count(message)
+                task_context.output_token_count = (
+                    response_token_count + context_output_token_count
+                )
                 task_context.llm_response_duration += int(
                     (time.time() - start_time) * 1000
                 )
@@ -208,9 +221,10 @@ class OpenaiAgent(BaseAgent):
                     (time.time() - start_time) * 1000
                 )
                 start_time = time.time()
-                if delta.get("content") != None:
-                    task_context.output_token_count += len(
-                        encoding.encode(delta.get("content"))
+                if message.get("content") != None:
+                    response_token_count = self._get_message_token_count(message)
+                    task_context.output_token_count = (
+                        response_token_count + context_output_token_count
                     )
                     if task_opt.streaming:
                         await queue.put(
@@ -231,23 +245,27 @@ class OpenaiAgent(BaseAgent):
                 logging.debug("the client has cancelled the request")
                 return
             function_name = message["function_call"]["name"]
+            raw_code = ""
             code = ""
             explanation = ""
             saved_filenames = []
             language = "python"
             if function_name == "python":
-                code = message["function_call"]["arguments"]
+                raw_code = message["function_call"]["arguments"]
                 logger.debug(f"call function {function_name} with args {code}")
+                code = raw_code
             else:
                 arguments = json.loads(message["function_call"]["arguments"])
                 logger.debug(f"call function {function_name} with args {arguments}")
-                code = arguments["code"]
+                raw_code = arguments["code"]
+                code = raw_code
                 explanation = arguments["explanation"]
                 saved_filenames = arguments.get("saved_filenames", [])
             if function_name == "execute_bash_code":
                 language = "bash"
+                code = f"%%bash\n{raw_code}"
             tool_input = json.dumps({
-                "code": code,
+                "code": raw_code,
                 "explanation": explanation,
                 "saved_filenames": saved_filenames,
                 "language": language,
@@ -262,6 +280,7 @@ class OpenaiAgent(BaseAgent):
                     ),
                 )
             )
+
             function_result = None
             async for (result, respond) in self.call_function(
                 code, context, task_context
