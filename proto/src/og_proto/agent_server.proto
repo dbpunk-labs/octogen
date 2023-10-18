@@ -72,6 +72,7 @@ message TaskResponse {
     OnModelOutputError = 7;
     OnInputTokenLimitExceed = 8;
     OnOutputTokenLimitExceed = 9;
+    OnSystemError = 10;
   }
   ResponseType response_type = 4;
   oneof body {
