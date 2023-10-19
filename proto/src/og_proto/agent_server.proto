@@ -83,6 +83,7 @@ message TaskResponse {
     string console_stderr = 9;
     string typing_content = 10;
     string error_msg = 11;
+    string typing_language = 12;
   }
 }
 

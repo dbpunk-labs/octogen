@@ -14,6 +14,7 @@ from .codellama_client import CodellamaClient
 from og_proto.agent_server_pb2 import OnStepActionStart, TaskResponse, OnStepActionEnd, FinalAnswer
 from .base_agent import BaseAgent, TypingState, TaskContext
 from .tokenizer import tokenize
+from .prompt import OCTOGEN_CODELLAMA_SYSTEM
 import tiktoken
 
 logger = logging.getLogger(__name__)
@@ -167,7 +168,11 @@ class CodellamaAgent(BaseAgent):
         call codellama api
         """
         start_time = time.time()
-        num_tokens = len(encoding.encode(question)) + len(encoding.encode(chat_history))
+        num_tokens = (
+            len(encoding.encode(OCTOGEN_CODELLAMA_SYSTEM))
+            + len(encoding.encode(question))
+            + len(encoding.encode(chat_history))
+        )
         task_context.input_token_count += num_tokens
         output_token_count = task_context.output_token_count
         state = None
@@ -201,11 +206,16 @@ class CodellamaAgent(BaseAgent):
                             state=task_context.to_context_state_proto(),
                             response_type=TaskResponse.OnModelTypeText,
                             typing_content=typed_chars,
+                            typing_language="text",
                         )
                     )
             if action_input_str and code_content != action_input_str:
                 typed_chars = action_input_str[len(code_content) :]
                 code_content = action_input_str
+                # use a better way to detect the language
+                typing_language = (
+                    "python" if message.find("execute_python_code") >= 0 else "bash"
+                )
                 await queue.put(
                     TaskResponse(
                         state=task_context.to_context_state_proto(),

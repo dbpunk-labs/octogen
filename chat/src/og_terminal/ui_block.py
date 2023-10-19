@@ -70,6 +70,7 @@ class MarkdownBlock(StreamingBlock):
 
 
 class TerminalBlock(StreamingBlock):
+
     def __init__(self, index):
         super().__init__(index, "")
         self.set_emoji("✅")
@@ -96,6 +97,7 @@ class TerminalBlock(StreamingBlock):
             tmp_content = self.terminal_stderr + terminal_stderr
             self.terminal_stderr = process_char_stream(tmp_content)
 
+
 class CodeBlock(StreamingCodeBlock):
 
     def __init__(self, index, content, language):
@@ -109,6 +111,7 @@ class CodeBlock(StreamingCodeBlock):
         else:
             return Syntax(self.content + "█", self.language, line_number=True)
 
+
 class LoadingBlock(BaseBlock):
 
     def __init__(self, index):
@@ -116,6 +119,7 @@ class LoadingBlock(BaseBlock):
 
     def render(self):
         return ""
+
 
 class UploadFilesBlock(BaseBlock):
 

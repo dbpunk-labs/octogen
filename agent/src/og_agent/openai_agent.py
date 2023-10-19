@@ -201,17 +201,24 @@ class OpenaiAgent(BaseAgent):
                                 state=task_context.to_context_state_proto(),
                                 response_type=TaskResponse.OnModelTypeText,
                                 typing_content=typed_chars,
+                                typing_language="text",
                             )
                         )
                 if code_str and code_content != code_str:
                     typed_chars = code_str[len(code_content) :]
                     code_content = code_str
                     if task_opt.streaming:
+                        typing_language = (
+                            "python"
+                            if delta["function_call"]["name"] == "execute_python_code"
+                            else "bash"
+                        )
                         await queue.put(
                             TaskResponse(
                                 state=task_context.to_context_state_proto(),
                                 response_type=TaskResponse.OnModelTypeCode,
                                 typing_content=typed_chars,
+                                typing_language=typing_language,
                             )
                         )
                 logger.debug(f"argument explanation:{explanation_str} code:{code_str}")

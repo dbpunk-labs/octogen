@@ -28,18 +28,17 @@ def test_ok_handle_action_end():
     segments = [(0, "", "")]
     images = []
     values = [()]
-    task_state = agent_server_pb2.TaskState(
-        generated_token_count=10,
-        iteration_count=1,
-        model_name="mock",
+    task_state = agent_server_pb2.ContextState(
+        output_token_count=10,
+        llm_name="mock",
         total_duration=1,
-        sent_token_count=10,
-        model_respond_duration=1000,
+        input_token_count=10,
+        llm_response_duration=1000,
     )
-    respond = agent_server_pb2.TaskRespond(
+    respond = agent_server_pb2.TaskResponse(
         state=task_state,
-        respond_type=agent_server_pb2.TaskRespond.OnAgentActionEndType,
-        on_agent_action_end=agent_server_pb2.OnAgentActionEnd(
+        response_type=agent_server_pb2.TaskResponse.OnStepActionEnd,
+        on_step_action_end=agent_server_pb2.OnStepActionEnd(
             output="", output_files=[], has_error=False
         ),
     )
@@ -51,20 +50,21 @@ def test_error_handle_action_end():
     segments = [(0, "", "")]
     images = []
     values = [()]
-    task_state = agent_server_pb2.TaskState(
-        generated_token_count=10,
-        iteration_count=1,
-        model_name="mock",
+    task_state = agent_server_pb2.ContextState(
+        output_token_count=10,
+        llm_name="mock",
         total_duration=1,
-        sent_token_count=10,
-        model_respond_duration=1000,
+        input_token_count=10,
+        llm_response_duration=1000,
     )
-    respond = agent_server_pb2.TaskRespond(
+
+    respond = agent_server_pb2.TaskResponse(
         state=task_state,
-        respond_type=agent_server_pb2.TaskRespond.OnAgentActionEndType,
-        on_agent_action_end=agent_server_pb2.OnAgentActionEnd(
+        response_type=agent_server_pb2.TaskResponse.OnStepActionEnd,
+        on_step_action_end=agent_server_pb2.OnStepActionEnd(
             output="", output_files=[], has_error=True
         ),
     )
+
     handle_action_end(segments, respond, images, values)
     assert segments[0][1] == "❌"

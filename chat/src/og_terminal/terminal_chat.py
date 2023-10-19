@@ -43,15 +43,16 @@ from og_proto import agent_server_pb2
 from dotenv import dotenv_values
 from prompt_toolkit.completion import Completer, Completion
 from .utils import parse_file_path
-from .markdown import CodeBlock
+from .markdown import CodeBlock as SyntaxBlock
+from .ui_block import TaskBlocks, TerminalBlock
 import clipboard
 
-Markdown.elements["fence"] = CodeBlock
-Markdown.elements["code_block"] = CodeBlock
-OCTOGEN_TITLE = "🐙[bold red]Octogen"
-OCTOGEN_APP_TITLE = "🐙[bold red]App"
+Markdown.elements["fence"] = SyntaxBlock
+Markdown.elements["code_block"] = SyntaxBlock
 
-EMOJI_KEYS = list(EMOJI.keys())
+USER_TITLE = "✍[bold yellow]User"
+OCTOGEN_TITLE = "🤖[bold green]Octogen"
+SYSTEM_TITLE = "🛠[bold red]System"
 
 
 def show_welcome(console):
@@ -60,6 +61,10 @@ Welcome to use octogen❤️ . To ask a programming question, simply type your q
 Use [bold yellow]/help[/] for help
 """
     console.print(welcome)
+
+
+def prompt_continuation(width, line_number, is_soft_wrap):
+    return "." * width
 
 
 def show_help(console):
@@ -176,7 +181,7 @@ def refresh(live, segments, title=OCTOGEN_TITLE, task_state=None):
     live.refresh()
 
 
-def handle_action_output(segments, respond, values):
+def handle_action_output(task_blocks, respond):
     if respond.response_type not in [
         agent_server_pb2.TaskResponse.OnStepActionStreamStdout,
         agent_server_pb2.TaskResponse.OnStepActionStreamStderr,
@@ -187,24 +192,11 @@ def handle_action_output(segments, respond, values):
     new_stderr = value[1][1]
     segment = segments.pop()
     if respond.response_type == agent_server_pb2.TaskResponse.OnStepActionStreamStdout:
-        new_stdout += respond.console_stdout
-        new_stdout = process_char_stream(new_stdout)
+        task_blocks.add_terminal(respond.console_stdout, "")
     elif (
         respond.response_type == agent_server_pb2.TaskResponse.OnStepActionStreamStderr
     ):
-        new_stderr += respond.console_stderr
-        new_stderr = process_char_stream(new_stderr)
-    values.append(("text", (new_stdout, new_stderr), []))
-    total_output = new_stdout
-    if new_stderr:
-        total_output = new_stdout + "\n" + new_stderr
-    text = Text.from_ansi(total_output)
-    syntax = Syntax(
-        f"{text.plain}",
-        "text",
-        line_numbers=True,  # background_color="default"
-    )
-    segments.append((len(values) - 1, segment[1], syntax))
+        task_blocks.add_terminal("", respond.console_stderr)
 
 
 def handle_action_end(segments, respond, images, values):
@@ -222,108 +214,40 @@ def handle_action_end(segments, respond, images, values):
     """
     if respond.response_type != agent_server_pb2.TaskResponse.OnStepActionEnd:
         return
-    output = respond.on_agent_action_end.output
-    has_error = "✅" if not respond.on_step_action_end.has_error else "❌"
-    old_value = values.pop()
-    segment = segments.pop()
+    has_error = respond.on_step_action_end.has_error
     if images and not has_error:
         images.extend(respond.on_step_action_end.output_files)
-    values.append(old_value)
-    segments.append((len(values) - 1, has_error, segment[2]))
-    # add the next steps loading
-    spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
-    values.append(("text", "", []))
-    segments.append((len(values) - 1, spinner, ""))
+    if isinstance(task_blocks.get_last_block(), TerminalBlock):
+        task_blocks.get_last_block().finish(has_error)
+    task_blocks.finish_current_blocks()
+    # wait for the next steps
+    task_blocks.add_loading()
 
 
-def handle_typing(segments, respond, values):
+def handle_typing(task_blocks, respond):
     if respond.response_type not in [
         agent_server_pb2.TaskResponse.OnModelTypeText,
         agent_server_pb2.TaskResponse.OnModelTypeCode,
     ]:
         return
-    value = values.pop()
-    segment = segments.pop()
     if respond.response_type == agent_server_pb2.TaskResponse.OnModelTypeText:
-        new_value = value[1] + respond.typing_content
-        values.append(("text", new_value, []))
-        markdown = Markdown("\n" + new_value + "█")
-        segments.append((len(values) - 1, segment[1], markdown))
+        task_blocks.add_markdown(respond.typing_content)
     else:
-        # Start write the code
-        if value[0] == "text":
-            values.append(value)
-            markdown = Markdown("\n" + value[1])
-            new_segment = (segment[0], "🧠", markdown)
-            segments.append(new_segment)
-            new_value = respond.typing_content
-            values.append(("python", new_value, []))
-            syntax = Syntax(
-                new_value,
-                "python",
-                line_numbers=True,  # background_color="default"
-            )
-            segments.append((len(values) - 1, "📖", syntax))
-        else:
-            # continue
-            new_value = value[1] + respond.typing_content
-            values.append(("python", new_value, []))
-            syntax = Syntax(
-                new_value + "█",
-                "python",
-                line_numbers=True,  # background_color="default"
-            )
-            segments.append((len(values) - 1, "📖", syntax))
+        task_blocks.add_code(respond.typing_content, respond.typing_language)
 
 
-def handle_action_start(segments, respond, images, values):
-    """Run on agent action."""
+def handle_action_start(task_blocks, respond, images):
+    """start to execute the action"""
     if respond.response_type != agent_server_pb2.TaskResponse.OnStepActionStart:
         return
     action = respond.on_step_action_start
     if not action.input:
         return
     arguments = json.loads(action.input)
-    value = values.pop()
-    segment = segments.pop()
     images.extend(arguments.get("saved_filenames", []))
-    if not value[1]:
-        new_value = (
-            arguments["language"],
-            arguments["code"],
-            arguments.get("saved_filenames", []),
-        )
-        values.append(new_value)
-        syntax = Syntax(
-            arguments["code"],
-            arguments["language"],
-            line_numbers=True,
-        )
-        new_segment = (segment[0], "📖", syntax)
-        segments.append(new_segment)
-    elif value[0] == "text":
-        values.append(value)
-        markdown = Markdown("\n" + value[1])
-        new_segment = (segment[0], segment[1], markdown)
-        segments.append(new_segment)
-    else:
-        values.append(value)
-        syntax = Syntax(
-            value[1],
-            value[0],
-            line_numbers=True,
-        )
-        new_segment = (segment[0], segment[1], syntax)
-        segments.append(new_segment)
-    # Add spinner for console
-    spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
-    values.append(("text", ("", ""), []))
-    syntax = Syntax(
-        "",
-        "text",
-        line_numbers=True,  # background_color="default"
-    )
-    segments.append((len(values) - 1, spinner, syntax))
+    task_blocks.finish_current_blocks()
+    # wait for the action to be finished
+    task_blocks.add_loading()
 
 
 def find_code(content, segments, values):
@@ -385,27 +309,23 @@ def render_image(images, sdk, image_dir, console):
         return False
 
 
-def run_chat(
-    prompt, sdk, session, console, values, spinner_name="hearts", filedir=None
-):
+def run_chat(prompt, sdk, session, console, values, filedir=None):
     """
     run the chat
     """
-    segments = []
+    task_blocks = TaskBlocks(values)
+    task_blocks.start()
+    segments = list(task_blocks.render())
     images = []
-    token_usage = 0
-    iteration = 0
-    model_name = ""
     with Live(Group(*segments), console=console) as live:
-        spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
-        values.append(("text", "", []))
-        segments.append((len(values) - 1, spinner, ""))
         refresh(live, segments)
+
         task_state = None
         for respond in sdk.prompt(prompt):
             if not respond:
                 break
-            handle_typing(segments, respond, values)
+
+            handle_typing(blocks, respond, values)
             handle_action_start(segments, respond, images, values)
             handle_action_output(segments, respond, values)
             handle_action_end(segments, respond, images, values)
@@ -447,7 +367,11 @@ def app(octogen_dir):
     show_welcome(console)
     while True:
         index = index + 1
-        real_prompt = session.prompt("[%s]%s>" % (index, "🎧"), multiline=True)
+        real_prompt = session.prompt(
+            "[%s]%s>" % (index, "🎧"),
+            multiline=True,
+            prompt_continuation=prompt_continuation,
+        )
         if not "".join(real_prompt.strip().split("\n")):
             continue
         if real_prompt.find("/help") >= 0:
@@ -497,6 +421,5 @@ def app(octogen_dir):
             session,
             console,
             values,
-            spinner_name=octopus_config.get("spinner", "dots2"),
             filedir=filedir,
         )
