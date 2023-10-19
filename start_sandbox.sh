@@ -41,6 +41,7 @@ cases_path=${WORKDIR}/sdk/tests/mock_messages.json
 EOF
 
 og_agent_rpc_server > agent_rpc.log 2>&1 &
+og_agent_http_server > agent_http.log 2>&1 &
 sleep 2
 echo "add a kernel"
 og_agent_setup --kernel_endpoint=127.0.0.1:9527 --kernel_api_key=${KERNEL_RPC_KEY} --agent_endpoint=127.0.0.1:9528 --admin_key=${AGENT_RPC_KEY}
