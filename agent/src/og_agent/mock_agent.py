@@ -8,7 +8,7 @@ import json
 import time
 import logging
 from .base_agent import BaseAgent, TypingState, TaskContext
-from og_proto.agent_server_pb2 import OnAgentAction, TaskRespond, OnAgentActionEnd, FinalRespond
+from og_proto.agent_server_pb2 import OnStepActionStart, TaskResponse, OnStepActionEnd, FinalAnswer
 from .tokenizer import tokenize
 
 logger = logging.getLogger(__name__)
@@ -74,14 +74,12 @@ class MockAgent(BaseAgent):
         """
         run the agent
         """
-        iteration = 0
         task_context = TaskContext(
             start_time=time.time(),
-            generated_token_count=10,
-            sent_token_count=10,
-            model_name="mock",
-            iteration_count=1,
-            model_respond_duration=1000,
+            output_token_count=10,
+            input_token_count=10,
+            llm_name="mock",
+            llm_respond_duration=1000,
         )
         try:
             while iteration < max_iteration:

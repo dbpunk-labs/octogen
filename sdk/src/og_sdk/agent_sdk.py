@@ -65,27 +65,6 @@ class AgentSyncSDK(AgentBaseSDK):
     def connect(self):
         self.connect_sync()
 
-    def assemble(self, name, code, language, desc="", saved_filenames=[]):
-        request = agent_server_pb2.AssembleAppRequest(
-            name=name,
-            language=language,
-            code=code,
-            saved_filenames=saved_filenames,
-            desc=desc,
-        )
-        response = self.stub.assemble(request, metadata=self.metadata)
-        return response
-
-    def run(self, name):
-        # TODO support input files
-        request = agent_server_pb2.RunAppRequest(name=name)
-        for respond in self.stub.run(request, metadata=self.metadata):
-            yield respond
-
-    def query_apps(self):
-        request = agent_server_pb2.QueryAppsRequest()
-        return self.stub.query_apps(request, metadata=self.metadata)
-
     def add_kernel(self, key, endpoint):
         """
         add kernel instance to the agent and only admin can call this method
@@ -154,6 +133,11 @@ class AgentProxySDK(AgentBaseSDK):
         async for respond in self.stub.send_task(request, metadata=metadata):
             yield respond
 
+    async def close(self):
+        if self.channel:
+            await self.channel.close()
+            self.channel = None
+
 
 class AgentSDK(AgentBaseSDK):
 
@@ -170,28 +154,6 @@ class AgentSDK(AgentBaseSDK):
         request = agent_server_pb2.PingRequest()
         response = await self.stub.ping(request, metadata=self.metadata)
         return response
-
-    async def assemble(self, name, code, language, desc="", saved_filenames=[]):
-        request = agent_server_pb2.AssembleAppRequest(
-            name=name,
-            language=language,
-            code=code,
-            saved_filenames=saved_filenames,
-            desc=desc,
-        )
-        response = await self.stub.assemble(request, metadata=self.metadata)
-        return response
-
-    async def run(self, name):
-        # TODO support input files
-        request = agent_server_pb2.RunAppRequest(name=name)
-        async for respond in self.stub.run(request, metadata=self.metadata):
-            yield respond
-
-    async def query_apps(self):
-        """query all apps"""
-        request = agent_server_pb2.QueryAppsRequest()
-        return await self.stub.query_apps(request, metadata=self.metadata)
 
     async def add_kernel(self, key, endpoint):
         """
@@ -229,7 +191,7 @@ class AgentSDK(AgentBaseSDK):
         # TODO limit the file size
         return await self.upload_binary(generate_async_chunk(filepath, filename))
 
-    def close(self):
+    async def close(self):
         if self.channel:
-            self.channel.close()
+            await self.channel.close()
             self.channel = None

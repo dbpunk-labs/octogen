@@ -14,6 +14,7 @@ from og_agent import openai_agent
 from og_proto.agent_server_pb2 import ProcessOptions, TaskResponse
 from openai.openai_object import OpenAIObject
 import asyncio
+import pytest_asyncio
 
 api_base = "127.0.0.1:9528"
 api_key = "ZCeI9cYtOCyLISoi488BgZHeBkHWuFUH"
@@ -53,17 +54,15 @@ class MockContext:
         return False
 
 
-@pytest.fixture
-def agent_sdk():
+@pytest_asyncio.fixture
+async def agent_sdk():
     sdk = AgentSDK(api_base, api_key)
     sdk.connect()
     yield sdk
-    sdk.close()
-
+    await sdk.close()
 
 @pytest.mark.asyncio
 async def test_openai_agent_smoke_test(mocker, agent_sdk):
-    await agent_sdk.add_kernel(api_key, "127.0.0.1:9527")
     sentence = "Hello, how can I help you?"
     stream = PayloadStream(sentence)
     with mocker.patch(
