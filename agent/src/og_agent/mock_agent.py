@@ -30,17 +30,17 @@ class MockAgent(BaseAgent):
         message = self.messages.get(prompt)[iteration]
         if message.get("explanation", None):
             await queue.put(
-                TaskRespond(
-                    state=task_context.to_task_state_proto(),
-                    respond_type=TaskRespond.OnAgentTextTyping,
+                TaskResponse(
+                    state=task_context.to_context_state_proto(),
+                    response_type=TaskResponse.OnModelTypeText,
                     typing_content=message["explanation"],
                 )
             )
         if message.get("code", None):
             await queue.put(
-                TaskRespond(
-                    state=task_context.to_task_state_proto(),
-                    respond_type=TaskRespond.OnAgentCodeTyping,
+                TaskResponse(
+                    state=task_context.to_context_state_proto(),
+                    response_type=TaskResponse.OnModelTypeCode,
                     typing_content=message["code"],
                 )
             )
@@ -53,12 +53,13 @@ class MockAgent(BaseAgent):
             "code": code,
             "explanation": explanation,
             "saved_filenames": saved_filenames,
+            "language": "python",
         })
         await queue.put(
-            TaskRespond(
-                state=task_context.to_task_state_proto(),
-                respond_type=TaskRespond.OnAgentActionType,
-                on_agent_action=OnAgentAction(
+            TaskResponse(
+                state=task_context.to_context_state_proto(),
+                response_type=TaskResponse.OnStepActionStart,
+                on_step_action_start=OnStepActionStart(
                     input=tool_input, tool="execute_python_code"
                 ),
             )
@@ -70,7 +71,7 @@ class MockAgent(BaseAgent):
                 await queue.put(respond)
         return function_result
 
-    async def arun(self, task, queue, context, max_iteration=5):
+    async def arun(self, task, queue, context, task_opt):
         """
         run the agent
         """
@@ -81,8 +82,9 @@ class MockAgent(BaseAgent):
             llm_name="mock",
             llm_respond_duration=1000,
         )
+        iteration = 0
         try:
-            while iteration < max_iteration:
+            while iteration <= 10:
                 message = await self.call_ai(task, queue, iteration, task_context)
                 iteration = iteration + 1
                 if message.get("code", None):
@@ -95,10 +97,10 @@ class MockAgent(BaseAgent):
                         message.get("saved_filenames", []),
                     )
                     await queue.put(
-                        TaskRespond(
-                            state=task_context.to_task_state_proto(),
-                            respond_type=TaskRespond.OnAgentActionEndType,
-                            on_agent_action_end=OnAgentActionEnd(
+                        TaskResponse(
+                            state=task_context.to_context_state_proto(),
+                            response_type=TaskResponse.OnStepActionEnd,
+                            on_step_action_end=OnStepActionEnd(
                                 output="",
                                 output_files=function_result.saved_filenames,
                                 has_error=function_result.has_error,
@@ -107,10 +109,10 @@ class MockAgent(BaseAgent):
                     )
                 else:
                     await queue.put(
-                        TaskRespond(
-                            state=task_context.to_task_state_proto(),
-                            respond_type=TaskRespond.OnFinalAnswerType,
-                            final_respond=FinalRespond(answer=message["explanation"]),
+                        TaskResponse(
+                            state=task_context.to_context_state_proto(),
+                            response_type=TaskResponse.OnFinalAnswer,
+                            final_answer=FinalAnswer(answer=message["explanation"]),
                         )
                     )
                     break

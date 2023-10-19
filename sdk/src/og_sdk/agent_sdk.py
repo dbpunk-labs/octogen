@@ -100,8 +100,8 @@ class AgentSyncSDK(AgentBaseSDK):
         """
         ask the ai with prompt and  uploaded files
         """
-        request = agent_server_pb2.SendTaskRequest(task=prompt, input_files=files)
-        for respond in self.stub.send_task(request, metadata=self.metadata):
+        request = agent_server_pb2.ProcessTaskRequest(task=prompt, input_files=files)
+        for respond in self.stub.process_task(request, metadata=self.metadata):
             yield respond
 
 
@@ -129,8 +129,8 @@ class AgentProxySDK(AgentBaseSDK):
         metadata = aio.Metadata(
             ("api_key", api_key),
         )
-        request = agent_server_pb2.SendTaskRequest(task=prompt, input_files=files)
-        async for respond in self.stub.send_task(request, metadata=metadata):
+        request = agent_server_pb2.ProcessTaskRequest(task=prompt, input_files=files)
+        async for respond in self.stub.process_task(request, metadata=metadata):
             yield respond
 
     async def close(self):
@@ -167,8 +167,8 @@ class AgentSDK(AgentBaseSDK):
         """
         ask the ai with prompt and  uploaded files
         """
-        request = agent_server_pb2.SendTaskRequest(task=prompt, input_files=files)
-        async for respond in self.stub.send_task(request, metadata=self.metadata):
+        request = agent_server_pb2.ProcessTaskRequest(task=prompt, input_files=files)
+        async for respond in self.stub.process_task(request, metadata=self.metadata):
             yield respond
 
     async def download_file(self, filename, parent_path):

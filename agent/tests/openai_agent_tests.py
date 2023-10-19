@@ -61,6 +61,7 @@ async def agent_sdk():
     yield sdk
     await sdk.close()
 
+
 @pytest.mark.asyncio
 async def test_openai_agent_smoke_test(mocker, agent_sdk):
     sentence = "Hello, how can I help you?"

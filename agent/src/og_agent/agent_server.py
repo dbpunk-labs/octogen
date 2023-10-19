@@ -158,7 +158,6 @@ class AgentRpcServer(AgentServerServicer):
         task = asyncio.create_task(
             worker(request.task, agent, queue, context, request.options)
         )
-
         while True:
             try:
                 logger.debug("start wait the queue message")
