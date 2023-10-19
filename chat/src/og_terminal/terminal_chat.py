@@ -73,9 +73,6 @@ def show_help(console):
 - **`/cc{number}`**: Copies the output of Octogen to your clipboard.
 - **`/exit`**: Exits the Octogen CLI.
 - **`/up`**: Uploads files from your local machine; useful for including in your questions.
-- **`/assemble {name} {number1} {number2}`**: Assembles the specified code segments into an application.
-- **`/run {name}`**: Executes an application with the specified name.
-- **`/apps`**: Displays a list of all your apps.
 
 ### Need Help?
 
@@ -148,7 +145,8 @@ def clean_code(code: str):
 
 def refresh(live, segments, title=OCTOGEN_TITLE, task_state=None):
     speed = (
-        task_state.generated_token_count / (task_state.model_respond_duration / 1000.0)
+        task_state.output_token_count
+        / ((task_state.llm_response_duration + 1) / 1000.0)
         if task_state
         else 0
     )
@@ -163,7 +161,13 @@ def refresh(live, segments, title=OCTOGEN_TITLE, task_state=None):
             table,
             title=title,
             title_align="left",
-            subtitle="[gray] %.1ft/s %s" % (speed, task_state.model_name)
+            subtitle="[gray] Speed:%.1ft/s Input:%d Output:%d Model:%s"
+            % (
+                speed,
+                task_state.input_token_count,
+                task_state.output_token_count,
+                task_state.llm_name,
+            )
             if task_state
             else "",
             subtitle_align="left",
@@ -173,19 +177,21 @@ def refresh(live, segments, title=OCTOGEN_TITLE, task_state=None):
 
 
 def handle_action_output(segments, respond, values):
-    if respond.respond_type not in [
-        agent_server_pb2.TaskRespond.OnAgentActionStdout,
-        agent_server_pb2.TaskRespond.OnAgentActionStderr,
+    if respond.response_type not in [
+        agent_server_pb2.TaskResponse.OnStepActionStreamStdout,
+        agent_server_pb2.TaskResponse.OnStepActionStreamStderr,
     ]:
         return
     value = values.pop()
     new_stdout = value[1][0]
     new_stderr = value[1][1]
     segment = segments.pop()
-    if respond.respond_type == agent_server_pb2.TaskRespond.OnAgentActionStdout:
+    if respond.response_type == agent_server_pb2.TaskResponse.OnStepActionStreamStdout:
         new_stdout += respond.console_stdout
         new_stdout = process_char_stream(new_stdout)
-    elif respond.respond_type == agent_server_pb2.TaskRespond.OnAgentActionStderr:
+    elif (
+        respond.response_type == agent_server_pb2.TaskResponse.OnStepActionStreamStderr
+    ):
         new_stderr += respond.console_stderr
         new_stderr = process_char_stream(new_stderr)
     values.append(("text", (new_stdout, new_stderr), []))
@@ -214,14 +220,14 @@ def handle_action_end(segments, respond, images, values):
     Returns:
       None.
     """
-    if respond.respond_type != agent_server_pb2.TaskRespond.OnAgentActionEndType:
+    if respond.response_type != agent_server_pb2.TaskResponse.OnStepActionEnd:
         return
     output = respond.on_agent_action_end.output
-    has_error = "✅" if not respond.on_agent_action_end.has_error else "❌"
+    has_error = "✅" if not respond.on_step_action_end.has_error else "❌"
     old_value = values.pop()
     segment = segments.pop()
     if images and not has_error:
-        images.extend(respond.on_agent_action_end.output_files)
+        images.extend(respond.on_step_action_end.output_files)
     values.append(old_value)
     segments.append((len(values) - 1, has_error, segment[2]))
     # add the next steps loading
@@ -231,14 +237,14 @@ def handle_action_end(segments, respond, images, values):
 
 
 def handle_typing(segments, respond, values):
-    if respond.respond_type not in [
-        agent_server_pb2.TaskRespond.OnAgentTextTyping,
-        agent_server_pb2.TaskRespond.OnAgentCodeTyping,
+    if respond.response_type not in [
+        agent_server_pb2.TaskResponse.OnModelTypeText,
+        agent_server_pb2.TaskResponse.OnModelTypeCode,
     ]:
         return
     value = values.pop()
     segment = segments.pop()
-    if respond.respond_type == agent_server_pb2.TaskRespond.OnAgentTextTyping:
+    if respond.response_type == agent_server_pb2.TaskResponse.OnModelTypeText:
         new_value = value[1] + respond.typing_content
         values.append(("text", new_value, []))
         markdown = Markdown("\n" + new_value + "█")
@@ -272,54 +278,52 @@ def handle_typing(segments, respond, values):
 
 def handle_action_start(segments, respond, images, values):
     """Run on agent action."""
-    if respond.respond_type != agent_server_pb2.TaskRespond.OnAgentActionType:
+    if respond.response_type != agent_server_pb2.TaskResponse.OnStepActionStart:
         return
-    action = respond.on_agent_action
+    action = respond.on_step_action_start
     if not action.input:
         return
     arguments = json.loads(action.input)
     value = values.pop()
     segment = segments.pop()
-    if action.tool == "execute_python_code" or action.tool == "show_sample_code":
-        images.extend(arguments.get("saved_filenames", []))
-        if not value[1]:
-            new_value = (
-                "python",
-                arguments["code"],
-                arguments.get("saved_filenames", []),
-            )
-            values.append(new_value)
-            syntax = Syntax(
-                arguments["code"],
-                "python",
-                line_numbers=True,  # background_color="default"
-            )
-            new_segment = (segment[0], "📖", syntax)
-            segments.append(new_segment)
-
-        elif value[0] == "text":
-            values.append(value)
-            markdown = Markdown("\n" + value[1])
-            new_segment = (segment[0], segment[1], markdown)
-            segments.append(new_segment)
-        elif value[0] == "python":
-            values.append(value)
-            syntax = Syntax(
-                value[1],
-                "python",
-                line_numbers=True,  # background_color="default"
-            )
-            new_segment = (segment[0], segment[1], syntax)
-            segments.append(new_segment)
-        # Add spinner for console
-        spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
-        values.append(("text", ("", ""), []))
-        syntax = Syntax(
-            "",
-            "text",
-            line_numbers=True,  # background_color="default"
+    images.extend(arguments.get("saved_filenames", []))
+    if not value[1]:
+        new_value = (
+            arguments["language"],
+            arguments["code"],
+            arguments.get("saved_filenames", []),
         )
-        segments.append((len(values) - 1, spinner, syntax))
+        values.append(new_value)
+        syntax = Syntax(
+            arguments["code"],
+            arguments["language"],
+            line_numbers=True,
+        )
+        new_segment = (segment[0], "📖", syntax)
+        segments.append(new_segment)
+    elif value[0] == "text":
+        values.append(value)
+        markdown = Markdown("\n" + value[1])
+        new_segment = (segment[0], segment[1], markdown)
+        segments.append(new_segment)
+    else:
+        values.append(value)
+        syntax = Syntax(
+            value[1],
+            value[0],
+            line_numbers=True,
+        )
+        new_segment = (segment[0], segment[1], syntax)
+        segments.append(new_segment)
+    # Add spinner for console
+    spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
+    values.append(("text", ("", ""), []))
+    syntax = Syntax(
+        "",
+        "text",
+        line_numbers=True,  # background_color="default"
+    )
+    segments.append((len(values) - 1, spinner, syntax))
 
 
 def find_code(content, segments, values):
@@ -348,9 +352,9 @@ def find_code(content, segments, values):
 
 
 def handle_final_answer(segments, respond, values):
-    if respond.respond_type != agent_server_pb2.TaskRespond.OnFinalAnswerType:
+    if respond.response_type != agent_server_pb2.TaskResponse.OnFinalAnswer:
         return
-    answer = respond.final_respond.answer
+    answer = respond.final_answer.answer
     values.pop()
     segments.pop()
     if not answer:
@@ -413,81 +417,6 @@ def run_chat(
     render_image(images, sdk, filedir, console)
 
 
-def run_app(name, sdk, session, console, values, filedir=None):
-    segments = []
-    images = []
-    with Live(Group(*segments), console=console) as live:
-        spinner = Spinner("dots", style="status.spinner", speed=1.0, text="")
-        values.append(("text", "", []))
-        segments.append((len(values) - 1, spinner, ""))
-        refresh(live, segments, title=OCTOGEN_APP_TITLE + f":{name}")
-        for respond in sdk.run(name):
-            if not respond:
-                break
-            handle_action_start(segments, respond, images, values)
-            handle_action_output(segments, respond, values)
-            handle_action_end(segments, respond, images, values)
-            refresh(live, segments, title=OCTOGEN_APP_TITLE + f":{name}")
-        values.pop()
-        segments.pop()
-        refresh(live, segments, title=OCTOGEN_APP_TITLE + f":{name}")
-    # display the images
-    render_image(images, sdk, filedir, console)
-
-
-def gen_app_panel(app):
-    desc = app.desc if app.desc else ""
-    date_str = datetime.fromtimestamp(app.ctime).strftime("%m/%d/%Y")
-    markdonw = f"""### {app.desc}  {app.name}
-created at {date_str} with {app.language}"""
-    style = Style(bgcolor="#2e2e2e")
-    return Panel(Markdown(markdonw), box=box.SIMPLE, title_align="left", style=style)
-
-
-def query_apps(sdk, console):
-    table = Table.grid(padding=1, pad_edge=True)
-    table.add_column("col1", no_wrap=True, justify="center")
-    table.add_column("col2", no_wrap=True, justify="center")
-    table.add_column("col3", no_wrap=True, justify="center")
-    table.add_column("col3", no_wrap=True, justify="center")
-
-    apps = sdk.query_apps()
-    for index in range(0, len(apps.apps), 4):
-        table.add_row(
-            gen_app_panel(apps.apps[index]) if index < len(apps.apps) else "",
-            gen_app_panel(apps.apps[index + 1]) if index + 1 < len(apps.apps) else "",
-            gen_app_panel(apps.apps[index + 2]) if index + 2 < len(apps.apps) else "",
-            gen_app_panel(apps.apps[index + 3]) if index + 3 < len(apps.apps) else "",
-        )
-    console.print(Panel(table, title=OCTOGEN_APP_TITLE, title_align="left"))
-
-
-def assemble_app(sdk, name, numbers, values):
-    code = []
-    language = "python"
-    saved_filenames = []
-    for number in numbers:
-        if values[number][0] == "text":
-            continue
-        if values[number][0] == "python":
-            code.append(values[number][1])
-            saved_filenames.extend(values[number][2])
-            language = values[number][0]
-    try:
-        response = sdk.assemble(
-            name,
-            "\n".join(code),
-            language,
-            desc=gen_a_random_emoji(),
-            saved_filenames=list(set(saved_filenames)),
-        )
-        if response.code == 0:
-            return True, response.msg
-        return False, response.msg
-    except Exception as ex:
-        return False, str(ex)
-
-
 @click.command()
 @click.option("--octogen_dir", default="~/.octogen", help="the root path of octogen")
 def app(octogen_dir):
@@ -541,43 +470,6 @@ def app(octogen_dir):
                 else:
                     console.print(f"❌ /cc{number} was not found!")
             continue
-        if real_prompt.find("/assemble") >= 0:
-            parts = real_prompt.split(" ")
-            if len(parts) < 3:
-                console.print(f"❌ please add at least on code segment number")
-                continue
-            try:
-                name = parts[1]
-                numbers = [int(number) for number in parts[2:]]
-                (status, msg) = assemble_app(sdk, name, numbers, values)
-                if status:
-                    console.print(
-                        f"👍 the app {name} has been assembled! use /run {name} to run this app."
-                    )
-                    continue
-                else:
-                    console.print(f"❌ fail to assemble the app {name} for error {msg}")
-                    continue
-            except Exception as ex:
-                console.print(f"❌ invalid numbers {ex}")
-                continue
-        if real_prompt.find("/run") >= 0:
-            parts = real_prompt.split(" ")
-            if len(parts) < 2:
-                console.print(f"❌ please specify the name of app")
-                continue
-
-            try:
-                name = parts[1]
-                run_app(name, sdk, session, console, values, filedir=filedir)
-                continue
-            except Exception as ex:
-                console.print(f"❌ exception {ex}")
-                continue
-        if real_prompt.find("/apps") >= 0:
-            query_apps(sdk, console)
-            continue
-
         # try to upload first⌛⏳❌
         filepaths = parse_file_path(real_prompt)
         if filepaths:

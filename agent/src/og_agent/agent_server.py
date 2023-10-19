@@ -154,10 +154,25 @@ class AgentRpcServer(AgentServerServicer):
                 result = str(ex)
                 return result
 
-        logger.debug("create the agent task")
-        task = asyncio.create_task(
-            worker(request.task, agent, queue, context, request.options)
+        options = (
+            request.options
+            if request.options
+            and request.options.input_token_limit != 0
+            and request.options.output_token_limit != 0
+            else agent_server_pb2.ProcessOptions(
+                streaming=True,
+                llm_name="",
+                input_token_limit=4000
+                if not request.options.input_token_limit
+                else request.options.input_token_limit,
+                output_token_limit=4000
+                if not request.options.output_token_limit
+                else request.options.output_token_limit,
+                timeout=10,
+            )
         )
+        logger.debug("create the agent task")
+        task = asyncio.create_task(worker(request.task, agent, queue, context, options))
         while True:
             try:
                 logger.debug("start wait the queue message")

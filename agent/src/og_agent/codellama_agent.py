@@ -241,7 +241,7 @@ class CodellamaAgent(BaseAgent):
                         TaskResponse(
                             state=task_context.to_context_state_proto(),
                             response_type=TaskResponse.OnInputTokenLimitExceed,
-                            error_msg="input token limit reached",
+                            error_msg=f"input token limit reached {task_opt.input_token_limit}",
                         )
                     )
                     break
@@ -250,7 +250,7 @@ class CodellamaAgent(BaseAgent):
                         TaskResponse(
                             state=task_context.to_context_state_proto(),
                             response_type=TaskResponse.OnOutputTokenLimitExceed,
-                            error_msg="output token limit reached",
+                            error_msg=f"output token limit reached {task_opt.output_token_limit}",
                         )
                     )
                     break
