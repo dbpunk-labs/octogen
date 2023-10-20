@@ -27,6 +27,8 @@ chown -R octogen:octogen ${ROOT_DIR}/kernel/logs
 chown -R octogen:octogen ${ROOT_DIR}/model_server/logs
 
 cat <<EOF> /bin/start_service.sh
+export PYTHONPATH=/home/octogen/.local/lib/python3.10/site-packages:$PYTHONPATH
+
 if [ "$2" -eq 1 ]
 then
     if [ -z "$3" ]
