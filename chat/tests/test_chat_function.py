@@ -35,7 +35,7 @@ def test_handle_final_answer_smoke_test():
     respond_content = agent_server_pb2.TaskResponse(
         state=task_state,
         response_type=agent_server_pb2.TaskResponse.OnModelTypeText,
-        typing_content="hello world!",
+        typing_content=agent_server_pb2.TypingContent(content="hello world!", language="text")
     )
     respond_final = agent_server_pb2.TaskResponse(
         state=task_state,
