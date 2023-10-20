@@ -11,7 +11,7 @@ import logging
 import io
 import time
 from .codellama_client import CodellamaClient
-from og_proto.agent_server_pb2 import OnStepActionStart, TaskResponse, OnStepActionEnd, FinalAnswer
+from og_proto.agent_server_pb2 import OnStepActionStart, TaskResponse, OnStepActionEnd, FinalAnswer, TypingContent
 from .base_agent import BaseAgent, TypingState, TaskContext
 from .tokenizer import tokenize
 from .prompt import OCTOGEN_CODELLAMA_SYSTEM
@@ -122,7 +122,7 @@ class CodellamaAgent(BaseAgent):
             TaskResponse(
                 state=task_context.to_context_state_proto(),
                 response_type=TaskResponse.OnStepActionStart,
-                on_agent_action_start=OnStepActionStart(
+                on_step_action_start=OnStepActionStart(
                     input=tool_input, tool=json_response["action"]
                 ),
             )
@@ -205,8 +205,9 @@ class CodellamaAgent(BaseAgent):
                         TaskResponse(
                             state=task_context.to_context_state_proto(),
                             response_type=TaskResponse.OnModelTypeText,
-                            typing_content=typed_chars,
-                            typing_language="text",
+                            typing_content=TypingContent(
+                                content=typed_chars, language="text"
+                            ),
                         )
                     )
             if action_input_str and code_content != action_input_str:
@@ -220,7 +221,9 @@ class CodellamaAgent(BaseAgent):
                     TaskResponse(
                         state=task_context.to_context_state_proto(),
                         response_type=TaskResponse.OnModelTypeCode,
-                        typing_content=typed_chars,
+                        typing_content=TypingContent(
+                            content=typed_chars, language=typing_language
+                        ),
                     )
                 )
             logger.debug(
@@ -311,8 +314,8 @@ class CodellamaAgent(BaseAgent):
                     await queue.put(
                         TaskResponse(
                             state=task_context.to_context_state_proto(),
-                            response_type=TaskRespond.OnStepActionEnd,
-                            on_agent_action_end=OnAgentActionEnd(
+                            response_type=TaskResponse.OnStepActionEnd,
+                            on_step_action_end=OnStepActionEnd(
                                 output=""
                                 if task_opt.streaming
                                 else function_result.console_stderr
@@ -360,7 +363,7 @@ class CodellamaAgent(BaseAgent):
                     await queue.put(
                         TaskResponse(
                             state=task_context.to_context_state_proto(),
-                            response_type=TaskRespond.OnFinalAnswer,
+                            response_type=TaskResponse.OnFinalAnswer,
                             final_answer=FinalAnswer(answer=result),
                         )
                     )
@@ -371,9 +374,17 @@ class CodellamaAgent(BaseAgent):
                         TaskResponse(
                             state=task_context.to_context_state_proto(),
                             response_type=TaskResponse.OnFinalAnswer,
-                            final_answer=FinalAnswer(answer=result),
+                            final_answer=FinalAnswer(
+                                answer=result if not task_opt.streaming else ""
+                            ),
                         )
                     )
                     break
+        except Exception as ex:
+            response = TaskResponse(
+                response_type=TaskResponse.OnSystemError,
+                error_msg=str(ex),
+            )
+            await queue.put(response)
         finally:
             await queue.put(None)

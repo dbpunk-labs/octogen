@@ -147,12 +147,7 @@ class AgentRpcServer(AgentServerServicer):
         queue = asyncio.Queue()
 
         async def worker(task, agent, queue, context, task_opt):
-            try:
-                return await agent.arun(task, queue, context, task_opt)
-            except Exception as ex:
-                logger.exception("fail to run agent")
-                result = str(ex)
-                return result
+            return await agent.arun(task, queue, context, task_opt)
 
         options = (
             request.options
@@ -174,24 +169,15 @@ class AgentRpcServer(AgentServerServicer):
         logger.debug("create the agent task")
         task = asyncio.create_task(worker(request.task, agent, queue, context, options))
         while True:
-            try:
-                logger.debug("start wait the queue message")
-                # TODO add timeout
-                respond = await queue.get()
-                if not respond:
-                    logger.debug("exit the queue")
-                    break
-                logger.debug(f"respond {respond}")
-                queue.task_done()
-                yield respond
-            except Exception as ex:
-                response = agent_server_pb2.TaskResponse(
-                    response_type=agent_server_pb2.TaskResponse.OnSystemError,
-                    error_msg=str(ex),
-                )
-                yield response
-                logger.error(f"fail to get respond for {ex}")
+            logger.debug("start wait the queue message")
+            # TODO add timeout
+            respond = await queue.get()
+            if not respond:
+                logger.debug("exit the queue")
                 break
+            logger.debug(f"respond {respond}")
+            queue.task_done()
+            yield respond
         await task
 
     async def download(

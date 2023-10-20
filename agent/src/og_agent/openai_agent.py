@@ -10,7 +10,7 @@ import json
 import logging
 import time
 from pydantic import BaseModel, Field
-from og_proto.agent_server_pb2 import OnStepActionStart, TaskResponse, OnStepActionEnd, FinalAnswer
+from og_proto.agent_server_pb2 import OnStepActionStart, TaskResponse, OnStepActionEnd, FinalAnswer, TypingContent
 from .base_agent import BaseAgent, TypingState, TaskContext
 from .tokenizer import tokenize
 import tiktoken
@@ -79,7 +79,7 @@ class OpenaiAgent(BaseAgent):
         self.model_name = model if not is_azure else ""
 
     def _merge_delta_for_function_call(self, message, delta):
-        if len(message.keys) == 0:
+        if len(message.keys()) == 0:
             message.update(delta)
             return
         if "function_call" not in message:
@@ -192,36 +192,45 @@ class OpenaiAgent(BaseAgent):
                     explanation_str,
                     code_str,
                 ) = self._get_function_call_argument_new_typing(message)
+                logger.debug(
+                    f"argument explanation:{explanation_str} code:{code_str} text_content:{text_content}"
+                )
                 if explanation_str and text_content != explanation_str:
                     typed_chars = explanation_str[len(text_content) :]
                     text_content = explanation_str
-                    if task_opt.streaming:
-                        await queue.put(
-                            TaskResponse(
-                                state=task_context.to_context_state_proto(),
-                                response_type=TaskResponse.OnModelTypeText,
-                                typing_content=typed_chars,
-                                typing_language="text",
-                            )
+                    if task_opt.streaming and len(typed_chars) > 0:
+                        task_response = TaskResponse(
+                            state=task_context.to_context_state_proto(),
+                            response_type=TaskResponse.OnModelTypeText,
+                            typing_content=TypingContent(
+                                content=typed_chars, language="text"
+                            ),
                         )
+                        await queue.put(task_response)
                 if code_str and code_content != code_str:
                     typed_chars = code_str[len(code_content) :]
                     code_content = code_str
-                    if task_opt.streaming:
-                        typing_language = (
-                            "python"
-                            if delta["function_call"]["name"] == "execute_python_code"
-                            else "bash"
-                        )
+                    if task_opt.streaming and len(typed_chars) > 0:
+                        typing_language = "text"
+                        if (
+                            delta["function_call"].get("name", "")
+                            == "execute_python_code"
+                        ):
+                            typing_language = "python"
+                        elif (
+                            delta["function_call"].get("name", "")
+                            == "execute_bash_code"
+                        ):
+                            typing_language = "bash"
                         await queue.put(
                             TaskResponse(
                                 state=task_context.to_context_state_proto(),
                                 response_type=TaskResponse.OnModelTypeCode,
-                                typing_content=typed_chars,
-                                typing_language=typing_language,
+                                typing_content=TypingContent(
+                                    content=typed_chars, language=typing_language
+                                ),
                             )
                         )
-                logger.debug(f"argument explanation:{explanation_str} code:{code_str}")
             else:
                 self._merge_delta_for_content(message, delta)
                 task_context.llm_response_duration += int(
@@ -233,12 +242,14 @@ class OpenaiAgent(BaseAgent):
                     task_context.output_token_count = (
                         response_token_count + context_output_token_count
                     )
-                    if task_opt.streaming:
+                    if task_opt.streaming and delta.get("content"):
                         await queue.put(
                             TaskResponse(
                                 state=task_context.to_context_state_proto(),
                                 response_type=TaskResponse.OnModelTypeText,
-                                typing_content=delta["content"],
+                                typing_content=TypingContent(
+                                    content=delta["content"], language="text"
+                                ),
                             )
                         )
         logger.info(
@@ -402,9 +413,20 @@ class OpenaiAgent(BaseAgent):
                         TaskResponse(
                             state=task_context.to_context_state_proto(),
                             response_type=TaskResponse.OnFinalAnswer,
-                            final_answer=FinalAnswer(answer=chat_message["content"]),
+                            final_answer=FinalAnswer(
+                                answer=chat_message["content"]
+                                if not task_opt.streaming
+                                else ""
+                            ),
                         )
                     )
                     break
+        except Exception as ex:
+            logging.exception("fail process task")
+            response = TaskResponse(
+                response_type=TaskResponse.OnSystemError,
+                error_msg=str(ex),
+            )
+            await queue.put(response)
         finally:
             await queue.put(None)

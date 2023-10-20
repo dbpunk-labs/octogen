@@ -30,7 +30,6 @@ from rich.progress import Progress
 from rich.rule import Rule
 from rich.live import Live
 from rich.spinner import Spinner
-from rich.emoji import EMOJI
 from rich import box
 from rich.style import Style
 from prompt_toolkit.auto_suggest import AutoSuggestFromHistory
@@ -52,7 +51,7 @@ Markdown.elements["code_block"] = SyntaxBlock
 
 USER_TITLE = "✍[bold yellow]User"
 OCTOGEN_TITLE = "🤖[bold green]Octogen"
-SYSTEM_TITLE = "🛠[bold red]System"
+SYSTEM_TITLE = "🔨[bold red]System"
 
 
 def show_welcome(console):
@@ -86,11 +85,6 @@ def show_help(console):
 """
     mk = Markdown(help, justify="left")
     console.print(mk)
-
-
-def gen_a_random_emoji():
-    index = random.randint(0, len(EMOJI_KEYS) - 1)
-    return EMOJI[EMOJI_KEYS[index]]
 
 
 def parse_numbers(text):
@@ -148,7 +142,7 @@ def clean_code(code: str):
     return code
 
 
-def refresh(live, segments, title=OCTOGEN_TITLE, task_state=None):
+def refresh(live, task_blocks, title=OCTOGEN_TITLE, task_state=None):
     speed = (
         task_state.output_token_count
         / ((task_state.llm_response_duration + 1) / 1000.0)
@@ -156,29 +150,35 @@ def refresh(live, segments, title=OCTOGEN_TITLE, task_state=None):
         else 0
     )
     table = Table.grid(padding=1, pad_edge=True)
-    table.add_column("Index", no_wrap=True, justify="center", style="bold red")
-    table.add_column("Status", no_wrap=True, justify="center", style="bold red")
+    table.add_column("Index", no_wrap=True, justify="center")
+    table.add_column("Status", no_wrap=True, justify="center")
     table.add_column("Content")
-    for index, status, segment in segments:
-        table.add_row(f"{index}", status, segment)
-    live.update(
-        Panel(
-            table,
-            title=title,
-            title_align="left",
-            subtitle="[gray] Speed:%.1ft/s Input:%d Output:%d Model:%s"
-            % (
-                speed,
-                task_state.input_token_count,
-                task_state.output_token_count,
-                task_state.llm_name,
+    count = 0
+    for index, status, block in task_blocks.render():
+        table.add_row(f"{index}", status, block)
+        count += 1
+    if count:
+        live.update(
+            Panel(
+                table,
+                title=title,
+                title_align="left",
+                subtitle="[gray] Speed:%.1ft/s Input:%d Output:%d Model:%s"
+                % (
+                    speed,
+                    task_state.input_token_count,
+                    task_state.output_token_count,
+                    task_state.llm_name,
+                )
+                if task_state
+                else "",
+                subtitle_align="left",
             )
-            if task_state
-            else "",
-            subtitle_align="left",
         )
-    )
-    live.refresh()
+        live.refresh()
+    else:
+        live.update(Group(*[]))
+        live.refresh()
 
 
 def handle_action_output(task_blocks, respond):
@@ -187,10 +187,6 @@ def handle_action_output(task_blocks, respond):
         agent_server_pb2.TaskResponse.OnStepActionStreamStderr,
     ]:
         return
-    value = values.pop()
-    new_stdout = value[1][0]
-    new_stderr = value[1][1]
-    segment = segments.pop()
     if respond.response_type == agent_server_pb2.TaskResponse.OnStepActionStreamStdout:
         task_blocks.add_terminal(respond.console_stdout, "")
     elif (
@@ -199,7 +195,7 @@ def handle_action_output(task_blocks, respond):
         task_blocks.add_terminal("", respond.console_stderr)
 
 
-def handle_action_end(segments, respond, images, values):
+def handle_action_end(task_blocks, respond, images):
     """
     Handles the end of an agent action.
 
@@ -207,7 +203,6 @@ def handle_action_end(segments, respond, images, values):
       segments: A list of segments in the current turn.
       respond: The response from the agent.
       images: A list of images to be displayed.
-      values: A list of values to be copied
 
     Returns:
       None.
@@ -215,11 +210,11 @@ def handle_action_end(segments, respond, images, values):
     if respond.response_type != agent_server_pb2.TaskResponse.OnStepActionEnd:
         return
     has_error = respond.on_step_action_end.has_error
-    if images and not has_error:
+    if not has_error:
         images.extend(respond.on_step_action_end.output_files)
     if isinstance(task_blocks.get_last_block(), TerminalBlock):
         task_blocks.get_last_block().finish(has_error)
-    task_blocks.finish_current_blocks()
+    task_blocks.finish_current_all_blocks()
     # wait for the next steps
     task_blocks.add_loading()
 
@@ -231,9 +226,11 @@ def handle_typing(task_blocks, respond):
     ]:
         return
     if respond.response_type == agent_server_pb2.TaskResponse.OnModelTypeText:
-        task_blocks.add_markdown(respond.typing_content)
+        task_blocks.add_markdown(respond.typing_content.content)
     else:
-        task_blocks.add_code(respond.typing_content, respond.typing_language)
+        task_blocks.add_code(
+            respond.typing_content.content, respond.typing_content.language
+        )
 
 
 def handle_action_start(task_blocks, respond, images):
@@ -245,12 +242,12 @@ def handle_action_start(task_blocks, respond, images):
         return
     arguments = json.loads(action.input)
     images.extend(arguments.get("saved_filenames", []))
-    task_blocks.finish_current_blocks()
+    task_blocks.finish_current_all_blocks()
     # wait for the action to be finished
     task_blocks.add_loading()
 
 
-def find_code(content, segments, values):
+def extract_the_code(content, task_blocks):
     start_index = 0
     while start_index < len(content):
         first_pos = content.find("```", start_index)
@@ -258,32 +255,31 @@ def find_code(content, segments, values):
             second_pos = content.find("```", first_pos + 1)
             if second_pos >= 0:
                 sub_content = content[start_index:first_pos]
-                values.append(("text", sub_content, []))
-                segments.append((len(values) - 1, "🧠", Markdown(sub_content)))
+                task_blocks.add_markdown(sub_content)
+                task_blocks.get_last_block().finish()
                 start_index = first_pos
                 code_content = content[first_pos : second_pos + 3]
                 clean_code_content = clean_code(code_content)
+                task_blocks.add_code(clean_code_content, "python")
+                task_blocks.get_last_block().finish()
                 # TODO parse language
-                values.append(("python", clean_code_content, []))
-                segments.append((len(values) - 1, "📖", Markdown(code_content)))
                 start_index = second_pos + 3
         else:
             break
     if start_index < len(content):
         sub_content = content[start_index:]
-        values.append(("text", sub_content, []))
-        segments.append((len(values) - 1, "🧠", Markdown(sub_content)))
+        task_blocks.add_markdown(sub_content)
+        task_blocks.get_last_block().finish()
 
 
-def handle_final_answer(segments, respond, values):
+def handle_final_answer(task_blocks, respond):
     if respond.response_type != agent_server_pb2.TaskResponse.OnFinalAnswer:
         return
     answer = respond.final_answer.answer
-    values.pop()
-    segments.pop()
+    task_blocks.finish_current_all_blocks()
     if not answer:
         return
-    find_code(answer, segments, values)
+    extract_the_code(answer, task_blocks)
 
 
 def render_image(images, sdk, image_dir, console):
@@ -314,27 +310,42 @@ def run_chat(prompt, sdk, session, console, values, filedir=None):
     run the chat
     """
     task_blocks = TaskBlocks(values)
-    task_blocks.start()
-    segments = list(task_blocks.render())
+    task_blocks.begin()
     images = []
-    with Live(Group(*segments), console=console) as live:
-        refresh(live, segments)
-
+    error_responses = []
+    with Live(Group(*[]), console=console) as live:
+        refresh(live, task_blocks)
         task_state = None
         for respond in sdk.prompt(prompt):
             if not respond:
                 break
-
-            handle_typing(blocks, respond, values)
-            handle_action_start(segments, respond, images, values)
-            handle_action_output(segments, respond, values)
-            handle_action_end(segments, respond, images, values)
-            handle_final_answer(segments, respond, values)
+            if respond.response_type in [
+                agent_server_pb2.TaskResponse.OnSystemError,
+                agent_server_pb2.TaskResponse.OnInputTokenLimitExceed,
+                agent_server_pb2.TaskResponse.OnOutputTokenLimitExceed,
+            ]:
+                error_responses.append(respond)
+                task_blocks.finish_current_all_blocks()
+                break
+            handle_typing(task_blocks, respond)
+            handle_action_start(task_blocks, respond, images)
+            handle_action_output(task_blocks, respond)
+            handle_action_end(task_blocks, respond, images)
+            handle_final_answer(task_blocks, respond)
             task_state = respond.state
-            refresh(live, segments, task_state=respond.state)
-        refresh(live, segments, task_state=task_state)
+            refresh(live, task_blocks, task_state=respond.state)
+        refresh(live, task_blocks, task_state=task_state)
+
+    if error_responses:
+        task_blocks = TaskBlocks(values)
+        task_blocks.begin()
+        with Live(Group(*[]), console=console) as live:
+            for respond in error_responses:
+                task_blocks.add_markdown(respond.error_msg)
+                task_blocks.get_last_block().finish()
+            refresh(live, task_blocks, title=SYSTEM_TITLE)
     # display the images
-    render_image(images, sdk, filedir, console)
+    # render_image(images, sdk, filedir, console)
 
 
 @click.command()
@@ -388,7 +399,7 @@ def app(octogen_dir):
             for number in parse_numbers(real_prompt):
                 num = int(number)
                 if num < len(values):
-                    clipboard.copy(values[num][1])
+                    clipboard.copy(values[num])
                     console.print(f"👍 /cc{number} has been copied to clipboard!")
                     break
                 else:

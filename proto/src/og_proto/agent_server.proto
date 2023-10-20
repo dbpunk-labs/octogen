@@ -58,6 +58,10 @@ message ContextState {
   // the time(ms) that the model has been used
   int32 llm_response_duration = 5;
 }
+message TypingContent {
+  string content = 1;
+  string language = 2;
+}
 
 message TaskResponse {
   ContextState state = 1;
@@ -81,9 +85,8 @@ message TaskResponse {
     FinalAnswer final_answer = 7;
     string console_stdout = 8;
     string console_stderr = 9;
-    string typing_content = 10;
-    string error_msg = 11;
-    string typing_language = 12;
+    string error_msg = 10;
+    TypingContent typing_content = 11;
   }
 }
 

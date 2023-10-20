@@ -120,14 +120,14 @@ class StepResponse(BaseModel):
             return cls(
                 step_type=StepResponseType.OnStepCodeTyping,
                 step_state=ContextState.new_from(response.state),
-                typing_content=response.typing_content,
+                typing_content=response.typing_content.content,
             )
 
         elif response.response_type == agent_server_pb2.TaskResponse.OnModelTypeText:
             return cls(
                 step_type=StepResponseType.OnStepTextTyping,
                 step_state=ContextState.new_from(response.state),
-                typing_content=response.typing_content,
+                typing_content=response.typing_content.content,
             )
         elif (
             response.response_type

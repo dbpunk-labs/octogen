@@ -81,11 +81,10 @@ class TerminalBlock(StreamingBlock):
         output = self.terminal_stdout
         if self.terminal_stderr:
             output += "\n" + self.terminal_stderr
-
         if self.finished:
-            return Syntax(output, "text", line_number=True)
+            return Syntax(output, "text", line_numbers=True)
         else:
-            return Syntax(output + "█", "text", line_number=True)
+            return Syntax(output + "█", "text", line_numbers=True)
 
     def write(self, terminal_stdout, terminal_stderr):
         if self.finished:
@@ -96,9 +95,13 @@ class TerminalBlock(StreamingBlock):
         if terminal_stderr:
             tmp_content = self.terminal_stderr + terminal_stderr
             self.terminal_stderr = process_char_stream(tmp_content)
+        output = self.terminal_stdout
+        if self.terminal_stderr:
+            output += "\n" + self.terminal_stderr
+        self.content = output
 
 
-class CodeBlock(StreamingCodeBlock):
+class CodeBlock(StreamingBlock):
 
     def __init__(self, index, content, language):
         super().__init__(index, content)
@@ -107,9 +110,9 @@ class CodeBlock(StreamingCodeBlock):
 
     def render(self):
         if self.finished:
-            return Syntax(self.content, self.language, line_number=True)
+            return Syntax(self.content, self.language, line_numbers=True)
         else:
-            return Syntax(self.content + "█", self.language, line_number=True)
+            return Syntax(self.content + "█", self.language, line_numbers=True)
 
 
 class LoadingBlock(BaseBlock):
@@ -148,33 +151,41 @@ class TaskBlocks:
             block = TerminalBlock(len(self.values))
             block.write(terminal_stdout, terminal_stderr)
             self.blocks.append(block)
-        elif isinstance(last_block, CodeBlock):
+            self.values.append(block.content)
+        elif isinstance(last_block, TerminalBlock):
             if last_block.is_finished():
                 block = TerminalBlock(len(self.values))
                 block.write(terminal_stdout, terminal_stderr)
                 self.blocks.append(block)
+                self.values.append(block.content)
             else:
                 last_block.write(terminal_stdout, terminal_stderr)
+                self.values[last_block.get_index()] = last_block.content
         else:
             last_block.finish()
             block = TerminalBlock(len(self.values))
             block.write(terminal_stdout, terminal_stderr)
             self.blocks.append(block)
+            self.values.append(block.content)
 
     def add_markdown(self, content):
         last_block = self.blocks[-1]
         if isinstance(last_block, LoadingBlock):
             self.blocks.pop()
             self.blocks.append(MarkdownBlock(len(self.values), content))
+            self.values.append(content)
 
         elif isinstance(last_block, MarkdownBlock):
             if last_block.is_finished():
                 self.blocks.append(MarkdownBlock(len(self.values), content))
+                self.values.append(content)
             else:
                 last_block.append(content)
+                self.values[last_block.get_index()] = last_block.content
         else:
             last_block.finish()
             self.blocks.append(MarkdownBlock(len(self.values), content))
+            self.values.append(content)
 
     def add_loading(self):
         last_block = self.blocks[-1]
@@ -182,11 +193,11 @@ class TaskBlocks:
             return
         self.blocks.append(LoadingBlock(0))
 
-    def finish_current_blocks(self):
+    def finish_current_all_blocks(self):
         for block in self.blocks:
             if block.is_finished():
                 continue
-            block.finished()
+            block.finish()
 
     def get_last_block(self):
         return self.blocks[-1]
@@ -196,17 +207,21 @@ class TaskBlocks:
         if isinstance(last_block, LoadingBlock):
             self.blocks.pop()
             self.blocks.append(CodeBlock(len(self.values), code, language))
+            self.values.append(code)
         elif isinstance(last_block, CodeBlock):
             if last_block.is_finished():
                 self.blocks.append(CodeBlock(len(self.values), code, language))
+                self.values.append(code)
             else:
                 last_block.append(code)
+                self.values[last_block.get_index()] = last_block.content
         else:
             last_block.finish()
-            self.blocks.append(CodeBlock(len(self.values), content))
+            self.blocks.append(CodeBlock(len(self.values), code, language))
+            self.values.append(code)
 
     def render(self):
         for block in self.blocks:
             if isinstance(block, LoadingBlock) and block.is_finished():
                 continue
-            yield (block.get_status(), block.render())
+            yield (block.get_index(), block.get_status(), block.render())
