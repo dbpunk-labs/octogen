@@ -101,7 +101,7 @@ class BaseAgent:
                         state=task_context.to_context_state_proto()
                         if task_context
                         else None,
-                        response_type=TaskResponse.OnStepActionStderr,
+                        response_type=TaskResponse.OnStepActionStreamStderr,
                         console_stderr=kernel_err,
                     ),
                 )
