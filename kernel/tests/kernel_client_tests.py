@@ -192,6 +192,8 @@ plt.show()
         if msg:
             logger.debug(f"{msg}")
             messages.append(msg)
+
+    logger.info(f"{messages}")
     assert len(list(filter(lambda x: x["msg_type"] == "display_data", messages))) > 0
     await asyncio.sleep(2)
     await kernel_client.stop_watch()

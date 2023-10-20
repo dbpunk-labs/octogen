@@ -11,9 +11,10 @@ import logging
 import io
 import time
 from .codellama_client import CodellamaClient
-from og_proto.agent_server_pb2 import OnAgentAction, TaskRespond, OnAgentActionEnd, FinalRespond
+from og_proto.agent_server_pb2 import OnStepActionStart, TaskResponse, OnStepActionEnd, FinalAnswer, TypingContent
 from .base_agent import BaseAgent, TypingState, TaskContext
 from .tokenizer import tokenize
+from .prompt import OCTOGEN_CODELLAMA_SYSTEM
 import tiktoken
 
 logger = logging.getLogger(__name__)
@@ -84,14 +85,14 @@ class CodellamaAgent(BaseAgent):
             "code": commands,
             "explanation": explanation,
             "saved_filenames": saved_filenames,
-            "language": json_response.get("language", "text"),
+            "language": json_response.get("language"),
         })
         await queue.put(
             TaskRespond(
                 state=task_context.to_task_state_proto(),
                 respond_type=TaskRespond.OnAgentActionType,
                 on_agent_action=OnAgentAction(
-                    input=tool_input, tool="execute_python_code"
+                    input=tool_input, tool="execute_bash_code"
                 ),
             )
         )
@@ -105,7 +106,9 @@ class CodellamaAgent(BaseAgent):
                 await queue.put(respond)
         return function_result
 
-    async def handle_function(self, json_response, queue, context, task_context):
+    async def handle_function(
+        self, json_response, queue, context, task_context, task_opt
+    ):
         code = json_response["action_input"]
         explanation = json_response["explanation"]
         saved_filenames = json_response.get("saved_filenames", [])
@@ -113,25 +116,24 @@ class CodellamaAgent(BaseAgent):
             "code": code,
             "explanation": explanation,
             "saved_filenames": saved_filenames,
-            "language": json_response.get("language", "text"),
+            "language": json_response.get("language"),
         })
         await queue.put(
-            TaskRespond(
-                state=task_context.to_task_state_proto(),
-                respond_type=TaskRespond.OnAgentActionType,
-                on_agent_action=OnAgentAction(
-                    input=tool_input, tool="execute_python_code"
+            TaskResponse(
+                state=task_context.to_context_state_proto(),
+                response_type=TaskResponse.OnStepActionStart,
+                on_step_action_start=OnStepActionStart(
+                    input=tool_input, tool=json_response["action"]
                 ),
             )
         )
         function_result = None
-
         async for (result, respond) in self.call_function(code, context, task_context):
             if context.done():
                 logger.debug("the client has cancelled the request")
                 break
             function_result = result
-            if respond:
+            if respond and task_opt.streaming:
                 await queue.put(respond)
         return function_result
 
@@ -160,14 +162,19 @@ class CodellamaAgent(BaseAgent):
         return (state, explanation_str, action_input_str)
 
     async def call_codellama(
-        self, question, chat_history, queue, context, task_context
+        self, question, chat_history, queue, context, task_context, task_opt
     ):
         """
         call codellama api
         """
         start_time = time.time()
-        num_tokens = len(encoding.encode(question)) + len(encoding.encode(chat_history))
-        task_context.sent_token_count += num_tokens
+        num_tokens = (
+            len(encoding.encode(OCTOGEN_CODELLAMA_SYSTEM))
+            + len(encoding.encode(question))
+            + len(encoding.encode(chat_history))
+        )
+        task_context.input_token_count += num_tokens
+        output_token_count = task_context.output_token_count
         state = None
         message = ""
         text_content = ""
@@ -179,14 +186,11 @@ class CodellamaAgent(BaseAgent):
                 logger.debug("the client has cancelled the request")
                 break
             respond = json.loads(line[6:])
-            task_context.generated_token_count += len(
-                encoding.encode(respond["content"])
-            )
-            task_context.model_respond_duration += int(
-                (time.time() - start_time) * 1000
-            )
+            task_context.llm_response_duration += int((time.time() - start_time) * 1000)
             start_time = time.time()
             message += respond["content"]
+            response_token_count = len(encoding.encode(message))
+            task_context.output_token_count = output_token_count + response_token_count
             logger.debug(f" message {message}")
             (
                 state,
@@ -196,32 +200,41 @@ class CodellamaAgent(BaseAgent):
             if explanation_str and text_content != explanation_str:
                 typed_chars = explanation_str[len(text_content) :]
                 text_content = explanation_str
-                await queue.put(
-                    TaskRespond(
-                        state=task_context.to_task_state_proto(),
-                        respond_type=TaskRespond.OnAgentTextTyping,
-                        typing_content=typed_chars,
+                if task_opt.streaming:
+                    await queue.put(
+                        TaskResponse(
+                            state=task_context.to_context_state_proto(),
+                            response_type=TaskResponse.OnModelTypeText,
+                            typing_content=TypingContent(
+                                content=typed_chars, language="text"
+                            ),
+                        )
                     )
-                )
             if action_input_str and code_content != action_input_str:
                 typed_chars = action_input_str[len(code_content) :]
                 code_content = action_input_str
+                # use a better way to detect the language
+                typing_language = (
+                    "python" if message.find("execute_python_code") >= 0 else "bash"
+                )
                 await queue.put(
-                    TaskRespond(
-                        state=task_context.to_task_state_proto(),
-                        respond_type=TaskRespond.OnAgentCodeTyping,
-                        typing_content=typed_chars,
+                    TaskResponse(
+                        state=task_context.to_context_state_proto(),
+                        response_type=TaskResponse.OnModelTypeCode,
+                        typing_content=TypingContent(
+                            content=typed_chars, language=typing_language
+                        ),
                     )
                 )
             logger.debug(
                 f"argument explanation:{explanation_str} code:{action_input_str}"
             )
-            if respond["stop"]:
+            if respond.get("stop", ""):
                 state = respond
 
         return (message, state)
 
-    async def arun(self, question, queue, context, max_iteration=5):
+    async def arun(self, question, queue, context, task_opt):
         """
         run the agent
         """
@@ -229,46 +242,58 @@ class CodellamaAgent(BaseAgent):
         current_question = question
         task_context = TaskContext(
             start_time=time.time(),
-            generated_token_count=0,
-            sent_token_count=0,
-            model_name="codellama",
-            iteration_count=0,
-            model_respond_duration=0,
+            output_token_count=0,
+            input_token_count=0,
+            llm_name="codellama",
+            llm_respond_duration=0,
         )
-        iteration = 0
         try:
-            while iteration < max_iteration:
-                if context.done():
-                    logger.debug("the client has cancelled the request")
+            while not context.done():
+                if task_context.input_token_count >= task_opt.input_token_limit:
+                    await queue.put(
+                        TaskResponse(
+                            state=task_context.to_context_state_proto(),
+                            response_type=TaskResponse.OnInputTokenLimitExceed,
+                            error_msg=f"input token limit reached {task_opt.input_token_limit}",
+                        )
+                    )
                     break
-                iteration += 1
-                task_context.iteration_count = iteration
+                if task_context.output_token_count >= task_opt.output_token_limit:
+                    await queue.put(
+                        TaskResponse(
+                            state=task_context.to_context_state_proto(),
+                            response_type=TaskResponse.OnOutputTokenLimitExceed,
+                            error_msg=f"output token limit reached {task_opt.output_token_limit}",
+                        )
+                    )
+                    break
                 chat_history = "\n".join(history)
                 (message, state) = await self.call_codellama(
-                    current_question, chat_history, queue, context, task_context
+                    current_question,
+                    chat_history,
+                    queue,
+                    context,
+                    task_context,
+                    task_opt,
                 )
                 try:
                     json_response = json.loads(message)
                     if not json_response:
                         await queue.put(
-                            TaskRespond(
-                                state=task_context.to_task_state_proto(),
-                                respond_type=TaskRespond.OnFinalAnswerType,
-                                final_respond=FinalRespond(
-                                    answer=self._output_exception()
-                                ),
+                            TaskResponse(
+                                state=task_context.to_context_state_proto(),
+                                response_type=TaskResponse.OnModelOutputError,
+                                error_msg=self._output_exception(),
                             )
                         )
                         break
                 except Exception as ex:
                     logger.exception(f"fail to load message the message is {message}")
                     await queue.put(
-                        TaskRespond(
-                            state=task_context.to_task_state_proto(),
-                            respond_type=TaskRespond.OnFinalAnswerType,
-                            final_respond=FinalRespond(
-                                answer="The model made an invalid respone"
-                            ),
+                        TaskResponse(
+                            state=task_context.to_context_state_proto(),
+                            response_type=TaskResponse.OnModelOutputError,
+                            error_msg=str(ex),
                         )
                     )
                     break
@@ -283,15 +308,18 @@ class CodellamaAgent(BaseAgent):
                         "execute_bash_code": self.handle_bash_code,
                     }
                     function_result = await tools_mapping[json_response["action"]](
-                        json_response, queue, context, task_context
+                        json_response, queue, context, task_context, task_opt
                     )
                     logger.debug(f"the function result {function_result}")
                     await queue.put(
-                        TaskRespond(
-                            state=task_context.to_task_state_proto(),
-                            respond_type=TaskRespond.OnAgentActionEndType,
-                            on_agent_action_end=OnAgentActionEnd(
-                                output="",
+                        TaskResponse(
+                            state=task_context.to_context_state_proto(),
+                            response_type=TaskResponse.OnStepActionEnd,
+                            on_step_action_end=OnStepActionEnd(
+                                output=""
+                                if task_opt.streaming
+                                else function_result.console_stderr
+                                + function_result.console_stdout,
                                 output_files=function_result.saved_filenames,
                                 has_error=function_result.has_error,
                             ),
@@ -333,22 +361,30 @@ class CodellamaAgent(BaseAgent):
                     )
                     result = self._format_output(json_response)
                     await queue.put(
-                        TaskRespond(
-                            state=task_context.to_task_state_proto(),
-                            respond_type=TaskRespond.OnFinalAnswerType,
-                            final_respond=FinalRespond(answer=result),
+                        TaskResponse(
+                            state=task_context.to_context_state_proto(),
+                            response_type=TaskResponse.OnFinalAnswer,
+                            final_answer=FinalAnswer(answer=result),
                         )
                     )
                     break
                 else:
                     result = self._format_output(json_response)
                     await queue.put(
-                        TaskRespond(
-                            state=task_context.to_task_state_proto(),
-                            respond_type=TaskRespond.OnFinalAnswerType,
-                            final_respond=FinalRespond(answer=result),
+                        TaskResponse(
+                            state=task_context.to_context_state_proto(),
+                            response_type=TaskResponse.OnFinalAnswer,
+                            final_answer=FinalAnswer(
+                                answer=result if not task_opt.streaming else ""
+                            ),
                         )
                     )
                     break
+        except Exception as ex:
+            response = TaskResponse(
+                response_type=TaskResponse.OnSystemError,
+                error_msg=str(ex),
+            )
+            await queue.put(response)
         finally:
             await queue.put(None)

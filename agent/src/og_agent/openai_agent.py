@@ -10,18 +10,17 @@ import json
 import logging
 import time
 from pydantic import BaseModel, Field
-from og_proto.agent_server_pb2 import OnAgentAction, TaskRespond, OnAgentActionEnd, FinalRespond
+from og_proto.agent_server_pb2 import OnStepActionStart, TaskResponse, OnStepActionEnd, FinalAnswer, TypingContent
 from .base_agent import BaseAgent, TypingState, TaskContext
 from .tokenizer import tokenize
 import tiktoken
 
 logger = logging.getLogger(__name__)
 encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
-
 OCTOGEN_FUNCTIONS = [
     {
         "name": "execute_python_code",
-        "description": "Safely execute arbitrary Python code and return the result, stdout, and stderr.",
+        "description": "Safely execute arbitrary Python code and return the result, stdout, and stderr. ",
         "parameters": {
             "type": "object",
             "properties": {
@@ -32,6 +31,29 @@ OCTOGEN_FUNCTIONS = [
                 "code": {
                     "type": "string",
                     "description": "the python code to be executed",
+                },
+                "saved_filenames": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "A list of filenames that were created by the code",
+                },
+            },
+            "required": ["explanation", "code"],
+        },
+    },
+    {
+        "name": "execute_bash_code",
+        "description": "Safely execute arbitrary Bash code and return the result, stdout, and stderr. sudo is not supported.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "explanation": {
+                    "type": "string",
+                    "description": "the explanation about the bash code",
+                },
+                "code": {
+                    "type": "string",
+                    "description": "the bash code to be executed",
                 },
                 "saved_filenames": {
                     "type": "array",
@@ -54,9 +76,11 @@ class OpenaiAgent(BaseAgent):
         logger.info(f"use openai model {model} is_azure {is_azure}")
         logger.info(f"use openai with system prompt {system_prompt}")
         self.is_azure = is_azure
+        self.model_name = model if not is_azure else ""
 
     def _merge_delta_for_function_call(self, message, delta):
-        if not delta:
+        if len(message.keys()) == 0:
+            message.update(delta)
             return
         if "function_call" not in message:
             message["function_call"] = delta["function_call"]
@@ -102,17 +126,25 @@ class OpenaiAgent(BaseAgent):
                     code_str = "".join(token)
         return (state, explanation_str, code_str)
 
-    async def call_openai(self, messages, queue, context, task_context):
+    def _get_message_token_count(self, message):
+        response_token_count = 0
+        if "function_call" in message and message["function_call"]:
+            arguments = message["function_call"].get("arguments", "")
+            response_token_count += len(encoding.encode(arguments))
+        if "content" in message and message["content"]:
+            response_token_count += len(encoding.encode(message.get("content")))
+        return response_token_count
+
+    async def call_openai(self, messages, queue, context, task_context, task_opt):
         """
         call the openai api
         """
-        sent_token_count = 0
+        input_token_count = 0
         for message in messages:
             if not message["content"]:
                 continue
-            sent_token_count += len(encoding.encode(message["content"]))
-        task_context.sent_token_count += sent_token_count
-
+            input_token_count += len(encoding.encode(message["content"]))
+        task_context.input_token_count += input_token_count
         start_time = time.time()
         if self.is_azure:
             response = await openai.ChatCompletion.acreate(
@@ -132,111 +164,141 @@ class OpenaiAgent(BaseAgent):
                 function_call="auto",
                 stream=True,
             )
-        message = None
+        message = {}
         text_content = ""
         code_content = ""
+        context_output_token_count = task_context.output_token_count
         async for chunk in response:
             if context.done():
                 logger.debug("the client has cancelled the request")
                 break
             if not chunk["choices"]:
                 continue
-
+            task_context.llm_name = chunk.get("model", "")
+            self.model_name = chunk.get("model", "")
             delta = chunk["choices"][0]["delta"]
-            logger.debug(f"{delta}")
-            if not message:
-                message = delta
+            if "function_call" in delta:
+                self._merge_delta_for_function_call(message, delta)
+                response_token_count = self._get_message_token_count(message)
+                task_context.output_token_count = (
+                    response_token_count + context_output_token_count
+                )
+                task_context.llm_response_duration += int(
+                    (time.time() - start_time) * 1000
+                )
+                start_time = time.time()
+                (
+                    state,
+                    explanation_str,
+                    code_str,
+                ) = self._get_function_call_argument_new_typing(message)
+                logger.debug(
+                    f"argument explanation:{explanation_str} code:{code_str} text_content:{text_content}"
+                )
+                if explanation_str and text_content != explanation_str:
+                    typed_chars = explanation_str[len(text_content) :]
+                    text_content = explanation_str
+                    if task_opt.streaming and len(typed_chars) > 0:
+                        task_response = TaskResponse(
+                            state=task_context.to_context_state_proto(),
+                            response_type=TaskResponse.OnModelTypeText,
+                            typing_content=TypingContent(
+                                content=typed_chars, language="text"
+                            ),
+                        )
+                        await queue.put(task_response)
+                if code_str and code_content != code_str:
+                    typed_chars = code_str[len(code_content) :]
+                    code_content = code_str
+                    if task_opt.streaming and len(typed_chars) > 0:
+                        typing_language = "text"
+                        if (
+                            delta["function_call"].get("name", "")
+                            == "execute_python_code"
+                        ):
+                            typing_language = "python"
+                        elif (
+                            delta["function_call"].get("name", "")
+                            == "execute_bash_code"
+                        ):
+                            typing_language = "bash"
+                        await queue.put(
+                            TaskResponse(
+                                state=task_context.to_context_state_proto(),
+                                response_type=TaskResponse.OnModelTypeCode,
+                                typing_content=TypingContent(
+                                    content=typed_chars, language=typing_language
+                                ),
+                            )
+                        )
             else:
-                if "function_call" in delta:
-                    self._merge_delta_for_function_call(message, delta)
-                    arguments = message["function_call"].get("arguments", "")
-                    task_context.generated_token_count += len(
-                        encoding.encode(arguments)
+                self._merge_delta_for_content(message, delta)
+                task_context.llm_response_duration += int(
+                    (time.time() - start_time) * 1000
+                )
+                start_time = time.time()
+                if message.get("content") != None:
+                    response_token_count = self._get_message_token_count(message)
+                    task_context.output_token_count = (
+                        response_token_count + context_output_token_count
                     )
-                    task_context.model_respond_duration += int(
-                        (time.time() - start_time) * 1000
-                    )
-                    start_time = time.time()
-                    (
-                        state,
-                        explanation_str,
-                        code_str,
-                    ) = self._get_function_call_argument_new_typing(message)
-                    if explanation_str and text_content != explanation_str:
-                        typed_chars = explanation_str[len(text_content) :]
-                        text_content = explanation_str
+                    if task_opt.streaming and delta.get("content"):
                         await queue.put(
-                            TaskRespond(
-                                state=task_context.to_task_state_proto(),
-                                respond_type=TaskRespond.OnAgentTextTyping,
-                                typing_content=typed_chars,
+                            TaskResponse(
+                                state=task_context.to_context_state_proto(),
+                                response_type=TaskResponse.OnModelTypeText,
+                                typing_content=TypingContent(
+                                    content=delta["content"], language="text"
+                                ),
                             )
                         )
-                    if code_str and code_content != code_str:
-                        typed_chars = code_str[len(code_content) :]
-                        code_content = code_str
-                        await queue.put(
-                            TaskRespond(
-                                state=task_context.to_task_state_proto(),
-                                respond_type=TaskRespond.OnAgentCodeTyping,
-                                typing_content=typed_chars,
-                            )
-                        )
-                    logger.debug(
-                        f"argument explanation:{explanation_str} code:{code_str}"
-                    )
-                else:
-                    self._merge_delta_for_content(message, delta)
-                    task_context.model_respond_duration += int(
-                        (time.time() - start_time) * 1000
-                    )
-                    start_time = time.time()
-                    if delta.get("content") != None:
-                        task_context.generated_token_count += len(
-                            encoding.encode(delta.get("content"))
-                        )
-                        await queue.put(
-                            TaskRespond(
-                                state=task_context.to_task_state_proto(),
-                                respond_type=TaskRespond.OnAgentTextTyping,
-                                typing_content=delta["content"],
-                            )
-                        )
+        logger.info(
+            f"call the {self.model_name} with input token {task_context.input_token_count} and output token count {task_context.output_token_count}"
+        )
         return message
 
-    async def handle_function(self, message, queue, context, task_context):
+    async def handle_function(self, message, queue, context, task_context, task_opt):
         if "function_call" in message:
             if context.done():
                 logging.debug("the client has cancelled the request")
                 return
             function_name = message["function_call"]["name"]
+            raw_code = ""
             code = ""
             explanation = ""
             saved_filenames = []
+            language = "python"
             if function_name == "python":
-                code = message["function_call"]["arguments"]
+                raw_code = message["function_call"]["arguments"]
                 logger.debug(f"call function {function_name} with args {code}")
+                code = raw_code
             else:
                 arguments = json.loads(message["function_call"]["arguments"])
                 logger.debug(f"call function {function_name} with args {arguments}")
-                code = arguments["code"]
+                raw_code = arguments["code"]
+                code = raw_code
                 explanation = arguments["explanation"]
                 saved_filenames = arguments.get("saved_filenames", [])
+            if function_name == "execute_bash_code":
+                language = "bash"
+                code = f"%%bash\n{raw_code}"
             tool_input = json.dumps({
-                "code": code,
+                "code": raw_code,
                 "explanation": explanation,
                 "saved_filenames": saved_filenames,
+                "language": language,
             })
             # send the respond to client
             await queue.put(
-                TaskRespond(
-                    state=task_context.to_task_state_proto(),
-                    respond_type=TaskRespond.OnAgentActionType,
-                    on_agent_action=OnAgentAction(
-                        input=tool_input, tool="execute_python_code"
+                TaskResponse(
+                    state=task_context.to_context_state_proto(),
+                    response_type=TaskResponse.OnStepActionStart,
+                    on_step_action_start=OnStepActionStart(
+                        input=tool_input, tool=function_name
                     ),
                 )
             )
+
             function_result = None
             async for (result, respond) in self.call_function(
                 code, context, task_context
@@ -245,14 +307,16 @@ class OpenaiAgent(BaseAgent):
                     logger.debug("the client has cancelled the request")
                     break
                 function_result = result
-                if respond:
+                if respond and task_opt.streaming:
                     await queue.put(respond)
             return function_result
         else:
             raise Exception("bad message, function message expected")
 
-    async def arun(self, task, queue, context, max_iteration=5):
-        """ """
+    async def arun(self, task, queue, context, task_opt):
+        """
+        process the task
+        """
         messages = [
             {"role": "system", "content": self.system_prompt},
             {"role": "user", "content": task},
@@ -260,19 +324,34 @@ class OpenaiAgent(BaseAgent):
         iterations = 0
         task_context = TaskContext(
             start_time=time.time(),
-            generated_token_count=0,
-            sent_token_count=0,
-            model_name="openai",
-            iteration_count=0,
-            model_respond_duration=0,
+            output_token_count=0,
+            input_token_count=0,
+            llm_name=self.model_name,
+            llm_respond_duration=0,
         )
         try:
-            while iterations < max_iteration and not context.cancelled():
-                iterations += 1
-                task_context.iteration_count = iterations
+            while not context.done():
+                if task_context.input_token_count >= task_opt.input_token_limit:
+                    await queue.put(
+                        TaskResponse(
+                            state=task_context.to_context_state_proto(),
+                            response_type=TaskResponse.OnInputTokenLimitExceed,
+                            error_msg="input token limit reached",
+                        )
+                    )
+                    break
+                if task_context.output_token_count >= task_opt.output_token_limit:
+                    await queue.put(
+                        TaskResponse(
+                            state=task_context.to_context_state_proto(),
+                            response_type=TaskResponse.OnOutputTokenLimitExceed,
+                            error_msg="output token limit reached",
+                        )
+                    )
+                    break
                 logger.debug(f" the input messages {messages}")
                 chat_message = await self.call_openai(
-                    messages, queue, context, task_context
+                    messages, queue, context, task_context, task_opt
                 )
                 logger.debug(f"the response {chat_message}")
                 if "function_call" in chat_message:
@@ -280,22 +359,30 @@ class OpenaiAgent(BaseAgent):
                         chat_message["content"] = None
                     messages.append(chat_message)
                     function_name = chat_message["function_call"]["name"]
-                    if function_name not in ["execute_python_code", "python"]:
+                    if function_name not in [
+                        "execute_python_code",
+                        "python",
+                        "execute_bash_code",
+                    ]:
                         messages.append({
                             "role": "function",
-                            "name": "execute_python_code",
-                            "content": "You can use the execute_python_code only",
+                            "name": function_name,
+                            "content": "You can use the execute_python_code or execute_bash_code",
                         })
                         continue
                     function_result = await self.handle_function(
-                        chat_message, queue, context, task_context
+                        chat_message, queue, context, task_context, task_opt
                     )
+
                     await queue.put(
-                        TaskRespond(
-                            state=task_context.to_task_state_proto(),
-                            respond_type=TaskRespond.OnAgentActionEndType,
-                            on_agent_action_end=OnAgentActionEnd(
-                                output="",
+                        TaskResponse(
+                            state=task_context.to_context_state_proto(),
+                            response_type=TaskResponse.OnStepActionEnd,
+                            on_step_action_end=OnStepActionEnd(
+                                output=""
+                                if task_opt.streaming
+                                else function_result.console_stderr
+                                + function_result.console_stdout,
                                 output_files=function_result.saved_filenames,
                                 has_error=function_result.has_error,
                             ),
@@ -305,30 +392,41 @@ class OpenaiAgent(BaseAgent):
                     if function_result.has_result:
                         messages.append({
                             "role": "function",
-                            "name": "execute_python_code",
+                            "name": function_name,
                             "content": function_result.console_stdout[0:500],
                         })
                     elif function_result.has_error:
                         messages.append({
                             "role": "function",
-                            "name": "execute_python_code",
+                            "name": function_name,
                             "content": function_result.console_stderr[0:500],
                         })
                     else:
                         messages.append({
                             "role": "function",
-                            "name": "execute_python_code",
+                            "name": function_name,
                             "content": function_result.console_stdout[0:500],
                         })
                 else:
                     # end task
                     await queue.put(
-                        TaskRespond(
-                            state=task_context.to_task_state_proto(),
-                            respond_type=TaskRespond.OnFinalAnswerType,
-                            final_respond=FinalRespond(answer=chat_message["content"]),
+                        TaskResponse(
+                            state=task_context.to_context_state_proto(),
+                            response_type=TaskResponse.OnFinalAnswer,
+                            final_answer=FinalAnswer(
+                                answer=chat_message["content"]
+                                if not task_opt.streaming
+                                else ""
+                            ),
                         )
                     )
                     break
+        except Exception as ex:
+            logging.exception("fail process task")
+            response = TaskResponse(
+                response_type=TaskResponse.OnSystemError,
+                error_msg=str(ex),
+            )
+            await queue.put(response)
         finally:
             await queue.put(None)

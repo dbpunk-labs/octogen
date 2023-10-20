@@ -4,14 +4,13 @@
 # SPDX-License-Identifier: Elastic-2.0
 
 """ """
-import openai
 import json
 import logging
 import time
-from typing import Any, Dict, List, Optional, Sequence, Union, Type
+from typing import List
 from pydantic import BaseModel, Field
 from og_proto.kernel_server_pb2 import ExecuteResponse
-from og_proto.agent_server_pb2 import OnAgentAction, TaskRespond, OnAgentActionEnd, FinalRespond, TaskState
+from og_proto.agent_server_pb2 import TaskResponse, ContextState
 from og_sdk.utils import parse_image_filename, process_char_stream
 
 logger = logging.getLogger(__name__)
@@ -29,22 +28,20 @@ class FunctionResult(BaseModel):
 
 class TaskContext(BaseModel):
     start_time: float = 0
-    generated_token_count: int = 0
-    sent_token_count: int = 0
-    model_name: str = ""
-    iteration_count: int = 0
-    model_respond_duration: int = 0
+    output_token_count: int = 0
+    input_token_count: int = 0
+    llm_name: str = ""
+    llm_response_duration: int = 0
 
-    def to_task_state_proto(self):
+    def to_context_state_proto(self):
         # in ms
         total_duration = int((time.time() - self.start_time) * 1000)
-        return TaskState(
-            generated_token_count=self.generated_token_count,
-            iteration_count=self.iteration_count,
-            model_name=self.model_name,
+        return ContextState(
+            output_token_count=self.output_token_count,
+            input_token_count=self.input_token_count,
+            llm_name=self.llm_name,
             total_duration=total_duration,
-            sent_token_count=self.sent_token_count,
-            model_respond_duration=self.model_respond_duration,
+            llm_response_duration=self.llm_response_duration,
         )
 
 
@@ -84,11 +81,11 @@ class BaseAgent:
                 logger.debug(f"the new stdout {console_stdout}")
                 yield (
                     None,
-                    TaskRespond(
-                        state=task_context.to_task_state_proto()
+                    TaskResponse(
+                        state=task_context.to_context_state_proto()
                         if task_context
                         else None,
-                        respond_type=TaskRespond.OnAgentActionStdout,
+                        response_type=TaskResponse.OnStepActionStreamStdout,
                         console_stdout=kernel_output,
                     ),
                 )
@@ -100,11 +97,11 @@ class BaseAgent:
                 logger.debug(f"the new stderr {console_stderr}")
                 yield (
                     None,
-                    TaskRespond(
-                        state=task_context.to_task_state_proto()
+                    TaskResponse(
+                        state=task_context.to_context_state_proto()
                         if task_context
                         else None,
-                        respond_type=TaskRespond.OnAgentActionStderr,
+                        response_type=TaskResponse.OnStepActionStderr,
                         console_stderr=kernel_err,
                     ),
                 )
@@ -115,11 +112,11 @@ class BaseAgent:
                 has_error = True
                 yield (
                     None,
-                    TaskRespond(
-                        state=task_context.to_task_state_proto()
+                    TaskResponse(
+                        state=task_context.to_context_state_proto()
                         if task_context
                         else None,
-                        respond_type=TaskRespond.OnAgentActionStderr,
+                        response_type=TaskResponse.OnStepActionStreamStderr,
                         console_stderr=traceback,
                     ),
                 )
@@ -140,11 +137,11 @@ class BaseAgent:
                         console_stdout = console_stdout[1 : len(console_stdout) - 1]
                 yield (
                     None,
-                    TaskRespond(
-                        state=task_context.to_task_state_proto()
+                    TaskResponse(
+                        state=task_context.to_context_state_proto()
                         if task_context
                         else None,
-                        respond_type=TaskRespond.OnAgentActionStdout,
+                        response_type=TaskResponse.OnStepActionStreamStdout,
                         console_stdout=console_stdout,
                     ),
                 )

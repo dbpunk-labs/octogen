@@ -27,8 +27,8 @@ setup(
     package_data={"og_proto": ["*.pyi"]},
 
     install_requires=[
-        "grpc-google-iam-v1>=0.12.6",
-        "grpcio-tools>=1.57.0",
+        "grpc-google-iam-v1>=0.12.0",
+        "grpcio-tools>=1.40.0",
     ],
 
     entry_points={

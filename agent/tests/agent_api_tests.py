@@ -16,7 +16,6 @@ from tempfile import gettempdir
 from pathlib import Path
 from og_sdk.agent_sdk import AgentProxySDK
 from og_sdk.utils import random_str
-from og_proto.agent_server_pb2 import TaskRespond
 from og_agent import agent_api_server
 
 logger = logging.getLogger(__name__)
@@ -40,7 +39,8 @@ async def test_helloworld_test(agent_sdk):
     )
     responds = []
     async for respond in agent_api_server.run_task(request, api_key):
-        responds.append(json.loads(respond))
+        json_data = respond[6:]
+        responds.append(json.loads(respond[6:]))
     logger.debug(f"{responds}")
     assert len(responds) > 0, "no responds for the prompt"
     assert (
@@ -67,7 +67,7 @@ async def test_run_code_test(agent_sdk):
     )
     responds = []
     async for respond in agent_api_server.run_task(request, api_key):
-        responds.append(json.loads(respond))
+        responds.append(json.loads(respond[6:]))
     logger.debug(f"{responds}")
     assert len(responds) > 0, "no responds for the prompt"
     assert (
