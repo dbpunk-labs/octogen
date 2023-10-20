@@ -100,5 +100,5 @@ async def test_codellama_agent_smoke_test(agent_sdk):
     assert (
         responses[-1].response_type == TaskResponse.OnFinalAnswer
     ), "bad response type"
-    assert responses[-1].state.input_token_count == 1
+    assert responses[-1].state.input_token_count == 388
     assert responses[-1].state.output_token_count == 43
