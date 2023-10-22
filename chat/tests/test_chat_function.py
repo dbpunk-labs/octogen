@@ -52,6 +52,36 @@ def test_handle_final_answer_smoke_test():
     assert values[0] == "hello world!"
 
 
+def test_handle_action_end_boundary_test():
+    # Setup
+    images = []
+    values = []
+    task_state = agent_server_pb2.ContextState(
+        output_token_count=10,
+        llm_name="mock",
+        total_duration=1,
+        input_token_count=10,
+        llm_response_duration=1000,
+    )
+    task_blocks = TaskBlocks(values)
+    task_blocks.begin()
+
+    # Create a response with a large number of output files
+    respond = agent_server_pb2.TaskResponse(
+        state=task_state,
+        response_type=agent_server_pb2.TaskResponse.OnStepActionEnd,
+        on_step_action_end=agent_server_pb2.OnStepActionEnd(
+            output="", output_files=["test.png"] * 1000, has_error=False
+        ),
+    )
+
+    # Call the function
+    handle_action_end(task_blocks, respond, images)
+
+    # Check the results
+    assert len(images) == 1000
+    assert all(image == "test.png" for image in images)
+
 def test_handle_action_end_smoke_test():
     images = []
     values = []
@@ -121,3 +151,39 @@ def test_error_handle_action_end():
     assert segments[0][1] == "❌"
     assert len(images) == 0
     assert values[0] == "\nerror"
+
+def test_handle_action_end_performance_test():
+    # Setup
+    images = []
+    values = []
+    task_state = agent_server_pb2.ContextState(
+        output_token_count=10,
+        llm_name="mock",
+        total_duration=1,
+        input_token_count=10,
+        llm_response_duration=1000,
+    )
+    task_blocks = TaskBlocks(values)
+    task_blocks.begin()
+
+    # Create a large number of responses
+    responses = [
+        agent_server_pb2.TaskResponse(
+            state=task_state,
+            response_type=agent_server_pb2.TaskResponse.OnStepActionEnd,
+            on_step_action_end=agent_server_pb2.OnStepActionEnd(
+                output="",
+                output_files=[f"test{i}.png"],  # Modify this line to create unique filenames
+                has_error=False,
+            ),
+        )
+        for i in range(1000)
+    ]
+
+    # Call the function with each response
+    for respond in responses:
+        handle_action_end(task_blocks, respond, images)
+
+    # Check the results
+    assert len(images) == 1000
+    assert all(image == f"test{i}.png" for i, image in enumerate(images))
