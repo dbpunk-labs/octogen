@@ -67,16 +67,18 @@ class CodellamaAgent(BaseAgent):
             "language": json_response.get("language", "text"),
         })
         await queue.put(
-            TaskRespond(
-                state=task_context.to_task_state_proto(),
-                respond_type=TaskRespond.OnAgentActionType,
-                on_agent_action=OnAgentAction(
+            TaskResponse(
+                state=task_context.to_context_state_proto(),
+                response_type=TaskResponse.OnStepActionStart,
+                on_step_agent_start=OnStepActionStart(
                     input=tool_input, tool="show_sample_code"
                 ),
             )
         )
 
-    async def handle_bash_code(self, json_response, queue, context, task_context):
+    async def handle_bash_code(
+        self, json_response, queue, context, task_context, task_opt
+    ):
         commands = json_response["action_input"]
         code = f"%%bash\n {commands}"
         explanation = json_response["explanation"]
@@ -88,10 +90,10 @@ class CodellamaAgent(BaseAgent):
             "language": json_response.get("language"),
         })
         await queue.put(
-            TaskRespond(
-                state=task_context.to_task_state_proto(),
-                respond_type=TaskRespond.OnAgentActionType,
-                on_agent_action=OnAgentAction(
+            TaskResponse(
+                state=task_context.to_context_state_proto(),
+                response_type=TaskResponse.OnStepActionStart,
+                on_step_action_start=OnStepActionStart(
                     input=tool_input, tool="execute_bash_code"
                 ),
             )
@@ -102,7 +104,7 @@ class CodellamaAgent(BaseAgent):
                 logger.debug("the client has cancelled the request")
                 break
             function_result = result
-            if respond:
+            if respond and task_opt.streaming:
                 await queue.put(respond)
         return function_result
 

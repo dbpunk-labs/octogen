@@ -305,6 +305,31 @@ def render_image(images, sdk, image_dir, console):
         return False
 
 
+def upload_file(prompt, console, history_prompt, sdk, values):
+    filepaths = parse_file_path(prompt)
+    if not filepaths:
+        return prompt
+    task_blocks = TaskBlocks(values)
+    task_blocks.begin()
+    real_prompt = prompt.replace("/up", "")
+    with Live(Group(*[]), console=console) as live:
+        mk = """The following files will be uploaded
+"""
+        task_blocks.add_markdown(mk)
+        refresh(live, task_blocks, title=SYSTEM_TITLE)
+        for file in filepaths:
+            filename = file.split("/")[-1]
+            sdk.upload_file(file, filename)
+            mk = "* ✅%s\n" % file
+            task_blocks.add_markdown(mk)
+            real_prompt = real_prompt.replace(file, "uploaded %s" % filename)
+            refresh(live, task_blocks, title=SYSTEM_TITLE)
+        task_blocks.get_last_block().finish()
+        refresh(live, task_blocks, title=SYSTEM_TITLE)
+    history_prompt.append_string(real_prompt)
+    return real_prompt
+
+
 def run_chat(prompt, sdk, session, console, values, filedir=None):
     """
     run the chat
@@ -406,26 +431,7 @@ def app(octogen_dir):
                     console.print(f"❌ /cc{number} was not found!")
             continue
         # try to upload first⌛⏳❌
-        filepaths = parse_file_path(real_prompt)
-        if filepaths:
-            real_prompt = real_prompt.replace("/up", "")
-            spinner = Spinner(octopus_config.get("spinner", "dots2"), text="Upload...")
-            segments = [spinner]
-            mk = """The following files will be uploaded
-"""
-            with Live(Group(*segments), console=console) as live:
-                live.update(spinner)
-                for file in filepaths:
-                    filename = file.split("/")[-1]
-                    sdk.upload_file(file, filename)
-                    mk += "* ✅%s\n" % file
-                    live.update(Group(*[Markdown(mk), spinner]))
-                    real_prompt = real_prompt.replace(file, "uploaded %s" % filename)
-                # clear the spinner
-                live.update(Group(*[Markdown(mk)]))
-            # add the prompt to history
-            # TODO remove the last prompt
-            history.append_string(real_prompt)
+        real_prompt = upload_file(real_prompt, console, history, sdk, values)
         run_chat(
             real_prompt,
             sdk,
