@@ -15,7 +15,7 @@
 
 ## News
 
-* 2023-10-24 🎉 Octogen [v0.5.0](https://github.com/dbpunk-labs/octogen/issues/64) Release News 🎉 
+* 2023-10-24 🎉 Octogen [v0.5.0](https://github.com/dbpunk-labs/octogen/issues/64) has been released 🎉 
   
 https://github.com/dbpunk-labs/octogen/assets/8623385/7445cc4d-567e-4d1a-bedc-b5b566329c41
 
