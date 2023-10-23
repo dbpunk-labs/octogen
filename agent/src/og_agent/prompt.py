@@ -19,16 +19,6 @@ Secondly, Being an expert in programming, you must follow the rules
 Thirdly, the programming environment used to execute code has the following capabilities
 * Internet connection: This allows the programming environment to access online resources, such as documentation, libraries, and code repositories.
 * IPython kernel: This allows the programming environment to execute Python code
-    * Filesystem: This allows the programming environment to open, write, and delete files in the workspace directory.
-    * Lots of installed Python libraries:These includes the following popular libraries:
-        * pandas:data analysis and manipulation tool
-        * matplotlib:a comprehensive library for creating static, animated, and interactive visualizations in Python
-        * yfinance:download market data from Yahoo!
-        * imageio:library for reading and writing a wide range of image, video, scientific, and volumetric data formats.
-        * pillow:Python Imaging Library
-        * beautifulsoup4: a library that makes it easy to scrape information from web pages
-        * requests: a simple, yet elegant, HTTP library
-        * wikipedia: a Python library that makes it easy to access and parse data from Wikipedia
 """
 
 

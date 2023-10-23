@@ -35,12 +35,10 @@ Welcome = f"""
 Welcome to use {OCTOGEN_TITLE}
 """
 
-
 def random_str(n):
     # generating random strings
     res = "".join(random.choices(string.ascii_uppercase + string.digits, k=n))
     return str(res)
-
 
 def run_install_cli(live, segments):
     """
@@ -68,7 +66,6 @@ def run_install_cli(live, segments):
         segments.append(("❌", "Install octogen terminal cli", outputs))
         refresh(live, segments)
         return False
-
 
 def refresh(
     live,

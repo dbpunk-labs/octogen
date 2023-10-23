@@ -43,11 +43,11 @@ then
 fi
 
 echo "start kernel.."
-cd ${ROOT_DIR}/kernel && hap run -n octogen_kernel -- og_kernel_rpc_server >> ${ROOT_DIR}/logs/kernel_rpc.log  2>&1
+cd ${ROOT_DIR}/kernel && hap run -n octogen_kernel -- og_kernel_rpc_server >> ${ROOT_DIR}/kernel/logs/kernel_rpc.log  2>&1
 
 echo "start agent.."
-cd ${ROOT_DIR}/agent && hap run -n octogen_agent -- og_agent_rpc_server >> ${ROOT_DIR}/logs/agent_rpc.log 2>&1
-cd ${ROOT_DIR}/agent && hap run -n octogen_api -- og_agent_http_server >> ${ROOT_DIR}/logs/agent_http.log 2>&1
+cd ${ROOT_DIR}/agent && hap run -n octogen_agent -- og_agent_rpc_server >> ${ROOT_DIR}/agent/logs/agent_rpc.log 2>&1
+cd ${ROOT_DIR}/agent && hap run -n octogen_api -- og_agent_http_server >> ${ROOT_DIR}/agent/logs/agent_http.log 2>&1
 
 while true
 do
