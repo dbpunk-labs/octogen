@@ -13,7 +13,12 @@
 > an open-source code interpreter   
 >  一款开源可本地部署的代码解释器
 
+## News
+
+* 2023-10-24 🎉 Octogen [v0.5.0](https://github.com/dbpunk-labs/octogen/issues/64) Release News 🎉 
+  
 https://github.com/dbpunk-labs/octogen/assets/8623385/7445cc4d-567e-4d1a-bedc-b5b566329c41
+
 
 |Supported OSs|Supported Interpreters|Supported Dev Enviroment|
 |----|-----|-----|
