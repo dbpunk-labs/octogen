@@ -70,7 +70,7 @@ class CodellamaAgent(BaseAgent):
             TaskResponse(
                 state=task_context.to_context_state_proto(),
                 response_type=TaskResponse.OnStepActionStart,
-                on_step_agent_start=OnStepActionStart(
+                on_step_action_start=OnStepActionStart(
                     input=tool_input, tool="show_sample_code"
                 ),
             )
