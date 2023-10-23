@@ -139,6 +139,7 @@ class OpenaiAgent(BaseAgent):
         """
         call the openai api
         """
+        logger.debug(f"call openai with messages {messages}")
         input_token_count = 0
         for message in messages:
             if not message["content"]:
@@ -212,10 +213,10 @@ class OpenaiAgent(BaseAgent):
                     code_content = code_str
                     if task_opt.streaming and len(typed_chars) > 0:
                         typing_language = "text"
-                        if (
-                            delta["function_call"].get("name", "")
-                            == "execute_python_code"
-                        ):
+                        if delta["function_call"].get("name", "") in [
+                            "execute_python_code",
+                            "python",
+                        ]:
                             typing_language = "python"
                         elif (
                             delta["function_call"].get("name", "")
@@ -357,6 +358,8 @@ class OpenaiAgent(BaseAgent):
                 if "function_call" in chat_message:
                     if "content" not in chat_message:
                         chat_message["content"] = None
+                    if "role" not in chat_message:
+                        chat_message["role"] = "assistant"
                     messages.append(chat_message)
                     function_name = chat_message["function_call"]["name"]
                     if function_name not in [

@@ -8,7 +8,7 @@ import json
 import time
 import logging
 from .base_agent import BaseAgent, TypingState, TaskContext
-from og_proto.agent_server_pb2 import OnStepActionStart, TaskResponse, OnStepActionEnd, FinalAnswer,TypingContent
+from og_proto.agent_server_pb2 import OnStepActionStart, TaskResponse, OnStepActionEnd, FinalAnswer, TypingContent
 from .tokenizer import tokenize
 
 logger = logging.getLogger(__name__)
@@ -33,7 +33,9 @@ class MockAgent(BaseAgent):
                 TaskResponse(
                     state=task_context.to_context_state_proto(),
                     response_type=TaskResponse.OnModelTypeText,
-                    typing_content=TypingContent(content = message["explanation"], language="text"),
+                    typing_content=TypingContent(
+                        content=message["explanation"], language="text"
+                    ),
                 )
             )
         if message.get("code", None):
@@ -41,7 +43,9 @@ class MockAgent(BaseAgent):
                 TaskResponse(
                     state=task_context.to_context_state_proto(),
                     response_type=TaskResponse.OnModelTypeCode,
-                    typing_content=TypingContent(content = message["code"], language="python"),
+                    typing_content=TypingContent(
+                        content=message["code"], language="python"
+                    ),
                 )
             )
         return message

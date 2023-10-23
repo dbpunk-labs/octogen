@@ -35,7 +35,9 @@ def test_handle_final_answer_smoke_test():
     respond_content = agent_server_pb2.TaskResponse(
         state=task_state,
         response_type=agent_server_pb2.TaskResponse.OnModelTypeText,
-        typing_content=agent_server_pb2.TypingContent(content="hello world!", language="text")
+        typing_content=agent_server_pb2.TypingContent(
+            content="hello world!", language="text"
+        ),
     )
     respond_final = agent_server_pb2.TaskResponse(
         state=task_state,
@@ -81,6 +83,7 @@ def test_handle_action_end_boundary_test():
     # Check the results
     assert len(images) == 1000
     assert all(image == "test.png" for image in images)
+
 
 def test_handle_action_end_smoke_test():
     images = []
@@ -152,6 +155,7 @@ def test_error_handle_action_end():
     assert len(images) == 0
     assert values[0] == "\nerror"
 
+
 def test_handle_action_end_performance_test():
     # Setup
     images = []
@@ -173,7 +177,9 @@ def test_handle_action_end_performance_test():
             response_type=agent_server_pb2.TaskResponse.OnStepActionEnd,
             on_step_action_end=agent_server_pb2.OnStepActionEnd(
                 output="",
-                output_files=[f"test{i}.png"],  # Modify this line to create unique filenames
+                output_files=[
+                    f"test{i}.png"
+                ],  # Modify this line to create unique filenames
                 has_error=False,
             ),
         )
