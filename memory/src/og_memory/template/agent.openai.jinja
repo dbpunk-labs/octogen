@@ -1,0 +1,22 @@
+{#the role description#}
+{{prompt.role}}
+
+{#the rule list#}
+{%if prompt.rules%}
+You must follow the below rules
+{% for rule in prompt.rules if rule%}
+{{loop.index}}.{{rule}}
+{% endfor%}
+{% endif %}
+
+{%if prompt.actions%}
+You can use the following actions to help you finishing your task
+{% for action in prompt.actions if action%}
+{{loop.index}}.{{action.name}}: {{action.desc}}
+{% endfor%}
+{% endif %}
+
+{%if guides%}
+Here are the instructions for the tools and libraries you recently used.
+
+{% endif %}

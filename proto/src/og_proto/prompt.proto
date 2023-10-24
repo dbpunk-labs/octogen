@@ -19,7 +19,7 @@ message AgentPrompt {
     // the system role of agent
     string role = 1;
     // the rules for the role
-    string rules = 2;
+    repeated string rules = 2;
     repeated ActionDesc actions = 3;
     // the response format for LLM
     string output_format = 4;
