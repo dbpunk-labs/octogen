@@ -1,0 +1,27 @@
+// SPDX-FileCopyrightText: 2023 imotai <jackwang@octogen.dev>
+// SPDX-FileContributor: imotai
+//
+// SPDX-License-Identifier: Elastic-2.0
+
+syntax = "proto3";
+package octogen_agent_prompt;
+
+message ActionDesc {
+    // the action name
+    string name = 1;
+    // the action description
+    string desc = 2;
+    // the external script for the action
+    string external_script = 3;
+}
+
+message AgentPrompt {
+    // the system role of agent
+    string role = 1;
+    // the rules for the role
+    string rules = 2;
+    repeated ActionDesc actions = 3;
+    // the response format for LLM
+    string output_format = 4;
+    string role_name = 5;
+}

@@ -4,7 +4,7 @@
 // SPDX-License-Identifier: Elastic-2.0
 
 syntax = "proto3";
-package octopus_agent_proto;
+package octogen_agent_proto;
 
 import "common.proto";
 
@@ -141,8 +141,8 @@ service AgentServer {
   // check the connection is ok
   rpc ping(PingRequest) returns (PongResponse) {}
   // upload the file
-  rpc upload(stream octopus_common_proto.FileChunk) returns (octopus_common_proto.FileUploaded) {}
-  rpc download(octopus_common_proto.DownloadRequest) returns (stream octopus_common_proto.FileChunk) {}
+  rpc upload(stream octogen_common_proto.FileChunk) returns (octogen_common_proto.FileUploaded) {}
+  rpc download(octogen_common_proto.DownloadRequest) returns (stream octogen_common_proto.FileChunk) {}
   rpc process_task(ProcessTaskRequest) returns (stream TaskResponse) {}
   rpc add_kernel(AddKernelRequest) returns (AddKernelResponse) {}
 }

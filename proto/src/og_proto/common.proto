@@ -5,7 +5,7 @@
 
 syntax = "proto3";
 
-package octopus_common_proto;
+package octogen_common_proto;
 
 message FileChunk {
   bytes buffer = 1;

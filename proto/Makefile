@@ -22,6 +22,7 @@ generate: $(PROTOS)
 	@sed -i'' -e 's/import agent_server_pb2 as agent__server__pb2/from . import agent_server_pb2 as agent__server__pb2/' src/og_proto/agent_server_pb2_grpc.py
 	@sed -i'' -e 's/import common_pb2 as common__pb2/from . import common_pb2 as common__pb2/' src/og_proto/agent_server_pb2_grpc.py
 	@sed -i'' -e 's/import common_pb2 as common__pb2/from . import common_pb2 as common__pb2/' src/og_proto/agent_server_pb2.py
+	@sed -i'' -e 's/import prompt_pb2 as prompt__pb2/from . import prompt_pb2 as prompt__pb2/' src/og_proto/memory_pb2.py
 	@echo "'${@}' done"
 
 clean:

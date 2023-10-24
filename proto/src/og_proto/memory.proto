@@ -1,0 +1,52 @@
+// SPDX-FileCopyrightText: 2023 imotai <jackwang@octogen.dev>
+// SPDX-FileContributor: imotai
+//
+// SPDX-License-Identifier: Elastic-2.0
+
+syntax = "proto3";
+package octogen_agent_memory;
+import "prompt.proto";
+
+message GuideMemory {
+    // the name of tool or library
+    string name = 1;
+    // the tool or method of library can solve what kind of problem
+    string what_it_can_do = 2;
+    // how to use the tool or library include how to import and usage
+    string how_to_use = 3;
+    // the timestamp in second
+    int32 recall_time = 4;
+}
+
+message Feedback {
+    bool is_correct = 1;
+    // the timestamp in second
+    int32 feedback_time = 2;
+}
+
+message ChatMessage {
+    // the role name
+    string role_name = 1;
+    // the content of chat message
+    string content = 2;
+    // the function name 
+    string function_name = 3;
+    // the function call content
+    string function_call = 4;
+    // the timestamp in second
+    int32 chat_time = 5;
+    // the feedback of the chat message
+    // and it  will not be sent to LLM
+    Feedback feedback = 6;
+}
+
+// every user has his own memory
+message AgentMemory {
+    octogen_agent_prompt.AgentPrompt instruction = 1;
+    string user_id = 2;
+    string user_name = 3;
+    repeated GuideMemory guide_memory = 4;
+    repeated ChatMessage chat_memory = 5;
+    // reset the memory id to clean the memory
+    string memory_id = 6;
+}
