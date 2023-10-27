@@ -31,7 +31,6 @@ async def agent_sdk():
     yield sdk
     await sdk.close()
 
-
 def test_connect_bad_endpoint():
     try:
         sdk = AgentSDK("xxx", api_key)
@@ -40,6 +39,18 @@ def test_connect_bad_endpoint():
     except Exception as ex:
         assert 1
 
+
+@pytest.mark.asyncio
+async def test_ping_test_with_bad_kernel_api_key(agent_sdk):
+    """
+    the ping method will throw an exception if the kernel api key is not valid
+    """
+    try:
+        await agent_sdk.add_kernel("bad_kernel_api_key", "127.0.0.1:9527")
+        response = await agent_sdk.ping()
+        assert 0, "should not go here"
+    except Exception as ex:
+        assert 1
 
 @pytest.mark.asyncio
 async def test_ping_test(agent_sdk):

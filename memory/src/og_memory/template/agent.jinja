@@ -1,22 +1,23 @@
 {#the role description#}
 {{prompt.role}}
-
 {#the rule list#}
 {%if prompt.rules%}
-You must follow the below rules
+Follow the rules
 {% for rule in prompt.rules if rule%}
 {{loop.index}}.{{rule}}
 {% endfor%}
 {% endif %}
-
 {%if prompt.actions%}
-You can use the following actions to help you finishing your task
+Use the following actions to help you finishing your task
 {% for action in prompt.actions if action%}
 {{loop.index}}.{{action.name}}: {{action.desc}}
 {% endfor%}
 {% endif %}
-
 {%if guides%}
-Here are the instructions for the tools and libraries you recently used.
-
+The instructions for the tools and libraries you recently used.
+{% for guide in guides if guide%}
+{{loop.index}}.{{guide.name}}
+{{guide.what_it_can_do}}
+{{guide.how_to_use}}
+{% endfor%}
 {% endif %}

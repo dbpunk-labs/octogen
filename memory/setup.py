@@ -19,15 +19,16 @@ setup(
 
     packages=[
         "og_memory",
+        "og_memory.template",
     ],
 
     package_dir={
         "og_memory": "src/og_memory",
+        "og_memory.template": "src/og_memory/template",
     },
-
     install_requires=[
         "og_proto",
         "Jinja2",
     ],
-    package_data={},
+    package_data={"og_memory.template": ["*.jinja"]},
 )

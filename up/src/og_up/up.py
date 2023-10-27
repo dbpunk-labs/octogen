@@ -572,6 +572,7 @@ def start_octogen_for_azure_openai(
         return False
 
 
+
 def start_octogen_for_codellama(
     live,
     segments,
