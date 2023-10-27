@@ -5,6 +5,7 @@
 
 """ """
 import json
+import io
 import logging
 import time
 from typing import List
@@ -12,7 +13,11 @@ from pydantic import BaseModel, Field
 from og_proto.kernel_server_pb2 import ExecuteResponse
 from og_proto.agent_server_pb2 import TaskResponse, ContextState
 from og_sdk.utils import parse_image_filename, process_char_stream
+from og_proto.agent_server_pb2 import OnStepActionStart, TaskResponse, OnStepActionEnd, FinalAnswer, TypingContent
+from .tokenizer import tokenize
+import tiktoken
 
+encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
 logger = logging.getLogger(__name__)
 
 
@@ -116,7 +121,7 @@ class BaseAgent:
         return response_token_count
 
     async def _read_function_call_message(
-        self, message, old_text_content, old_code_content, task_context, task_opt
+        self, message, queue, old_text_content, old_code_content, task_context, task_opt
     ):
         typing_language = "text"
         if message["function_call"].get("name", "") in [
@@ -126,26 +131,23 @@ class BaseAgent:
             typing_language = "python"
         elif message["function_call"].get("name", "") == "execute_bash_code":
             typing_language = "bash"
-
-        logger.debug(
-            f"argument explanation:{explanation_str} code:{code_str} text_content:{old_text_content}"
-        )
         is_code = False
         if message["function_call"].get("name", "") == "python":
             is_code = True
         arguments = message["function_call"].get("arguments", "")
         return await self._send_typing_message(
             arguments,
+            queue,
             old_text_content,
             old_code_content,
             typing_language,
-            queue,
+            task_context,
             task_opt,
             is_code=is_code,
         )
 
     async def _read_json_message(
-        self, message, old_text_content, old_code_content, task_context, task_opt
+        self, message, queue, old_text_content, old_code_content, task_context, task_opt
     ):
         arguments = messages.get("content", "")
         typing_language = "text"
@@ -160,16 +162,18 @@ class BaseAgent:
             old_code_content,
             typing_language,
             queue,
+            task_context,
             task_opt,
         )
 
     async def _send_typing_message(
         self,
         arguments,
+        queue,
         old_text_content,
         old_code_content,
         language,
-        queue,
+        task_context,
         task_opt,
         is_code=False,
     ):
@@ -190,8 +194,8 @@ class BaseAgent:
                     typing_content=TypingContent(content=typed_chars, language="text"),
                 )
                 await queue.put(task_response)
-            return new_text_content, old_code_context
-        if code_str and old_code_context != code_str:
+            return new_text_content, old_code_content
+        if code_str and old_code_content != code_str:
             typed_chars = code_str[len(old_code_content) :]
             code_content = code_str
             if task_opt.streaming and len(typed_chars) > 0:
@@ -205,6 +209,7 @@ class BaseAgent:
                     )
                 )
             return old_text_content, code_content
+        return old_text_content, old_code_content
 
     async def extract_message(
         self,
@@ -248,6 +253,7 @@ class BaseAgent:
                     new_code_content,
                 ) = await self._read_function_call_message(
                     message,
+                    queue,
                     text_content,
                     code_content,
                     task_context,
@@ -269,6 +275,7 @@ class BaseAgent:
                     if is_json_format:
                         await self._read_json_message(
                             message,
+                            queue,
                             text_content,
                             code_content,
                             task_context,

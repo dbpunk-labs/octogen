@@ -14,7 +14,7 @@ from .base_stream_client import BaseStreamClient
 logger = logging.getLogger(__name__)
 
 
-class LlamaChatClient(BaseStreamClient):
+class LlamaClient(BaseStreamClient):
 
     def __init__(self, endpoint, key, grammar):
         super().__init__(endpoint + "/v1/chat/completions", key)
@@ -25,8 +25,8 @@ class LlamaChatClient(BaseStreamClient):
     ):
         data = {
             "messages": messages,
-            "grammar": self.grammar,
             "temperature": temperature,
+            "grammar": self.grammar,
             "stream": True,
             "model": model,
             "max_tokens": max_tokens,

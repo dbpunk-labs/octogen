@@ -32,6 +32,6 @@ logger = logging.getLogger(__name__)
 def run_serving():
     app = create_app(settings)
     host = config.get("host", "localhost")
-    port = int(config.get("port", "9517"))
+    port = int(config.get("port", "8080"))
     logger.info(f"Starting serving at {host}:{port}")
     uvicorn.run(app, host=host, port=port)

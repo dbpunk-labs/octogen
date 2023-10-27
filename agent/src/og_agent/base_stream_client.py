@@ -19,12 +19,11 @@ class BaseStreamClient:
 
     async def arun(self, request_data):
         logging.debug(f"{request_data}")
-        data = json.dumps(request_data)
         headers = {"Authorization": self.key}
         async with aiohttp.ClientSession(
             headers=headers, raise_for_status=True
         ) as session:
-            async with session.post(self.endpoint, data=data) as r:
+            async with session.post(self.endpoint, json=request_data) as r:
                 async for line in r.content:
                     if line:
                         yield line

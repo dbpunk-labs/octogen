@@ -568,7 +568,6 @@ class CreateCompletionRequest(BaseModel):
     top_k: int = top_k_field
     repeat_penalty: float = repeat_penalty_field
     logit_bias_type: Optional[Literal["input_ids", "tokens"]] = Field(None)
-    grammar: str = Field(default=None)
     model_config = {
         "json_schema_extra": {
             "examples": [{
@@ -727,7 +726,7 @@ class CreateChatCompletionRequest(BaseModel):
     model: Optional[str] = model_field
     n: Optional[int] = 1
     user: Optional[str] = Field(None)
-
+    grammar: str = Field(default=None)
     # llama.cpp specific parameters
     top_k: int = top_k_field
     repeat_penalty: float = repeat_penalty_field
@@ -767,7 +766,7 @@ async def create_chat_completion(
         "user",
     }
     kwargs = body.model_dump(exclude=exclude)
-    if "grammar" in kwargs["grammar"] and kwargs["grammar"]:
+    if "grammar" in kwargs and kwargs["grammar"]:
         kwargs["grammar"] = LlamaGrammar.from_string(kwargs["grammar"])
     if body.logit_bias is not None:
         kwargs["logits_processor"] = llama_cpp.LogitsProcessorList([
