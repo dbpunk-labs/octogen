@@ -68,7 +68,6 @@ OCTOGEN_FUNCTIONS = [
 
 
 class OpenaiAgent(BaseAgent):
-
     def __init__(self, model, system_prompt, sdk, is_azure=True):
         super().__init__(sdk)
         self.model = model

@@ -21,4 +21,8 @@ tiktoken
 fastapi
 uvicorn
 pytest-mock
+pydantic-settings
+sse-starlette
+starlette-context
+llama-cpp-python
 
