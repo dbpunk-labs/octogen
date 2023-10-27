@@ -20,9 +20,7 @@ class LlamaClient(BaseStreamClient):
         super().__init__(endpoint + "/v1/chat/completions", key)
         self.grammar = grammar
 
-    async def chat(
-        self, messages, model, temperature=0, max_tokens=1024, stop=["</s>", "\n"]
-    ):
+    async def chat(self, messages, model, temperature=0, max_tokens=1024, stop=[]):
         data = {
             "messages": messages,
             "temperature": temperature,
@@ -31,8 +29,9 @@ class LlamaClient(BaseStreamClient):
             "model": model,
             "max_tokens": max_tokens,
             "top_p": 0.9,
-            "stop": stop,
         }
+        if stop:
+            data["stop"] = stop
         async for line in self.arun(data):
             if len(line) < 6:
                 continue

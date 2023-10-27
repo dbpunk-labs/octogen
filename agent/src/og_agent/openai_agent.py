@@ -166,13 +166,7 @@ class OpenaiAgent(BaseAgent):
                 stream=True,
             )
         message = await self.extract_message(
-            response,
-            queue,
-            context,
-            task_context,
-            task_opt,
-            start_time,
-            is_json_format=False,
+            response, queue, context, task_context, task_opt, start_time
         )
         return message
 

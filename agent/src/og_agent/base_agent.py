@@ -91,6 +91,7 @@ class BaseAgent:
         state = TypingState.START
         explanation_str = ""
         code_str = ""
+        logger.debug(f"the arguments {arguments}")
         for token_state, token in tokenize(io.StringIO(arguments)):
             if token_state == None:
                 if state == TypingState.EXPLANATION and token[0] == 1:
@@ -149,7 +150,7 @@ class BaseAgent:
     async def _read_json_message(
         self, message, queue, old_text_content, old_code_content, task_context, task_opt
     ):
-        arguments = messages.get("content", "")
+        arguments = message.get("content", "")
         typing_language = "text"
         if arguments.find("execute_python_code") >= 0:
             typing_language = "python"
@@ -158,10 +159,10 @@ class BaseAgent:
 
         return await self._send_typing_message(
             arguments,
+            queue,
             old_text_content,
             old_code_content,
             typing_language,
-            queue,
             task_context,
             task_opt,
         )
@@ -222,7 +223,7 @@ class BaseAgent:
         is_json_format=False,
     ):
         """
-        extract the messages from the response generator
+        extract the chunk from the response generator
         """
         message = {}
         text_content = ""
@@ -235,6 +236,7 @@ class BaseAgent:
                 break
             if not chunk["choices"]:
                 continue
+            logger.debug(f"the chunk {chunk}")
             task_context.llm_name = chunk.get("model", "")
             self.model_name = chunk.get("model", "")
             delta = chunk["choices"][0]["delta"]
@@ -273,7 +275,10 @@ class BaseAgent:
                         response_token_count + context_output_token_count
                     )
                     if is_json_format:
-                        await self._read_json_message(
+                        (
+                            new_text_content,
+                            new_code_content,
+                        ) = await self._read_json_message(
                             message,
                             queue,
                             text_content,
@@ -281,6 +286,9 @@ class BaseAgent:
                             task_context,
                             task_opt,
                         )
+                        text_content = new_text_content
+                        code_content = new_code_content
+
                     elif task_opt.streaming and delta.get("content"):
                         await queue.put(
                             TaskResponse(

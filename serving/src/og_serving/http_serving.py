@@ -12,6 +12,9 @@ import uvicorn
 import logging
 from dotenv import dotenv_values
 from .server_app import create_app, Settings
+from llama_cpp.llama_chat_format import register_chat_format, ChatFormatterResponse, _map_roles, _format_add_colon_single
+from llama_cpp import llama_types
+from typing import Any, List
 
 config = dotenv_values(".env")
 
@@ -27,6 +30,23 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+
+
+@register_chat_format("phind")
+def format_phind(
+    messages: List[llama_types.ChatCompletionRequestMessage],
+    **kwargs: Any,
+) -> ChatFormatterResponse:
+    _roles = dict(user="### User Message", assistant="### Assistant")
+    _sep = "\n\n"
+    _system_message = "### System Prompt\nYou are an intelligent programming assistant."
+    for message in messages:
+        if message["role"] == "system" and message["content"]:
+            _system_message = f"""### System Prompt\n{message['content']}"""
+    _messages = _map_roles(messages, _roles)
+    _messages.append((_roles["assistant"], None))
+    _prompt = _format_add_colon_single(_system_message, _messages, _sep)
+    return ChatFormatterResponse(prompt=_prompt)
 
 
 def run_serving():

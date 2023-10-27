@@ -174,7 +174,7 @@ class LlamaAgent(BaseAgent):
             input_token_count += len(encoding.encode(message["content"]))
         task_context.input_token_count += input_token_count
         start_time = time.time()
-        response = self.client.chat(messages, "codellama")
+        response = self.client.chat(messages, "codellama", max_tokens=2048)
         message = await self.extract_message(
             response,
             queue,
@@ -182,7 +182,7 @@ class LlamaAgent(BaseAgent):
             task_context,
             task_opt,
             start_time,
-            is_json_format=False,
+            is_json_format=True,
         )
         return message
 
