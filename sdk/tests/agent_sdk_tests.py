@@ -14,7 +14,7 @@ import random
 import logging
 from tempfile import gettempdir
 from pathlib import Path
-from og_sdk.agent_sdk import AgentSDK
+from og_sdk.agent_sdk import AgentSDK, AgentSyncSDK
 from og_sdk.utils import random_str
 from og_proto.agent_server_pb2 import TaskResponse
 import pytest_asyncio
@@ -24,12 +24,21 @@ api_base = "127.0.0.1:9528"
 api_key = "ZCeI9cYtOCyLISoi488BgZHeBkHWuFUH"
 
 
+@pytest.fixture
+def agent_sync_sdk():
+    sdk = AgentSyncSDK(api_base, api_key)
+    sdk.connect()
+    yield sdk
+    sdk.close()
+
+
 @pytest_asyncio.fixture
 async def agent_sdk():
     sdk = AgentSDK(api_base, api_key)
     sdk.connect()
     yield sdk
     await sdk.close()
+
 
 def test_connect_bad_endpoint():
     try:
@@ -38,6 +47,33 @@ def test_connect_bad_endpoint():
         assert 0, "should not go here"
     except Exception as ex:
         assert 1
+
+
+def test_connect_bad_endpoint_for_sync_sdk():
+    try:
+        sdk = AgentSyncSDK("xxx", api_key)
+        sdk.connect()
+        assert 0, "should not go here"
+    except Exception as ex:
+        assert 1
+
+
+def test_connect_bad_kernel_api_key_for_sync_sdk(agent_sync_sdk):
+    try:
+        agent_sync_sdk.add_kernel("bad_kernel_api_key", "127.0.0.1:9527")
+        agent_sdk.ping()
+        assert 0, "should not go here"
+    except Exception as ex:
+        assert 1
+
+
+def test_ping_test_for_sync_sdk(agent_sync_sdk):
+    try:
+        agent_sync_sdk.add_kernel(api_key, "127.0.0.1:9527")
+        response = agent_sync_sdk.ping()
+        assert response.code == 0
+    except Exception as ex:
+        assert 0, str(ex)
 
 
 @pytest.mark.asyncio
@@ -51,6 +87,7 @@ async def test_ping_test_with_bad_kernel_api_key(agent_sdk):
         assert 0, "should not go here"
     except Exception as ex:
         assert 1
+
 
 @pytest.mark.asyncio
 async def test_ping_test(agent_sdk):

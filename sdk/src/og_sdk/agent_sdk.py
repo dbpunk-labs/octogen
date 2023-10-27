@@ -104,6 +104,11 @@ class AgentSyncSDK(AgentBaseSDK):
         for respond in self.stub.process_task(request, metadata=self.metadata):
             yield respond
 
+    def close(self):
+        if self.channel:
+            self.channel.close()
+            self.channel = None
+
 
 class AgentProxySDK(AgentBaseSDK):
 
