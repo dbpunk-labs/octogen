@@ -42,7 +42,7 @@ class LlamaAgent(BaseAgent):
         elif json_response["action"] == "show_sample_code":
             return ""
         else:
-            code = json_response.get("action_input", None)
+            code = json_response.get("code", None)
             answer_code = """%s
 ```%s
 %s
@@ -57,7 +57,7 @@ class LlamaAgent(BaseAgent):
     async def handle_show_sample_code(
         self, json_response, queue, context, task_context
     ):
-        code = json_response["action_input"]
+        code = json_response["code"]
         explanation = json_response["explanation"]
         saved_filenames = json_response.get("saved_filenames", [])
         tool_input = json.dumps({
@@ -79,7 +79,7 @@ class LlamaAgent(BaseAgent):
     async def handle_bash_code(
         self, json_response, queue, context, task_context, task_opt
     ):
-        commands = json_response["action_input"]
+        commands = json_response["code"]
         code = f"%%bash\n {commands}"
         explanation = json_response["explanation"]
         saved_filenames = json_response.get("saved_filenames", [])
@@ -111,7 +111,7 @@ class LlamaAgent(BaseAgent):
     async def handle_function(
         self, json_response, queue, context, task_context, task_opt
     ):
-        code = json_response["action_input"]
+        code = json_response["code"]
         explanation = json_response["explanation"]
         saved_filenames = json_response.get("saved_filenames", [])
         tool_input = json.dumps({
@@ -138,30 +138,6 @@ class LlamaAgent(BaseAgent):
             if respond and task_opt.streaming:
                 await queue.put(respond)
         return function_result
-
-    def _get_argument_new_typing(self, message):
-        state = TypingState.START
-        explanation_str = ""
-        action_input_str = ""
-        for token_state, token in tokenize(io.StringIO(message)):
-            if token_state == None:
-                if state == TypingState.EXPLANATION and token[0] == 1:
-                    explanation_str = token[1]
-                    state = TypingState.START
-                if state == TypingState.CODE and token[0] == 1:
-                    action_input_str = token[1]
-                    state = TypingState.START
-                if token[1] == "explanation":
-                    state = TypingState.EXPLANATION
-                if token[1] == "action_input":
-                    state = TypingState.CODE
-            else:
-                # String
-                if token_state == 9 and state == TypingState.EXPLANATION:
-                    explanation_str = "".join(token)
-                elif token_state == 9 and state == TypingState.CODE:
-                    action_input_str = "".join(token)
-        return (state, explanation_str, action_input_str)
 
     async def call_llama(self, messages, queue, context, task_context, task_opt):
         """
@@ -254,7 +230,7 @@ class LlamaAgent(BaseAgent):
                 if (
                     json_response["action"]
                     in ["execute_python_code", "execute_bash_code"]
-                    and json_response["action_input"]
+                    and json_response["code"]
                 ):
                     messages.append(message)
                     tools_mapping = {
@@ -284,29 +260,26 @@ class LlamaAgent(BaseAgent):
                     current_question = "Give me the final answer summary if the above output of action  meets the goal Otherwise try a new step"
                     if function_result.has_result:
                         messages.append({
-                            "role": "function",
-                            "name": json_response["action"],
-                            "content": function_result.console_stdout,
+                            "role": "user",
+                            "content": f"{action_output} \n {function_result.console_stdout}",
                         })
                         messages.append({"role": "user", "content": current_question})
                     elif function_result.has_error:
                         messages.append({
-                            "role": "function",
-                            "name": json_response["action"],
-                            "content": function_result.console_stderr,
+                            "role": "user",
+                            "content": f"{action_output} \n {function_result.console_stderr}",
                         })
                         current_question = f"Generate a new step to fix the above error"
                         messages.append({"role": "user", "content": current_question})
                     else:
                         messages.append({
-                            "role": "function",
-                            "name": json_response["action"],
-                            "content": function_result.console_stdout,
+                            "role": "user",
+                            "content": f"{action_output} \n {function_result.console_stdout}",
                         })
                         messages.append({"role": "user", "content": current_question})
                 elif (
                     json_response["action"] == "show_sample_code"
-                    and json_response["action_input"]
+                    and json_response["code"]
                 ):
                     await self.handle_show_sample_code(
                         json_response, queue, context, task_context
@@ -333,6 +306,7 @@ class LlamaAgent(BaseAgent):
                     )
                     break
         except Exception as ex:
+            logger.exception("fail to run the agent")
             response = TaskResponse(
                 response_type=TaskResponse.OnSystemError,
                 error_msg=str(ex),

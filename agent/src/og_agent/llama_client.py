@@ -35,5 +35,10 @@ class LlamaClient(BaseStreamClient):
         async for line in self.arun(data):
             if len(line) < 6:
                 continue
-            message = json.loads(line[6:])
-            yield message
+            try:
+                content = line[6:]
+                message = json.loads(content)
+                yield message
+            except Exception as e:
+                logger.error("error: %s, content: %s", e, content)
+                continue

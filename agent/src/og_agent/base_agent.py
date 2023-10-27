@@ -82,7 +82,13 @@ class BaseAgent:
         if delta.get("content"):
             message["content"] = content + delta["content"]
 
-    def _parse_arguments(self, arguments, is_code=False):
+    def _parse_arguments(
+        self,
+        arguments,
+        is_code=False,
+        first_field_name="explanation",
+        second_field_name="code",
+    ):
         """
         parse the partial key with string value from json
         """
@@ -100,9 +106,9 @@ class BaseAgent:
                 if state == TypingState.CODE and token[0] == 1:
                     code_str = token[1]
                     state = TypingState.START
-                if token[1] == "explanation":
+                if token[1] == first_field_name:
                     state = TypingState.EXPLANATION
-                if token[1] == "code":
+                if token[1] == second_field_name:
                     state = TypingState.CODE
             else:
                 # String

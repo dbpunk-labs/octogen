@@ -41,7 +41,7 @@ Thirdly, the following actions are available:
 Fourthly, the output format must be a JSON format with the following fields:
 * explanation (string): The explanation about the action input
 * action (string): The name of the action.
-* action_input (string): The sample code , python code or base code to be executed for the action or an empty string if no action is specified
+* code (string): The sample code , python code or base code to be executed for the action or an empty string if no action is specified
 * saved_filenames (list of strings): A list of filenames that were created by the action input.
 * language (string): The programming language used to execute the action.
 * is_final_answer (boolean): Whether this is the final answer to the question. If it is, the value of this field should be true. Otherwise, the value should be false.
