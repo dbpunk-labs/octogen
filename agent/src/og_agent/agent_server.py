@@ -24,7 +24,7 @@ from grpc.aio import ServicerContext, server
 from og_sdk.kernel_sdk import KernelSDK
 from og_sdk.utils import parse_image_filename
 from .agent_llm import LLMManager
-from .agent_builder import build_mock_agent, build_openai_agent, build_codellama_agent
+from .agent_builder import build_mock_agent, build_openai_agent, build_llama_agent
 import databases
 import orm
 from datetime import datetime
@@ -116,11 +116,11 @@ class AgentRpcServer(AgentServerServicer):
             agent = build_mock_agent(sdk, config["cases_path"])
             self.agents[request.key] = {"sdk": sdk, "agent": agent}
         elif config["llm_key"] == "codellama":
-            logger.info(f"create a codellama agent {request.endpoint}")
+            logger.info(f"create a llama agent {request.endpoint}")
             grammer_path = os.path.join(
                 pathlib.Path(__file__).parent.resolve(), "grammar.bnf"
             )
-            agent = build_codellama_agent(
+            agent = build_llama_agent(
                 config["llama_api_base"], config["llama_api_key"], sdk, grammer_path
             )
             self.agents[request.key] = {"sdk": sdk, "agent": agent}

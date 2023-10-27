@@ -28,6 +28,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+
 def run_serving():
     app = create_app(settings)
     host = config.get("host", "localhost")

@@ -52,6 +52,7 @@ class TypingState:
 
 
 class BaseAgent:
+
     def __init__(self, sdk):
         self.kernel_sdk = sdk
         self.model_name = ""
@@ -76,11 +77,12 @@ class BaseAgent:
         if delta.get("content"):
             message["content"] = content + delta["content"]
 
-    def _get_function_call_argument_new_typing(self, message):
-        if message["function_call"]["name"] == "python":
-            return TypingState.CODE, "", message["function_call"].get("arguments", "")
-
-        arguments = message["function_call"].get("arguments", "")
+    def _parse_arguments(self, arguments, is_code=False):
+        """
+        parse the partial key with string value from json
+        """
+        if is_code:
+            return TypingState.CODE, "", arguments
         state = TypingState.START
         explanation_str = ""
         code_str = ""
@@ -113,27 +115,115 @@ class BaseAgent:
             response_token_count += len(encoding.encode(message.get("content")))
         return response_token_count
 
-    async def extract_message_for_json(self, response_generator,
-                                       messages, queue, rpc_context, task_context, task_opt):
+    async def _read_function_call_message(
+        self, message, old_text_content, old_code_content, task_context, task_opt
+    ):
+        typing_language = "text"
+        if message["function_call"].get("name", "") in [
+            "execute_python_code",
+            "python",
+        ]:
+            typing_language = "python"
+        elif message["function_call"].get("name", "") == "execute_bash_code":
+            typing_language = "bash"
 
-    async def extract_message(self, response_generator, 
-                               messages, 
-                               queue, 
-                               rpc_context, 
-                               task_context, task_opt):
+        logger.debug(
+            f"argument explanation:{explanation_str} code:{code_str} text_content:{old_text_content}"
+        )
+        is_code = False
+        if message["function_call"].get("name", "") == "python":
+            is_code = True
+        arguments = message["function_call"].get("arguments", "")
+        return await self._send_typing_message(
+            arguments,
+            old_text_content,
+            old_code_content,
+            typing_language,
+            queue,
+            task_opt,
+            is_code=is_code,
+        )
+
+    async def _read_json_message(
+        self, message, old_text_content, old_code_content, task_context, task_opt
+    ):
+        arguments = messages.get("content", "")
+        typing_language = "text"
+        if arguments.find("execute_python_code") >= 0:
+            typing_language = "python"
+        elif arguments.find("execute_bash_code") >= 0:
+            typing_language = "bash"
+
+        return await self._send_typing_message(
+            arguments,
+            old_text_content,
+            old_code_content,
+            typing_language,
+            queue,
+            task_opt,
+        )
+
+    async def _send_typing_message(
+        self,
+        arguments,
+        old_text_content,
+        old_code_content,
+        language,
+        queue,
+        task_opt,
+        is_code=False,
+    ):
+        """
+        send the typing message to the client
+        """
+        (state, explanation_str, code_str) = self._parse_arguments(arguments, is_code)
+        logger.debug(
+            f"argument explanation:{explanation_str} code:{code_str} text_content:{old_text_content}"
+        )
+        if explanation_str and old_text_content != explanation_str:
+            typed_chars = explanation_str[len(old_text_content) :]
+            new_text_content = explanation_str
+            if task_opt.streaming and len(typed_chars) > 0:
+                task_response = TaskResponse(
+                    state=task_context.to_context_state_proto(),
+                    response_type=TaskResponse.OnModelTypeText,
+                    typing_content=TypingContent(content=typed_chars, language="text"),
+                )
+                await queue.put(task_response)
+            return new_text_content, old_code_context
+        if code_str and old_code_context != code_str:
+            typed_chars = code_str[len(old_code_content) :]
+            code_content = code_str
+            if task_opt.streaming and len(typed_chars) > 0:
+                await queue.put(
+                    TaskResponse(
+                        state=task_context.to_context_state_proto(),
+                        response_type=TaskResponse.OnModelTypeCode,
+                        typing_content=TypingContent(
+                            content=typed_chars, language=language
+                        ),
+                    )
+                )
+            return old_text_content, code_content
+
+    async def extract_message(
+        self,
+        response_generator,
+        queue,
+        rpc_context,
+        task_context,
+        task_opt,
+        start_time,
+        is_json_format=False,
+    ):
         """
         extract the messages from the response generator
         """
-        input_token_count = 0
-        for message in messages:
-            if not message["content"]:
-                continue
-            input_token_count += len(encoding.encode(message["content"]))
-        task_context.input_token_count += input_token_count
         message = {}
         text_content = ""
         code_content = ""
         context_output_token_count = task_context.output_token_count
+        start_time = time.time()
         async for chunk in response_generator:
             if rpc_context.done():
                 logger.debug("the client has cancelled the request")
@@ -154,49 +244,17 @@ class BaseAgent:
                 )
                 start_time = time.time()
                 (
-                    state,
-                    explanation_str,
-                    code_str,
-                ) = self._get_function_call_argument_new_typing(message)
-                logger.debug(
-                    f"argument explanation:{explanation_str} code:{code_str} text_content:{text_content}"
+                    new_text_content,
+                    new_code_content,
+                ) = await self._read_function_call_message(
+                    message,
+                    text_content,
+                    code_content,
+                    task_context,
+                    task_opt,
                 )
-                if explanation_str and text_content != explanation_str:
-                    typed_chars = explanation_str[len(text_content) :]
-                    text_content = explanation_str
-                    if task_opt.streaming and len(typed_chars) > 0:
-                        task_response = TaskResponse(
-                            state=task_context.to_context_state_proto(),
-                            response_type=TaskResponse.OnModelTypeText,
-                            typing_content=TypingContent(
-                                content=typed_chars, language="text"
-                            ),
-                        )
-                        await queue.put(task_response)
-                if code_str and code_content != code_str:
-                    typed_chars = code_str[len(code_content) :]
-                    code_content = code_str
-                    if task_opt.streaming and len(typed_chars) > 0:
-                        typing_language = "text"
-                        if delta["function_call"].get("name", "") in [
-                            "execute_python_code",
-                            "python",
-                        ]:
-                            typing_language = "python"
-                        elif (
-                            delta["function_call"].get("name", "")
-                            == "execute_bash_code"
-                        ):
-                            typing_language = "bash"
-                        await queue.put(
-                            TaskResponse(
-                                state=task_context.to_context_state_proto(),
-                                response_type=TaskResponse.OnModelTypeCode,
-                                typing_content=TypingContent(
-                                    content=typed_chars, language=typing_language
-                                ),
-                            )
-                        )
+                text_content = new_text_content
+                code_content = new_code_content
             else:
                 self._merge_delta_for_content(message, delta)
                 task_context.llm_response_duration += int(
@@ -208,7 +266,15 @@ class BaseAgent:
                     task_context.output_token_count = (
                         response_token_count + context_output_token_count
                     )
-                    if task_opt.streaming and delta.get("content"):
+                    if is_json_format:
+                        await self._read_json_message(
+                            message,
+                            text_content,
+                            code_content,
+                            task_context,
+                            task_opt,
+                        )
+                    elif task_opt.streaming and delta.get("content"):
                         await queue.put(
                             TaskResponse(
                                 state=task_context.to_context_state_proto(),
@@ -222,9 +288,6 @@ class BaseAgent:
             f"call the {self.model_name} with input token {task_context.input_token_count} and output token count {task_context.output_token_count}"
         )
         return message
-
-
-
 
     async def call_function(self, code, context, task_context=None):
         """

@@ -5,9 +5,7 @@
 #
 # SPDX-License-Identifier: Elastic-2.0
 
-"""
-
-"""
+""" """
 import sys
 import json
 import traceback
@@ -41,7 +39,7 @@ import numpy.typing as npt
 
 
 # Disable warning for model and model_alias settings
-BaseSettings.model_config['protected_namespaces'] = ()
+BaseSettings.model_config["protected_namespaces"] = ()
 
 
 class Settings(BaseSettings):
@@ -52,7 +50,9 @@ class Settings(BaseSettings):
         default=None,
         description="The alias of the model to use for generating completions.",
     )
-    seed: int = Field(default=llama_cpp.LLAMA_DEFAULT_SEED, description="Random seed. -1 for random.")
+    seed: int = Field(
+        default=llama_cpp.LLAMA_DEFAULT_SEED, description="Random seed. -1 for random."
+    )
     n_ctx: int = Field(default=2048, ge=1, description="The context size.")
     n_batch: int = Field(
         default=512, ge=1, description="The batch size to use per eval."
@@ -71,9 +71,7 @@ class Settings(BaseSettings):
         default=None,
         description="Split layers across multiple GPUs in proportion.",
     )
-    rope_freq_base: float = Field(
-        default=0.0, description="RoPE base frequency"
-    )
+    rope_freq_base: float = Field(default=0.0, description="RoPE base frequency")
     rope_freq_scale: float = Field(
         default=0.0, description="RoPE frequency scaling factor"
     )
@@ -106,7 +104,7 @@ class Settings(BaseSettings):
     )
     lora_base: Optional[str] = Field(
         default=None,
-        description="Optional path to base model, useful if using a quantized base model and you want to apply LoRA to an f16 model."
+        description="Optional path to base model, useful if using a quantized base model and you want to apply LoRA to an f16 model.",
     )
     lora_path: Optional[str] = Field(
         default=None,
@@ -573,14 +571,13 @@ class CreateCompletionRequest(BaseModel):
     grammar: str = Field(default=None)
     model_config = {
         "json_schema_extra": {
-            "examples": [
-                {
-                    "prompt": "\n\n### Instructions:\nWhat is the capital of France?\n\n### Response:\n",
-                    "stop": ["\n", "###"],
-                }
-            ]
+            "examples": [{
+                "prompt": "\n\n### Instructions:\nWhat is the capital of France?\n\n### Response:\n",
+                "stop": ["\n", "###"],
+            }]
         }
     }
+
 
 def make_logit_bias_processor(
     llama: llama_cpp.Llama,
@@ -638,11 +635,9 @@ async def create_completion(
     kwargs = body.model_dump(exclude=exclude)
 
     if body.logit_bias is not None:
-        kwargs["logits_processor"] = llama_cpp.LogitsProcessorList(
-            [
-                make_logit_bias_processor(llama, body.logit_bias, body.logit_bias_type),
-            ]
-        )
+        kwargs["logits_processor"] = llama_cpp.LogitsProcessorList([
+            make_logit_bias_processor(llama, body.logit_bias, body.logit_bias_type),
+        ])
 
     iterator_or_completion: Union[
         llama_cpp.Completion, Iterator[llama_cpp.CompletionChunk]
@@ -679,11 +674,9 @@ class CreateEmbeddingRequest(BaseModel):
 
     model_config = {
         "json_schema_extra": {
-            "examples": [
-                {
-                    "input": "The food was delicious and the waiter...",
-                }
-            ]
+            "examples": [{
+                "input": "The food was delicious and the waiter...",
+            }]
         }
     }
 
@@ -774,14 +767,12 @@ async def create_chat_completion(
         "user",
     }
     kwargs = body.model_dump(exclude=exclude)
-    if 'grammar'in kwargs['grammar'] and kwargs['grammar']:
-        kwargs['grammar'] = LlamaGrammar.from_string(kwargs['grammar'])
+    if "grammar" in kwargs["grammar"] and kwargs["grammar"]:
+        kwargs["grammar"] = LlamaGrammar.from_string(kwargs["grammar"])
     if body.logit_bias is not None:
-        kwargs["logits_processor"] = llama_cpp.LogitsProcessorList(
-            [
-                make_logit_bias_processor(llama, body.logit_bias, body.logit_bias_type),
-            ]
-        )
+        kwargs["logits_processor"] = llama_cpp.LogitsProcessorList([
+            make_logit_bias_processor(llama, body.logit_bias, body.logit_bias_type),
+        ])
     iterator_or_completion: Union[
         llama_cpp.ChatCompletion, Iterator[llama_cpp.ChatCompletionChunk]
     ] = await run_in_threadpool(llama.create_chat_completion, **kwargs)
@@ -829,14 +820,12 @@ async def get_models(
     assert llama is not None
     return {
         "object": "list",
-        "data": [
-            {
-                "id": settings.model_alias
-                if settings.model_alias is not None
-                else llama.model_path,
-                "object": "model",
-                "owned_by": "me",
-                "permissions": [],
-            }
-        ],
+        "data": [{
+            "id": settings.model_alias
+            if settings.model_alias is not None
+            else llama.model_path,
+            "object": "model",
+            "owned_by": "me",
+            "permissions": [],
+        }],
     }
