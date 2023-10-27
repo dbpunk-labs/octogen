@@ -4,7 +4,7 @@
 // SPDX-License-Identifier: Elastic-2.0
 
 syntax = "proto3";
-package octopus_kernel_proto;
+package octogen_kernel_proto;
 
 import "common.proto";
 
@@ -73,6 +73,6 @@ service KernelServerNode {
   rpc stop(StopKernelRequest) returns (StopKernelResponse) {}
   rpc execute(ExecuteRequest) returns (stream ExecuteResponse) {}
   rpc get_status(GetStatusRequest) returns (GetStatusResponse) {}
-  rpc upload(stream octopus_common_proto.FileChunk) returns (octopus_common_proto.FileUploaded) {}
-  rpc download(octopus_common_proto.DownloadRequest) returns (stream octopus_common_proto.FileChunk) {}
+  rpc upload(stream octogen_common_proto.FileChunk) returns (octogen_common_proto.FileUploaded) {}
+  rpc download(octogen_common_proto.DownloadRequest) returns (stream octogen_common_proto.FileChunk) {}
 }
