@@ -10,7 +10,7 @@ import json
 import logging
 import io
 import time
-from .codellama_client import CodellamaClient
+from .llama_client import LlamaClient
 from og_proto.agent_server_pb2 import OnStepActionStart, TaskResponse, OnStepActionEnd, FinalAnswer, TypingContent
 from .base_agent import BaseAgent, TypingState, TaskContext
 from .tokenizer import tokenize
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
 
 
-class CodellamaAgent(BaseAgent):
+class LlamaAgent(BaseAgent):
 
     def __init__(self, client, kernel_sdk):
         super().__init__(kernel_sdk)
@@ -42,7 +42,7 @@ class CodellamaAgent(BaseAgent):
         elif json_response["action"] == "show_sample_code":
             return ""
         else:
-            code = json_response.get("action_input", None)
+            code = json_response.get("code", None)
             answer_code = """%s
 ```%s
 %s
@@ -57,7 +57,7 @@ class CodellamaAgent(BaseAgent):
     async def handle_show_sample_code(
         self, json_response, queue, context, task_context
     ):
-        code = json_response["action_input"]
+        code = json_response["code"]
         explanation = json_response["explanation"]
         saved_filenames = json_response.get("saved_filenames", [])
         tool_input = json.dumps({
@@ -79,7 +79,7 @@ class CodellamaAgent(BaseAgent):
     async def handle_bash_code(
         self, json_response, queue, context, task_context, task_opt
     ):
-        commands = json_response["action_input"]
+        commands = json_response["code"]
         code = f"%%bash\n {commands}"
         explanation = json_response["explanation"]
         saved_filenames = json_response.get("saved_filenames", [])
@@ -111,7 +111,7 @@ class CodellamaAgent(BaseAgent):
     async def handle_function(
         self, json_response, queue, context, task_context, task_opt
     ):
-        code = json_response["action_input"]
+        code = json_response["code"]
         explanation = json_response["explanation"]
         saved_filenames = json_response.get("saved_filenames", [])
         tool_input = json.dumps({
@@ -139,109 +139,37 @@ class CodellamaAgent(BaseAgent):
                 await queue.put(respond)
         return function_result
 
-    def _get_argument_new_typing(self, message):
-        state = TypingState.START
-        explanation_str = ""
-        action_input_str = ""
-        for token_state, token in tokenize(io.StringIO(message)):
-            if token_state == None:
-                if state == TypingState.EXPLANATION and token[0] == 1:
-                    explanation_str = token[1]
-                    state = TypingState.START
-                if state == TypingState.CODE and token[0] == 1:
-                    action_input_str = token[1]
-                    state = TypingState.START
-                if token[1] == "explanation":
-                    state = TypingState.EXPLANATION
-                if token[1] == "action_input":
-                    state = TypingState.CODE
-            else:
-                # String
-                if token_state == 9 and state == TypingState.EXPLANATION:
-                    explanation_str = "".join(token)
-                elif token_state == 9 and state == TypingState.CODE:
-                    action_input_str = "".join(token)
-        return (state, explanation_str, action_input_str)
-
-    async def call_codellama(
-        self, question, chat_history, queue, context, task_context, task_opt
-    ):
+    async def call_llama(self, messages, queue, context, task_context, task_opt):
         """
-        call codellama api
+        call llama api
         """
-        start_time = time.time()
-        num_tokens = (
-            len(encoding.encode(OCTOGEN_CODELLAMA_SYSTEM))
-            + len(encoding.encode(question))
-            + len(encoding.encode(chat_history))
-        )
-        task_context.input_token_count += num_tokens
-        output_token_count = task_context.output_token_count
-        state = None
-        message = ""
-        text_content = ""
-        code_content = ""
-        async for line in self.client.prompt(question, chat_history=chat_history):
-            if len(line) < 6:
+        input_token_count = 0
+        for message in messages:
+            if not message["content"]:
                 continue
-            if context.done():
-                logger.debug("the client has cancelled the request")
-                break
-            respond = json.loads(line[6:])
-            task_context.llm_response_duration += int((time.time() - start_time) * 1000)
-            start_time = time.time()
-            message += respond["content"]
-            response_token_count = len(encoding.encode(message))
-            task_context.output_token_count = output_token_count + response_token_count
-            logger.debug(f" message {message}")
-            (
-                state,
-                explanation_str,
-                action_input_str,
-            ) = self._get_argument_new_typing(message)
-            if explanation_str and text_content != explanation_str:
-                typed_chars = explanation_str[len(text_content) :]
-                text_content = explanation_str
-                if task_opt.streaming:
-                    await queue.put(
-                        TaskResponse(
-                            state=task_context.to_context_state_proto(),
-                            response_type=TaskResponse.OnModelTypeText,
-                            typing_content=TypingContent(
-                                content=typed_chars, language="text"
-                            ),
-                        )
-                    )
-            if action_input_str and code_content != action_input_str:
-                typed_chars = action_input_str[len(code_content) :]
-                code_content = action_input_str
-                # use a better way to detect the language
-                typing_language = (
-                    "python" if message.find("execute_python_code") >= 0 else "bash"
-                )
-                await queue.put(
-                    TaskResponse(
-                        state=task_context.to_context_state_proto(),
-                        response_type=TaskResponse.OnModelTypeCode,
-                        typing_content=TypingContent(
-                            content=typed_chars, language=typing_language
-                        ),
-                    )
-                )
-            logger.debug(
-                f"argument explanation:{explanation_str} code:{action_input_str}"
-            )
-            if respond.get("stop", ""):
-                state = respond
-
-        return (message, state)
+            input_token_count += len(encoding.encode(message["content"]))
+        task_context.input_token_count += input_token_count
+        start_time = time.time()
+        response = self.client.chat(messages, "codellama", max_tokens=2048)
+        message = await self.extract_message(
+            response,
+            queue,
+            context,
+            task_context,
+            task_opt,
+            start_time,
+            is_json_format=True,
+        )
+        return message
 
     async def arun(self, question, queue, context, task_opt):
         """
         run the agent
         """
-        history = []
-        current_question = question
+        messages = [
+            {"role": "system", "content": OCTOGEN_CODELLAMA_SYSTEM},
+            {"role": "user", "content": question},
+        ]
         task_context = TaskContext(
             start_time=time.time(),
             output_token_count=0,
@@ -269,17 +197,15 @@ class CodellamaAgent(BaseAgent):
                         )
                     )
                     break
-                chat_history = "\n".join(history)
-                (message, state) = await self.call_codellama(
-                    current_question,
-                    chat_history,
+                message = await self.call_llama(
+                    messages,
                     queue,
                     context,
                     task_context,
                     task_opt,
                 )
                 try:
-                    json_response = json.loads(message)
+                    json_response = json.loads(message["content"])
                     if not json_response:
                         await queue.put(
                             TaskResponse(
@@ -299,12 +225,14 @@ class CodellamaAgent(BaseAgent):
                         )
                     )
                     break
-                logger.debug(f" codellama response {json_response}")
+
+                logger.debug(f" llama response {json_response}")
                 if (
                     json_response["action"]
                     in ["execute_python_code", "execute_bash_code"]
-                    and json_response["action_input"]
+                    and json_response["code"]
                 ):
+                    messages.append(message)
                     tools_mapping = {
                         "execute_python_code": self.handle_function,
                         "execute_bash_code": self.handle_bash_code,
@@ -327,36 +255,31 @@ class CodellamaAgent(BaseAgent):
                             ),
                         )
                     )
-                    history.append("User:%s" % current_question)
+
                     action_output = "the output of %s:" % json_response["action"]
                     current_question = "Give me the final answer summary if the above output of action  meets the goal Otherwise try a new step"
-                    # TODO limit the output size
                     if function_result.has_result:
-                        octogen_response = f"Octogen:{message}\n{action_output}\n{function_result.console_stdout}"
-                        history.append(octogen_response)
-                        logger.debug(
-                            "continue to iterate with codellama with question %s"
-                            % function_result.console_stdout
-                        )
+                        messages.append({
+                            "role": "user",
+                            "content": f"{action_output} \n {function_result.console_stdout}",
+                        })
+                        messages.append({"role": "user", "content": current_question})
                     elif function_result.has_error:
-                        octogen_response = f"Octogen:{message}\n{action_output}\n{function_result.console_stderr}"
-                        history.append(octogen_response)
+                        messages.append({
+                            "role": "user",
+                            "content": f"{action_output} \n {function_result.console_stderr}",
+                        })
                         current_question = f"Generate a new step to fix the above error"
-                        logger.debug(
-                            "continue to iterate with codellama with question %s"
-                            % function_result.console_stderr
-                        )
-
+                        messages.append({"role": "user", "content": current_question})
                     else:
-                        octogen_response = f"Octogen:{message}\n{action_output}\n{function_result.console_stdout}"
-                        history.append(octogen_response)
-                        logger.debug(
-                            "continue to iterate with codellama with question %s"
-                            % function_result.console_stdout
-                        )
+                        messages.append({
+                            "role": "user",
+                            "content": f"{action_output} \n {function_result.console_stdout}",
+                        })
+                        messages.append({"role": "user", "content": current_question})
                 elif (
                     json_response["action"] == "show_sample_code"
-                    and json_response["action_input"]
+                    and json_response["code"]
                 ):
                     await self.handle_show_sample_code(
                         json_response, queue, context, task_context
@@ -383,6 +306,7 @@ class CodellamaAgent(BaseAgent):
                     )
                     break
         except Exception as ex:
+            logger.exception("fail to run the agent")
             response = TaskResponse(
                 response_type=TaskResponse.OnSystemError,
                 error_msg=str(ex),

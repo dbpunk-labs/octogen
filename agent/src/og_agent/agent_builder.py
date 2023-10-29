@@ -6,25 +6,23 @@
 """ """
 import json
 from .prompt import OCTOGEN_FUNCTION_SYSTEM, OCTOGEN_CODELLAMA_SYSTEM
-from .codellama_agent import CodellamaAgent
+from .llama_agent import LlamaAgent
 from .openai_agent import OpenaiAgent
-from .codellama_client import CodellamaClient
+from .llama_client import LlamaClient
 from .mock_agent import MockAgent
 
 
-def build_codellama_agent(endpoint, key, sdk, grammer_path):
+def build_llama_agent(endpoint, key, sdk, grammer_path):
     """
-    build codellama agent
+    build llama agent
     """
     with open(grammer_path, "r") as fd:
         grammar = fd.read()
 
-    client = CodellamaClient(
-        endpoint, key, OCTOGEN_CODELLAMA_SYSTEM, "Octogen", "User", grammar
-    )
+    client = LlamaClient(endpoint, key, grammar)
 
     # init the agent
-    return CodellamaAgent(client, sdk)
+    return LlamaAgent(client, sdk)
 
 
 def build_openai_agent(sdk, model_name, is_azure=True):

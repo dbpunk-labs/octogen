@@ -5,6 +5,7 @@
 #
 # SPDX-License-Identifier: Elastic-2.0
 
+import sys
 import asyncio
 import uvicorn
 import json
@@ -19,10 +20,18 @@ from fastapi.responses import StreamingResponse
 from fastapi.param_functions import Header, Annotated
 from dotenv import dotenv_values
 
-logger = logging.getLogger(__name__)
-
-# the agent config
+# the api server config
 config = dotenv_values(".env")
+
+LOG_LEVEL = (
+    logging.DEBUG if config.get("log_level", "info") == "debug" else logging.INFO
+)
+logging.basicConfig(
+    level=LOG_LEVEL,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI()
 # the agent endpoint
@@ -32,7 +41,6 @@ listen_addr = "%s:%s" % (
 )
 if config.get("rpc_host", "") == "0.0.0.0":
     listen_addr = "127.0.0.1:%s" % config.get("rpc_port", "9528")
-logger.info(f"connect the agent server at {listen_addr}")
 agent_sdk = AgentProxySDK(listen_addr)
 
 
@@ -191,6 +199,7 @@ async def process_task(
 
 
 async def run_server():
+    logger.info(f"connect the agent server at {listen_addr}")
     port = int(config.get("rpc_port", "9528")) + 1
     server_config = uvicorn.Config(
         app, host=config.get("rpc_host", "127.0.0.1"), port=port

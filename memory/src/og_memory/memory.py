@@ -9,16 +9,16 @@
 
 """
 
-
 # import the agent memory
-from og_proto.memory_pb2 import AgentMemory
+from og_proto.memory_pb2 import AgentMemory as AgentMemoryProto
 from jinja2 import Environment
 from jinja2.loaders import PackageLoader
 
 env = Environment(loader=PackageLoader("og_memory", "template"))
+
 context_tpl = env.get_template("agent.jinja")
 
-def agent_memory_to_context(memory: AgentMemory):
+def agent_memory_to_context(memory: AgentMemoryProto):
     """
     Convert the agent memory to context
     :param memory : AgentMemory
@@ -26,5 +26,8 @@ def agent_memory_to_context(memory: AgentMemory):
     """
     return context_tpl.render(prompt=memory.instruction, guides=memory.guide_memory)
 
+class AgentMemory():
+    def __init__(self, path):
+        self.path = path
 
 
