@@ -12,7 +12,7 @@ import logging
 import pytest
 
 from og_sdk.kernel_sdk import KernelSDK
-from og_agent.codellama_agent import CodellamaAgent
+from og_agent.llama_agent import LlamaAgent
 from og_proto.agent_server_pb2 import ProcessOptions, TaskResponse
 import asyncio
 import pytest_asyncio
@@ -56,13 +56,13 @@ class MockContext:
         return False
 
 
-class CodellamaMockClient:
+class LlamaMockClient:
 
     def __init__(self, payloads):
         self.payloads = payloads
         self.index = 0
 
-    async def prompt(self, question, chat_history=[]):
+    async def chat(self, question, name, max_tokens=1024):
         if self.index >= len(self.payloads):
             raise StopAsyncIteration
         self.index += 1
@@ -90,8 +90,8 @@ async def test_codellama_agent_execute_bash_code(kernel_sdk):
         "language": "en",
         "is_final_answer": False,
     }
-    client = CodellamaMockClient([json.dumps(sentence1), json.dumps(sentence2)])
-    agent = CodellamaAgent(client, kernel_sdk)
+    client = LlamaMockClient([json.dumps(sentence1), json.dumps(sentence2)])
+    agent = LlamaAgent(client, kernel_sdk)
     task_opt = ProcessOptions(
         streaming=True,
         llm_name="codellama",
@@ -140,8 +140,8 @@ async def test_codellama_agent_execute_python_code(kernel_sdk):
         "language": "en",
         "is_final_answer": False,
     }
-    client = CodellamaMockClient([json.dumps(sentence1), json.dumps(sentence2)])
-    agent = CodellamaAgent(client, kernel_sdk)
+    client = LlamaMockClient([json.dumps(sentence1), json.dumps(sentence2)])
+    agent = LlamaAgent(client, kernel_sdk)
     task_opt = ProcessOptions(
         streaming=True,
         llm_name="codellama",
@@ -181,8 +181,8 @@ async def test_codellama_agent_show_demo_code(kernel_sdk):
         "language": "shell",
         "is_final_answer": True,
     }
-    client = CodellamaMockClient([json.dumps(sentence)])
-    agent = CodellamaAgent(client, kernel_sdk)
+    client = LlamaMockClient([json.dumps(sentence)])
+    agent = LlamaAgent(client, kernel_sdk)
     task_opt = ProcessOptions(
         streaming=True,
         llm_name="codellama",
@@ -217,8 +217,8 @@ async def test_codellama_agent_smoke_test(kernel_sdk):
         "language": "en",
         "is_final_answer": True,
     }
-    client = CodellamaMockClient([json.dumps(sentence)])
-    agent = CodellamaAgent(client, kernel_sdk)
+    client = LlamaMockClient([json.dumps(sentence)])
+    agent = LlamaAgent(client, kernel_sdk)
     task_opt = ProcessOptions(
         streaming=True,
         llm_name="codellama",

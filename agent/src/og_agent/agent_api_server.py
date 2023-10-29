@@ -5,6 +5,7 @@
 #
 # SPDX-License-Identifier: Elastic-2.0
 
+import sys
 import asyncio
 import uvicorn
 import json
