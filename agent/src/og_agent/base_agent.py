@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Elastic-2.0
 
 """ """
+import uuid
 import json
 import io
 import logging
@@ -14,7 +15,10 @@ from og_proto.kernel_server_pb2 import ExecuteResponse
 from og_proto.agent_server_pb2 import TaskResponse, ContextState
 from og_sdk.utils import parse_image_filename, process_char_stream
 from og_proto.agent_server_pb2 import OnStepActionStart, TaskResponse, OnStepActionEnd, FinalAnswer, TypingContent
+from og_proto.prompt_pb2 import AgentPrompt
 from .tokenizer import tokenize
+from .prompt import ROLE, RULES, ACTIONS, OUTPUT_FORMAT
+from og_memory.memory import MemoryAgentMemory
 import tiktoken
 
 encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
@@ -30,14 +34,13 @@ class FunctionResult(BaseModel):
     has_result: bool = False
     has_error: bool = False
 
-
 class TaskContext(BaseModel):
     start_time: float = 0
     output_token_count: int = 0
     input_token_count: int = 0
     llm_name: str = ""
     llm_response_duration: int = 0
-
+    context_id: str = ""
     def to_context_state_proto(self):
         # in ms
         total_duration = int((time.time() - self.start_time) * 1000)
@@ -48,7 +51,6 @@ class TaskContext(BaseModel):
             total_duration=total_duration,
             llm_response_duration=self.llm_response_duration,
         )
-
 
 class TypingState:
     START = 0
@@ -61,6 +63,35 @@ class BaseAgent:
     def __init__(self, sdk):
         self.kernel_sdk = sdk
         self.model_name = ""
+        self.agent_memories = {}
+
+    def create_new_memory_with_default_prompt(self, user_name, user_id):
+        """
+        create a new memory for the user
+        """
+        # generate a uuid
+        memory_id = str(uuid.uuid4())
+        agent_prompt = AgentPrompt(
+            role=ROLE,
+            rules=RULES,
+            actions=ACTIONS,
+            output_format=OUTPUT_FORMAT,
+        )
+        agent_memory = MemoryAgentMemory(memory_id, user_name, user_id)
+        agent_memory.swap_instruction(agent_prompt)
+        self.agent_memories[memory_id] = agent_memory
+        logger.info(f"create a new memory {memory_id} for user {user_name}")
+        return memory_id
+
+    def reset_memory(self, memory_id):
+        """
+        reset the memory
+        """
+        if memory_id in self.agent_memories:
+            self.agent_memories[memory_id].reset_memory()
+            logger.info(f"reset the memory {memory_id}")
+        else:
+            logger.info(f"the memory {memory_id} does not exist")
 
     def _merge_delta_for_function_call(self, message, delta):
         if len(message.keys()) == 0:
@@ -187,6 +218,7 @@ class BaseAgent:
         """
         send the typing message to the client
         """
+        task_opt = request
         (state, explanation_str, code_str) = self._parse_arguments(arguments, is_code)
         logger.debug(
             f"argument explanation:{explanation_str} code:{code_str} text_content:{old_text_content}"
@@ -199,6 +231,7 @@ class BaseAgent:
                     state=task_context.to_context_state_proto(),
                     response_type=TaskResponse.OnModelTypeText,
                     typing_content=TypingContent(content=typed_chars, language="text"),
+                    context_id=task_context.context_id
                 )
                 await queue.put(task_response)
             return new_text_content, old_code_content
@@ -213,6 +246,7 @@ class BaseAgent:
                         typing_content=TypingContent(
                             content=typed_chars, language=language
                         ),
+                        context_id=task_context.context_id
                     )
                 )
             return old_text_content, code_content
@@ -224,13 +258,14 @@ class BaseAgent:
         queue,
         rpc_context,
         task_context,
-        task_opt,
+        request,
         start_time,
         is_json_format=False,
     ):
         """
         extract the chunk from the response generator
         """
+        task_opt = request.options
         message = {}
         text_content = ""
         code_content = ""
@@ -303,6 +338,7 @@ class BaseAgent:
                                 typing_content=TypingContent(
                                     content=delta["content"], language="text"
                                 ),
+                                context_id=task_context.context_id
                             )
                         )
         logger.info(
@@ -310,7 +346,7 @@ class BaseAgent:
         )
         return message
 
-    async def call_function(self, code, context, task_context=None):
+    async def call_function(self, code, context, task_context):
         """
         run code with kernel
         """
@@ -336,11 +372,10 @@ class BaseAgent:
                 yield (
                     None,
                     TaskResponse(
-                        state=task_context.to_context_state_proto()
-                        if task_context
-                        else None,
+                        state=task_context.to_context_state_proto(),
                         response_type=TaskResponse.OnStepActionStreamStdout,
                         console_stdout=kernel_output,
+                        context_id=task_context.context_id
                     ),
                 )
             # process the stderr
@@ -352,11 +387,10 @@ class BaseAgent:
                 yield (
                     None,
                     TaskResponse(
-                        state=task_context.to_context_state_proto()
-                        if task_context
-                        else None,
+                        state=task_context.to_context_state_proto(),
                         response_type=TaskResponse.OnStepActionStreamStderr,
                         console_stderr=kernel_err,
+                        context_id=task_context.context_id
                     ),
                 )
             elif kernel_respond.output_type == ExecuteResponse.TracebackType:
@@ -367,11 +401,10 @@ class BaseAgent:
                 yield (
                     None,
                     TaskResponse(
-                        state=task_context.to_context_state_proto()
-                        if task_context
-                        else None,
+                        state=task_context.to_context_state_proto(),
                         response_type=TaskResponse.OnStepActionStreamStderr,
                         console_stderr=traceback,
+                        context_id=task_context.context_id
                     ),
                 )
             else:
@@ -392,11 +425,10 @@ class BaseAgent:
                 yield (
                     None,
                     TaskResponse(
-                        state=task_context.to_context_state_proto()
-                        if task_context
-                        else None,
+                        state=task_context.to_context_state_proto(),
                         response_type=TaskResponse.OnStepActionStreamStdout,
                         console_stdout=console_stdout,
+                        context_id=task_context.context_id
                     ),
                 )
         output_files = []

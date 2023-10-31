@@ -11,8 +11,8 @@ message ActionDesc {
     string name = 1;
     // the action description
     string desc = 2;
-    // the external script for the action
-    string external_script = 3;
+    // the parameters with json schema format for the action
+    string parameters = 3;
 }
 
 message AgentPrompt {

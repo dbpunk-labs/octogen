@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 from og_proto.agent_server_pb2 import OnStepActionStart, TaskResponse, OnStepActionEnd, FinalAnswer, TypingContent
 from .base_agent import BaseAgent, TypingState, TaskContext
 from .tokenizer import tokenize
+from og_memory.memory import AgentMemoryOption
 import tiktoken
 
 logger = logging.getLogger(__name__)
@@ -66,76 +67,17 @@ OCTOGEN_FUNCTIONS = [
     },
 ]
 
-
 class OpenaiAgent(BaseAgent):
 
-    def __init__(self, model, system_prompt, sdk, is_azure=True):
+    def __init__(self, model, sdk, is_azure=True):
         super().__init__(sdk)
         self.model = model
-        self.system_prompt = system_prompt
         logger.info(f"use openai model {model} is_azure {is_azure}")
-        logger.info(f"use openai with system prompt {system_prompt}")
         self.is_azure = is_azure
         self.model_name = model if not is_azure else ""
+        self.memory_option = AgentMemoryOption(show_function_instruction=False)
 
-    def _merge_delta_for_function_call(self, message, delta):
-        if len(message.keys()) == 0:
-            message.update(delta)
-            return
-        if "function_call" not in message:
-            message["function_call"] = delta["function_call"]
-            return
-        old_arguments = message["function_call"].get("arguments", "")
-        if delta["function_call"]["arguments"]:
-            message["function_call"]["arguments"] = (
-                old_arguments + delta["function_call"]["arguments"]
-            )
-
-    def _merge_delta_for_content(self, message, delta):
-        if not delta:
-            return
-        content = message.get("content", "")
-        if delta.get("content"):
-            message["content"] = content + delta["content"]
-
-    def _get_function_call_argument_new_typing(self, message):
-        if message["function_call"]["name"] == "python":
-            return TypingState.CODE, "", message["function_call"].get("arguments", "")
-
-        arguments = message["function_call"].get("arguments", "")
-        state = TypingState.START
-        explanation_str = ""
-        code_str = ""
-        for token_state, token in tokenize(io.StringIO(arguments)):
-            if token_state == None:
-                if state == TypingState.EXPLANATION and token[0] == 1:
-                    explanation_str = token[1]
-                    state = TypingState.START
-                if state == TypingState.CODE and token[0] == 1:
-                    code_str = token[1]
-                    state = TypingState.START
-                if token[1] == "explanation":
-                    state = TypingState.EXPLANATION
-                if token[1] == "code":
-                    state = TypingState.CODE
-            else:
-                # String
-                if token_state == 9 and state == TypingState.EXPLANATION:
-                    explanation_str = "".join(token)
-                elif token_state == 9 and state == TypingState.CODE:
-                    code_str = "".join(token)
-        return (state, explanation_str, code_str)
-
-    def _get_message_token_count(self, message):
-        response_token_count = 0
-        if "function_call" in message and message["function_call"]:
-            arguments = message["function_call"].get("arguments", "")
-            response_token_count += len(encoding.encode(arguments))
-        if "content" in message and message["content"]:
-            response_token_count += len(encoding.encode(message.get("content")))
-        return response_token_count
-
-    async def call_openai(self, messages, queue, context, task_context, task_opt):
+    async def call_openai(self, messages, queue, context, task_context, request):
         """
         call the openai api
         """
@@ -166,11 +108,12 @@ class OpenaiAgent(BaseAgent):
                 stream=True,
             )
         message = await self.extract_message(
-            response, queue, context, task_context, task_opt, start_time
+            response, queue, context, task_context, request, start_time
         )
         return message
 
-    async def handle_function(self, message, queue, context, task_context, task_opt):
+    async def handle_function(self, message, queue, context, task_context, request):
+        task_opt = request.options
         if "function_call" in message:
             if context.done():
                 logging.debug("the client has cancelled the request")
@@ -209,6 +152,7 @@ class OpenaiAgent(BaseAgent):
                     on_step_action_start=OnStepActionStart(
                         input=tool_input, tool=function_name
                     ),
+                    context_id=task_context.context_id
                 )
             )
 
@@ -226,22 +170,41 @@ class OpenaiAgent(BaseAgent):
         else:
             raise Exception("bad message, function message expected")
 
-    async def arun(self, task, queue, context, task_opt):
+    async def arun(self, request, queue, context):
         """
         process the task
         """
-        messages = [
-            {"role": "system", "content": self.system_prompt},
-            {"role": "user", "content": task},
-        ]
-        iterations = 0
+        task = request.task
+        task_opt = request.options
+        context_id = (
+            request.context_id
+            if request.context_id
+            else self.create_new_memory_with_default_prompt("", "")
+        )
         task_context = TaskContext(
             start_time=time.time(),
             output_token_count=0,
             input_token_count=0,
             llm_name=self.model_name,
             llm_respond_duration=0,
+            context_id=context_id,
         )
+        if context_id not in self.agent_memories:
+            await queue.put(
+                TaskResponse(
+                    state=task_context.to_context_state_proto(),
+                    response_type=TaskResponse.OnSystemError,
+                    error_msg="invalid context id",
+                    context_id = context_id,
+                )
+            )
+            return
+
+        agent_memory = self.agent_memories[context_id]
+        agent_memory.update_option(self.memory_option)
+        agent_memory.append_chat_message({
+            {"role": "user", "content": task},
+        })
         try:
             while not context.done():
                 if task_context.input_token_count >= task_opt.input_token_limit:
@@ -250,6 +213,7 @@ class OpenaiAgent(BaseAgent):
                             state=task_context.to_context_state_proto(),
                             response_type=TaskResponse.OnInputTokenLimitExceed,
                             error_msg="input token limit reached",
+                            context_id = context_id,
                         )
                     )
                     break
@@ -259,12 +223,13 @@ class OpenaiAgent(BaseAgent):
                             state=task_context.to_context_state_proto(),
                             response_type=TaskResponse.OnOutputTokenLimitExceed,
                             error_msg="output token limit reached",
+                            context_id = context_id,
                         )
                     )
                     break
                 logger.debug(f" the input messages {messages}")
                 chat_message = await self.call_openai(
-                    messages, queue, context, task_context, task_opt
+                    agent_memories.to_messages(), queue, context, task_context, request
                 )
                 logger.debug(f"the response {chat_message}")
                 if "function_call" in chat_message:
@@ -272,14 +237,14 @@ class OpenaiAgent(BaseAgent):
                         chat_message["content"] = None
                     if "role" not in chat_message:
                         chat_message["role"] = "assistant"
-                    messages.append(chat_message)
+                    agent_memory.append_chat_message(chat_message)
                     function_name = chat_message["function_call"]["name"]
                     if function_name not in [
                         "execute_python_code",
                         "python",
                         "execute_bash_code",
                     ]:
-                        messages.append({
+                        agent_memory.append_chat_message({
                             "role": "function",
                             "name": function_name,
                             "content": "You can use the execute_python_code or execute_bash_code",
@@ -288,7 +253,6 @@ class OpenaiAgent(BaseAgent):
                     function_result = await self.handle_function(
                         chat_message, queue, context, task_context, task_opt
                     )
-
                     await queue.put(
                         TaskResponse(
                             state=task_context.to_context_state_proto(),
@@ -301,23 +265,24 @@ class OpenaiAgent(BaseAgent):
                                 output_files=function_result.saved_filenames,
                                 has_error=function_result.has_error,
                             ),
+                            context_id = context_id,
                         )
                     )
                     # TODO optimize the token limitation
                     if function_result.has_result:
-                        messages.append({
+                        agent_memory.append_chat_message({
                             "role": "function",
                             "name": function_name,
                             "content": function_result.console_stdout[0:500],
                         })
                     elif function_result.has_error:
-                        messages.append({
+                        agent_memory.append_chat_message({
                             "role": "function",
                             "name": function_name,
                             "content": function_result.console_stderr[0:500],
                         })
                     else:
-                        messages.append({
+                        agent_memory.append_chat_message({
                             "role": "function",
                             "name": function_name,
                             "content": function_result.console_stdout[0:500],
@@ -333,6 +298,7 @@ class OpenaiAgent(BaseAgent):
                                 if not task_opt.streaming
                                 else ""
                             ),
+                            context_id = context_id,
                         )
                     )
                     break
@@ -341,6 +307,7 @@ class OpenaiAgent(BaseAgent):
             response = TaskResponse(
                 response_type=TaskResponse.OnSystemError,
                 error_msg=str(ex),
+                context_id = context_id,
             )
             await queue.put(response)
         finally:

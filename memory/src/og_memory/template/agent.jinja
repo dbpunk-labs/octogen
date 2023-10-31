@@ -1,23 +1,20 @@
-{#the role description#}
-{{prompt.role}}
-{#the rule list#}
-{%if prompt.rules%}
-Follow the rules
-{% for rule in prompt.rules if rule%}
+{#the role description#}{{prompt.role}}
+{#the rule list#}{%if prompt.rules -%}Follow the rules
+{% for rule in prompt.rules if rule -%}
 {{loop.index}}.{{rule}}
-{% endfor%}
-{% endif %}
-{%if prompt.actions%}
+{% endfor -%}
+{% endif -%}
+{%if prompt.actions and options.show_function_instruction -%}
 Use the following actions to help you finishing your task
-{% for action in prompt.actions if action%}
-{{loop.index}}.{{action.name}}: {{action.desc}}
-{% endfor%}
-{% endif %}
-{%if guides%}
-The instructions for the tools and libraries you recently used.
-{% for guide in guides if guide%}
-{{loop.index}}.{{guide.name}}
-{{guide.what_it_can_do}}
-{{guide.how_to_use}}
-{% endfor%}
-{% endif %}
+{% for action in prompt.actions if action -%}
+{% set temp_parameters = action.parameters | from_json %}
+{{loop.index}}.{{action.name}}: {{action.desc}}, the following are parameters
+    {% for key, value in temp_parameters.properties.items() -%}
+        {{key}}({{value.type}}):{{value.description}}
+    {%endfor-%}
+{% endfor -%}
+{% endif -%}{%if guides -%}The instructions for the tools and libraries you recently used.
+{% for guide in guides if guide -%}{{loop.index}}.{{guide.name}}{{guide.what_it_can_do}}{{guide.how_to_use}}
+{% endfor -%}{% endif -%}{%if prompt.output_format -%}
+{{prompt.output_format}}
+{% endif -%}
