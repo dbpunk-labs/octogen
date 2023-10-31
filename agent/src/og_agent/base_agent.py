@@ -34,6 +34,7 @@ class FunctionResult(BaseModel):
     has_result: bool = False
     has_error: bool = False
 
+
 class TaskContext(BaseModel):
     start_time: float = 0
     output_token_count: int = 0
@@ -41,6 +42,7 @@ class TaskContext(BaseModel):
     llm_name: str = ""
     llm_response_duration: int = 0
     context_id: str = ""
+
     def to_context_state_proto(self):
         # in ms
         total_duration = int((time.time() - self.start_time) * 1000)
@@ -52,10 +54,12 @@ class TaskContext(BaseModel):
             llm_response_duration=self.llm_response_duration,
         )
 
+
 class TypingState:
     START = 0
     EXPLANATION = 1
     CODE = 2
+    LANGUAGE = 3
 
 
 class BaseAgent:
@@ -117,17 +121,16 @@ class BaseAgent:
         self,
         arguments,
         is_code=False,
-        first_field_name="explanation",
-        second_field_name="code",
     ):
         """
         parse the partial key with string value from json
         """
         if is_code:
-            return TypingState.CODE, "", arguments
+            return TypingState.CODE, "", arguments, "python"
         state = TypingState.START
         explanation_str = ""
         code_str = ""
+        language_str = ""
         logger.debug(f"the arguments {arguments}")
         for token_state, token in tokenize(io.StringIO(arguments)):
             if token_state == None:
@@ -137,17 +140,21 @@ class BaseAgent:
                 if state == TypingState.CODE and token[0] == 1:
                     code_str = token[1]
                     state = TypingState.START
-                if token[1] == first_field_name:
+                if token[1] == "explanation":
                     state = TypingState.EXPLANATION
-                if token[1] == second_field_name:
+                if token[1] == "code":
                     state = TypingState.CODE
+                if token[1] == "language":
+                    state = TypingState.LANGUAGE
             else:
                 # String
                 if token_state == 9 and state == TypingState.EXPLANATION:
                     explanation_str = "".join(token)
                 elif token_state == 9 and state == TypingState.CODE:
                     code_str = "".join(token)
-        return (state, explanation_str, code_str)
+                elif token_state == 9 and state == TypingState.LANGUAGE:
+                    language_str = "".join(token)
+        return (state, explanation_str, code_str, language_str)
 
     def _get_message_token_count(self, message):
         response_token_count = 0
@@ -159,16 +166,16 @@ class BaseAgent:
         return response_token_count
 
     async def _read_function_call_message(
-        self, message, queue, old_text_content, old_code_content, task_context, task_opt
+        self,
+        message,
+        queue,
+        old_text_content,
+        old_code_content,
+        language_str,
+        task_context,
+        task_opt,
     ):
         typing_language = "text"
-        if message["function_call"].get("name", "") in [
-            "execute_python_code",
-            "python",
-        ]:
-            typing_language = "python"
-        elif message["function_call"].get("name", "") == "execute_bash_code":
-            typing_language = "bash"
         is_code = False
         if message["function_call"].get("name", "") == "python":
             is_code = True
@@ -178,28 +185,30 @@ class BaseAgent:
             queue,
             old_text_content,
             old_code_content,
-            typing_language,
+            language_str,
             task_context,
             task_opt,
             is_code=is_code,
         )
 
     async def _read_json_message(
-        self, message, queue, old_text_content, old_code_content, task_context, task_opt
+        self,
+        message,
+        queue,
+        old_text_content,
+        old_code_content,
+        old_language_str,
+        task_context,
+        task_opt,
     ):
         arguments = message.get("content", "")
         typing_language = "text"
-        if arguments.find("execute_python_code") >= 0:
-            typing_language = "python"
-        elif arguments.find("execute_bash_code") >= 0:
-            typing_language = "bash"
-
         return await self._send_typing_message(
             arguments,
             queue,
             old_text_content,
             old_code_content,
-            typing_language,
+            old_language_str,
             task_context,
             task_opt,
         )
@@ -210,7 +219,7 @@ class BaseAgent:
         queue,
         old_text_content,
         old_code_content,
-        language,
+        old_language_str,
         task_context,
         task_opt,
         is_code=False,
@@ -218,10 +227,11 @@ class BaseAgent:
         """
         send the typing message to the client
         """
-        task_opt = request
-        (state, explanation_str, code_str) = self._parse_arguments(arguments, is_code)
+        (state, explanation_str, code_str, language_str) = self._parse_arguments(
+            arguments, is_code
+        )
         logger.debug(
-            f"argument explanation:{explanation_str} code:{code_str} text_content:{old_text_content}"
+            f"argument explanation:{explanation_str} code:{code_str} language_str:{language_str} text_content:{old_text_content}"
         )
         if explanation_str and old_text_content != explanation_str:
             typed_chars = explanation_str[len(old_text_content) :]
@@ -231,10 +241,10 @@ class BaseAgent:
                     state=task_context.to_context_state_proto(),
                     response_type=TaskResponse.OnModelTypeText,
                     typing_content=TypingContent(content=typed_chars, language="text"),
-                    context_id=task_context.context_id
+                    context_id=task_context.context_id,
                 )
                 await queue.put(task_response)
-            return new_text_content, old_code_content
+            return new_text_content, old_code_content, old_language_str
         if code_str and old_code_content != code_str:
             typed_chars = code_str[len(old_code_content) :]
             code_content = code_str
@@ -244,13 +254,25 @@ class BaseAgent:
                         state=task_context.to_context_state_proto(),
                         response_type=TaskResponse.OnModelTypeCode,
                         typing_content=TypingContent(
-                            content=typed_chars, language=language
+                            content=typed_chars, language="text"
                         ),
-                        context_id=task_context.context_id
+                        context_id=task_context.context_id,
                     )
                 )
-            return old_text_content, code_content
-        return old_text_content, old_code_content
+            return old_text_content, code_content, old_language_str
+        if language_str and old_language_str != language_str:
+            typed_chars = language_str[len(old_language_str) :]
+            if task_opt.streaming and len(typed_chars) > 0:
+                await queue.put(
+                    TaskResponse(
+                        state=task_context.to_context_state_proto(),
+                        response_type=TaskResponse.OnModelTypeCode,
+                        typing_content=TypingContent(content="", language=language_str),
+                        context_id=task_context.context_id,
+                    )
+                )
+            return old_text_content, old_code_content, language_str
+        return old_text_content, old_code_content, old_language_str
 
     async def extract_message(
         self,
@@ -258,17 +280,17 @@ class BaseAgent:
         queue,
         rpc_context,
         task_context,
-        request,
+        task_opt,
         start_time,
         is_json_format=False,
     ):
         """
         extract the chunk from the response generator
         """
-        task_opt = request.options
         message = {}
         text_content = ""
         code_content = ""
+        language_str = ""
         context_output_token_count = task_context.output_token_count
         start_time = time.time()
         async for chunk in response_generator:
@@ -294,11 +316,13 @@ class BaseAgent:
                 (
                     new_text_content,
                     new_code_content,
+                    new_language_str,
                 ) = await self._read_function_call_message(
                     message,
                     queue,
                     text_content,
                     code_content,
+                    language_str,
                     task_context,
                     task_opt,
                 )
@@ -324,6 +348,7 @@ class BaseAgent:
                             queue,
                             text_content,
                             code_content,
+                            language_str,
                             task_context,
                             task_opt,
                         )
@@ -338,7 +363,7 @@ class BaseAgent:
                                 typing_content=TypingContent(
                                     content=delta["content"], language="text"
                                 ),
-                                context_id=task_context.context_id
+                                context_id=task_context.context_id,
                             )
                         )
         logger.info(
@@ -375,7 +400,7 @@ class BaseAgent:
                         state=task_context.to_context_state_proto(),
                         response_type=TaskResponse.OnStepActionStreamStdout,
                         console_stdout=kernel_output,
-                        context_id=task_context.context_id
+                        context_id=task_context.context_id,
                     ),
                 )
             # process the stderr
@@ -390,7 +415,7 @@ class BaseAgent:
                         state=task_context.to_context_state_proto(),
                         response_type=TaskResponse.OnStepActionStreamStderr,
                         console_stderr=kernel_err,
-                        context_id=task_context.context_id
+                        context_id=task_context.context_id,
                     ),
                 )
             elif kernel_respond.output_type == ExecuteResponse.TracebackType:
@@ -404,7 +429,7 @@ class BaseAgent:
                         state=task_context.to_context_state_proto(),
                         response_type=TaskResponse.OnStepActionStreamStderr,
                         console_stderr=traceback,
-                        context_id=task_context.context_id
+                        context_id=task_context.context_id,
                     ),
                 )
             else:
@@ -428,7 +453,7 @@ class BaseAgent:
                         state=task_context.to_context_state_proto(),
                         response_type=TaskResponse.OnStepActionStreamStdout,
                         console_stdout=console_stdout,
-                        context_id=task_context.context_id
+                        context_id=task_context.context_id,
                     ),
                 )
         output_files = []

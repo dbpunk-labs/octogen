@@ -15,6 +15,6 @@ Use the following actions to help you finishing your task
 {% endfor -%}
 {% endif -%}{%if guides -%}The instructions for the tools and libraries you recently used.
 {% for guide in guides if guide -%}{{loop.index}}.{{guide.name}}{{guide.what_it_can_do}}{{guide.how_to_use}}
-{% endfor -%}{% endif -%}{%if prompt.output_format -%}
+{% endfor -%}{% endif -%}{%if prompt.output_format and not options.disable_output_format -%}
 {{prompt.output_format}}
 {% endif -%}

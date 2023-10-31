@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Elastic-2.0
 
 import json
-from og_proto.memory_pb2 import ActionDesc
+from og_proto.prompt_pb2 import ActionDesc
 
 ROLE = """You are the Programming Copilot called Octogen, a world-class programmer to complete any goal by executing code"""
 
@@ -16,7 +16,6 @@ RULES = [
     "You can install new package with pip",
     "Use `execute` action to execute any code and `direct_message` action to send message to user",
 ]
-
 ACTIONS = [
     ActionDesc(
         name="execute",
@@ -34,7 +33,7 @@ ACTIONS = [
                 },
                 "language": {
                     "type": "string",
-                    "description": "the language of the code",
+                    "description": "the language of the code, only python and bash are supported",
                 },
                 "saved_filenames": {
                     "type": "array",

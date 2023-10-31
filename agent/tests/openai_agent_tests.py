@@ -12,7 +12,7 @@ import logging
 import pytest
 from og_sdk.kernel_sdk import KernelSDK
 from og_agent import openai_agent
-from og_proto.agent_server_pb2 import ProcessOptions, TaskResponse
+from og_proto.agent_server_pb2 import ProcessOptions, TaskResponse, ProcessTaskRequest
 from openai.openai_object import OpenAIObject
 import asyncio
 import pytest_asyncio
@@ -112,8 +112,9 @@ async def test_openai_agent_call_execute_bash_code(mocker, kernel_sdk):
         "explanation": "the hello world in bash",
         "code": "echo 'hello world'",
         "saved_filenames": [],
+        "language": "bash",
     }
-    stream1 = FunctionCallPayloadStream("execute_bash_code", json.dumps(arguments))
+    stream1 = FunctionCallPayloadStream("execute", json.dumps(arguments))
     sentence = "The output 'hello world' is the result"
     stream2 = PayloadStream(sentence)
     call_mock = MultiCallMock([stream1, stream2])
@@ -121,7 +122,7 @@ async def test_openai_agent_call_execute_bash_code(mocker, kernel_sdk):
         "og_agent.openai_agent.openai.ChatCompletion.acreate",
         side_effect=call_mock.call,
     ) as mock_openai:
-        agent = openai_agent.OpenaiAgent("gpt4", "prompt", kernel_sdk, is_azure=False)
+        agent = openai_agent.OpenaiAgent("gpt4", kernel_sdk, is_azure=False)
         queue = asyncio.Queue()
         task_opt = ProcessOptions(
             streaming=True,
@@ -130,7 +131,13 @@ async def test_openai_agent_call_execute_bash_code(mocker, kernel_sdk):
             output_token_limit=100000,
             timeout=5,
         )
-        await agent.arun("write a hello world in bash", queue, MockContext(), task_opt)
+        request = ProcessTaskRequest(
+            input_files=[],
+            task="write a hello world in bash",
+            context_id="",
+            options=task_opt,
+        )
+        await agent.arun(request, queue, MockContext(), task_opt)
         responses = []
         while True:
             try:
@@ -157,9 +164,10 @@ async def test_openai_agent_call_execute_python_code(mocker, kernel_sdk):
     arguments = {
         "explanation": "the hello world in python",
         "code": "print('hello world')",
+        "language": "python",
         "saved_filenames": [],
     }
-    stream1 = FunctionCallPayloadStream("execute_python_code", json.dumps(arguments))
+    stream1 = FunctionCallPayloadStream("execute", json.dumps(arguments))
     sentence = "The output 'hello world' is the result"
     stream2 = PayloadStream(sentence)
     call_mock = MultiCallMock([stream1, stream2])
@@ -167,7 +175,7 @@ async def test_openai_agent_call_execute_python_code(mocker, kernel_sdk):
         "og_agent.openai_agent.openai.ChatCompletion.acreate",
         side_effect=call_mock.call,
     ) as mock_openai:
-        agent = openai_agent.OpenaiAgent("gpt4", "prompt", kernel_sdk, is_azure=False)
+        agent = openai_agent.OpenaiAgent("gpt4", kernel_sdk, is_azure=False)
         queue = asyncio.Queue()
         task_opt = ProcessOptions(
             streaming=True,
@@ -176,10 +184,13 @@ async def test_openai_agent_call_execute_python_code(mocker, kernel_sdk):
             output_token_limit=100000,
             timeout=5,
         )
-
-        await agent.arun(
-            "write a hello world in python", queue, MockContext(), task_opt
+        request = ProcessTaskRequest(
+            input_files=[],
+            task="write a hello world in python",
+            context_id="",
+            options=task_opt,
         )
+        await agent.arun(request, queue, MockContext(), task_opt)
         responses = []
         while True:
             try:
@@ -207,7 +218,7 @@ async def test_openai_agent_smoke_test(mocker, kernel_sdk):
     with mocker.patch(
         "og_agent.openai_agent.openai.ChatCompletion.acreate", return_value=stream
     ) as mock_openai:
-        agent = openai_agent.OpenaiAgent("gpt4", "prompt", kernel_sdk, is_azure=False)
+        agent = openai_agent.OpenaiAgent("gpt4", kernel_sdk, is_azure=False)
         queue = asyncio.Queue()
         task_opt = ProcessOptions(
             streaming=True,
@@ -216,7 +227,10 @@ async def test_openai_agent_smoke_test(mocker, kernel_sdk):
             output_token_limit=100000,
             timeout=5,
         )
-        await agent.arun("hello", queue, MockContext(), task_opt)
+        request = ProcessTaskRequest(
+            input_files=[], task="hello", context_id="", options=task_opt
+        )
+        await agent.arun(request, queue, MockContext(), task_opt)
         responses = []
         while True:
             try:

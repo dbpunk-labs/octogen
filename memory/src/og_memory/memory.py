@@ -79,12 +79,20 @@ class BaseAgentMemory(ABC):
         """
         pass
 
+    @abstractmethod
+    def get_functions(self):
+        """
+        return the function definitions for model that supports the function_call
+        """
+        pass
+
 
 class AgentMemoryOption(BaseModel):
     """
     The agent memory option
     """
     show_function_instruction: bool = Field(False, description="Show the function instruction")
+    disable_output_format: bool = Field(False, description="Disable the output format")
 
 class MemoryAgentMemory(BaseAgentMemory):
     """
@@ -115,11 +123,16 @@ class MemoryAgentMemory(BaseAgentMemory):
     def swap_instruction(self, instruction):
         self.instruction = instruction
 
+    def get_functions(self):
+        return [{"name": action.name, "description": action.desc, "parameters":
+          json.loads(action.parameters)} for action in self.instruction.actions]
+
     def to_messages(self):
         system_message = {
           "role":"system",
-          "content":agent_memory_to_context(self.instruction, self.guide_memory)
+          "content":agent_memory_to_context(self.instruction, self.guide_memory, options = self.options)
         }
-        logging.degug(f"system message: {system_message}")
+        logging.debug(f"system message: {system_message}")
         return [system_message] + self.chat_memory
+
 

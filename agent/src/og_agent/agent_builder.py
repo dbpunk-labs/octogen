@@ -18,9 +18,7 @@ def build_llama_agent(endpoint, key, sdk, grammer_path):
     """
     with open(grammer_path, "r") as fd:
         grammar = fd.read()
-
     client = LlamaClient(endpoint, key, grammar)
-
     # init the agent
     return LlamaAgent(client, sdk)
 
@@ -30,7 +28,7 @@ def build_openai_agent(sdk, model_name, is_azure=True):
     # TODO a data dir per user
     # init the agent
 
-    agent = OpenaiAgent(model_name, OCTOGEN_FUNCTION_SYSTEM, sdk, is_azure=is_azure)
+    agent = OpenaiAgent(model_name, sdk, is_azure=is_azure)
     return agent
 
 
