@@ -16,6 +16,7 @@ RULES = [
     "You can install new package with pip",
     "Use `execute` action to execute any code and `direct_message` action to send message to user",
 ]
+
 ACTIONS = [
     ActionDesc(
         name="execute",

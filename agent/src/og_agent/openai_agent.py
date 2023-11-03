@@ -29,7 +29,7 @@ class OpenaiAgent(BaseAgent):
         self.is_azure = is_azure
         self.model_name = model if not is_azure else ""
         self.memory_option = AgentMemoryOption(
-            show_function_instruction=False, disable_output_format=True
+            show_function_instruction=False, disable_output_forat=True
         )
 
     async def call_openai(self, agent_memory, queue, context, task_context, task_opt):
@@ -79,6 +79,21 @@ class OpenaiAgent(BaseAgent):
             explanation = ""
             saved_filenames = []
             language = "python"
+            if function_name == "direct_message":
+                arguments = json.loads(message["function_call"]["arguments"])
+                await queue.put(
+                    TaskResponse(
+                        state=task_context.to_context_state_proto(),
+                        response_type=TaskResponse.OnFinalAnswer,
+                        final_answer=FinalAnswer(
+                            answer=arguments["message"]
+                            if not task_opt.streaming
+                            else ""
+                        ),
+                        context_id=context_id,
+                    )
+                )
+                return None
             if function_name == "python":
                 raw_code = message["function_call"]["arguments"]
                 logger.debug(f"call function {function_name} with args {code}")
@@ -192,6 +207,8 @@ class OpenaiAgent(BaseAgent):
                     function_result = await self.handle_function(
                         chat_message, queue, context, task_context, task_opt
                     )
+                    if not function_result:
+                        break
                     await queue.put(
                         TaskResponse(
                             state=task_context.to_context_state_proto(),
