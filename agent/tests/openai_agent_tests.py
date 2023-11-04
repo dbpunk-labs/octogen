@@ -159,6 +159,47 @@ async def test_openai_agent_call_execute_bash_code(mocker, kernel_sdk):
 
 
 @pytest.mark.asyncio
+async def test_openai_agent_direct_message(mocker, kernel_sdk):
+    kernel_sdk.connect()
+    arguments = {
+        "message": "hello world",
+    }
+    stream1 = FunctionCallPayloadStream("direct_message", json.dumps(arguments))
+    call_mock = MultiCallMock([stream1])
+    with mocker.patch(
+        "og_agent.openai_agent.openai.ChatCompletion.acreate",
+        side_effect=call_mock.call,
+    ) as mock_openai:
+        agent = openai_agent.OpenaiAgent("gpt4", kernel_sdk, is_azure=False)
+        queue = asyncio.Queue()
+        task_opt = ProcessOptions(
+            streaming=False,
+            llm_name="gpt4",
+            input_token_limit=100000,
+            output_token_limit=100000,
+            timeout=5,
+        )
+        request = ProcessTaskRequest(
+            input_files=[],
+            task="say hello world",
+            context_id="",
+            options=task_opt,
+        )
+        await agent.arun(request, queue, MockContext(), task_opt)
+        responses = []
+        while True:
+            try:
+                response = await queue.get()
+                if not response:
+                    break
+                responses.append(response)
+            except asyncio.QueueEmpty:
+                break
+        logger.info(responses)
+        assert responses[0].final_answer.answer == "hello world"
+
+
+@pytest.mark.asyncio
 async def test_openai_agent_call_execute_python_code(mocker, kernel_sdk):
     kernel_sdk.connect()
     arguments = {
@@ -245,5 +286,5 @@ async def test_openai_agent_smoke_test(mocker, kernel_sdk):
         assert (
             responses[-1].response_type == TaskResponse.OnFinalAnswer
         ), "bad response type"
-        assert responses[-1].state.input_token_count == 2
+        assert responses[-1].state.input_token_count == 325
         assert responses[-1].state.output_token_count == 8

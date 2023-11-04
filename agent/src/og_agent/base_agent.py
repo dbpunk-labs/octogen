@@ -60,6 +60,7 @@ class TypingState:
     EXPLANATION = 1
     CODE = 2
     LANGUAGE = 3
+    MESSAGE = 4
 
 
 class BaseAgent:
@@ -131,6 +132,7 @@ class BaseAgent:
         explanation_str = ""
         code_str = ""
         language_str = ""
+        message_str = ""
         logger.debug(f"the arguments {arguments}")
         for token_state, token in tokenize(io.StringIO(arguments)):
             if token_state == None:
@@ -146,6 +148,8 @@ class BaseAgent:
                     state = TypingState.CODE
                 if token[1] == "language":
                     state = TypingState.LANGUAGE
+                if token[1] == "message":
+                    state = TypingState.MESSAGE
             else:
                 # String
                 if token_state == 9 and state == TypingState.EXPLANATION:
@@ -154,7 +158,9 @@ class BaseAgent:
                     code_str = "".join(token)
                 elif token_state == 9 and state == TypingState.LANGUAGE:
                     language_str = "".join(token)
-        return (state, explanation_str, code_str, language_str)
+                elif token_state == 9 and state == TypingState.MESSAGE:
+                    message_str = "".join(token)
+        return (state, explanation_str, code_str, language_str, message_str)
 
     def _get_message_token_count(self, message):
         response_token_count = 0
@@ -171,6 +177,7 @@ class BaseAgent:
         queue,
         old_text_content,
         old_code_content,
+        old_message_str,
         language_str,
         task_context,
         task_opt,
@@ -185,6 +192,7 @@ class BaseAgent:
             queue,
             old_text_content,
             old_code_content,
+            old_message_str,
             language_str,
             task_context,
             task_opt,
@@ -197,6 +205,7 @@ class BaseAgent:
         queue,
         old_text_content,
         old_code_content,
+        old_message_str,
         old_language_str,
         task_context,
         task_opt,
@@ -208,6 +217,7 @@ class BaseAgent:
             queue,
             old_text_content,
             old_code_content,
+            old_message_str,
             old_language_str,
             task_context,
             task_opt,
@@ -220,6 +230,7 @@ class BaseAgent:
         old_text_content,
         old_code_content,
         old_language_str,
+        old_message_str,
         task_context,
         task_opt,
         is_code=False,
@@ -227,9 +238,14 @@ class BaseAgent:
         """
         send the typing message to the client
         """
-        (state, explanation_str, code_str, language_str) = self._parse_arguments(
-            arguments, is_code
-        )
+        (
+            state,
+            explanation_str,
+            code_str,
+            language_str,
+            message_str,
+        ) = self._parse_arguments(arguments, is_code)
+
         logger.debug(
             f"argument explanation:{explanation_str} code:{code_str} language_str:{language_str} text_content:{old_text_content}"
         )
@@ -244,7 +260,7 @@ class BaseAgent:
                     context_id=task_context.context_id,
                 )
                 await queue.put(task_response)
-            return new_text_content, old_code_content, old_language_str
+            return new_text_content, old_code_content, old_language_str, old_message_str
         if code_str and old_code_content != code_str:
             typed_chars = code_str[len(old_code_content) :]
             code_content = code_str
@@ -259,7 +275,7 @@ class BaseAgent:
                         context_id=task_context.context_id,
                     )
                 )
-            return old_text_content, code_content, old_language_str
+            return old_text_content, code_content, old_language_str, old_message_str
         if language_str and old_language_str != language_str:
             typed_chars = language_str[len(old_language_str) :]
             if task_opt.streaming and len(typed_chars) > 0:
@@ -271,8 +287,22 @@ class BaseAgent:
                         context_id=task_context.context_id,
                     )
                 )
-            return old_text_content, old_code_content, language_str
-        return old_text_content, old_code_content, old_language_str
+            return old_text_content, old_code_content, language_str, old_message_str
+        if message_str and old_message_str != message_str:
+            typed_chars = message_str[len(old_message_str) :]
+            if task_opt.streaming and len(typed_chars) > 0:
+                await queue.put(
+                    TaskResponse(
+                        state=task_context.to_context_state_proto(),
+                        response_type=TaskResponse.OnModelTypeText,
+                        typing_content=TypingContent(
+                            content=typed_chars, language="text"
+                        ),
+                        context_id=task_context.context_id,
+                    )
+                )
+            return old_text_content, old_code_content, old_language_str, message_str
+        return old_text_content, old_code_content, old_language_str, old_message_str
 
     async def extract_message(
         self,
@@ -291,6 +321,7 @@ class BaseAgent:
         text_content = ""
         code_content = ""
         language_str = ""
+        message_str = ""
         context_output_token_count = task_context.output_token_count
         start_time = time.time()
         async for chunk in response_generator:
@@ -317,17 +348,21 @@ class BaseAgent:
                     new_text_content,
                     new_code_content,
                     new_language_str,
+                    new_message_str,
                 ) = await self._read_function_call_message(
                     message,
                     queue,
                     text_content,
                     code_content,
+                    message_str,
                     language_str,
                     task_context,
                     task_opt,
                 )
                 text_content = new_text_content
                 code_content = new_code_content
+                message_str = new_message_str
+                language_str = new_language_str
             else:
                 self._merge_delta_for_content(message, delta)
                 task_context.llm_response_duration += int(
@@ -343,17 +378,22 @@ class BaseAgent:
                         (
                             new_text_content,
                             new_code_content,
+                            new_language_str,
+                            new_message_str,
                         ) = await self._read_json_message(
                             message,
                             queue,
                             text_content,
                             code_content,
+                            message_str,
                             language_str,
                             task_context,
                             task_opt,
                         )
                         text_content = new_text_content
                         code_content = new_code_content
+                        message_str = new_message_str
+                        language_str = new_language_str
 
                     elif task_opt.streaming and delta.get("content"):
                         await queue.put(

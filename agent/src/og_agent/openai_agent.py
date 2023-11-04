@@ -90,7 +90,7 @@ class OpenaiAgent(BaseAgent):
                             if not task_opt.streaming
                             else ""
                         ),
-                        context_id=context_id,
+                        context_id=task_context.context_id,
                     )
                 )
                 return None
