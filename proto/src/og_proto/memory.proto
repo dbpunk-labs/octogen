@@ -38,6 +38,7 @@ message ChatMessage {
     // the feedback of the chat message
     // and it  will not be sent to LLM
     Feedback feedback = 6;
+    string id = 7;
 }
 
 // every user has his own memory

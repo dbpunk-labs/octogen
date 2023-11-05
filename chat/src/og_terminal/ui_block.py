@@ -214,6 +214,7 @@ class TaskBlocks:
                 self.values.append(code)
             else:
                 last_block.append(code)
+                last_block.language = language
                 self.values[last_block.get_index()] = last_block.content
         else:
             last_block.finish()

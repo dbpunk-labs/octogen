@@ -330,7 +330,7 @@ def upload_file(prompt, console, history_prompt, sdk, values):
     return real_prompt
 
 
-def run_chat(prompt, sdk, session, console, values, filedir=None):
+def run_chat(prompt, session, console, values, filedir=None):
     """
     run the chat
     """
@@ -341,7 +341,7 @@ def run_chat(prompt, sdk, session, console, values, filedir=None):
     with Live(Group(*[]), console=console) as live:
         refresh(live, task_blocks)
         task_state = None
-        for respond in sdk.prompt(prompt):
+        for respond in session.prompt(prompt):
             if not respond:
                 break
             if respond.response_type in [
@@ -360,7 +360,6 @@ def run_chat(prompt, sdk, session, console, values, filedir=None):
             task_state = respond.state
             refresh(live, task_blocks, task_state=respond.state)
         refresh(live, task_blocks, task_state=task_state)
-
     if error_responses:
         task_blocks = TaskBlocks(values)
         task_blocks.begin()
@@ -389,54 +388,54 @@ def app(octogen_dir):
     os.makedirs(filedir, exist_ok=True)
     sdk = AgentSyncSDK(octopus_config["endpoint"], octopus_config["api_key"])
     sdk.connect()
-    history = FileHistory(real_octogen_dir + "/history")
-    values = []
-    completer = OctogenCompleter(values)
-    session = PromptSession(
-        history=history,
-        completer=completer,
-        complete_in_thread=True,
-        complete_while_typing=True,
-        complete_style=CompleteStyle.MULTI_COLUMN,
-    )
-    index = 0
-    show_welcome(console)
-    while True:
-        index = index + 1
-        real_prompt = session.prompt(
-            "[%s]%s>" % (index, "🎧"),
-            multiline=True,
-            prompt_continuation=prompt_continuation,
+    with sdk.create_session() as agent_session:
+        history = FileHistory(real_octogen_dir + "/history")
+        values = []
+        completer = OctogenCompleter(values)
+        session = PromptSession(
+            history=history,
+            completer=completer,
+            complete_in_thread=True,
+            complete_while_typing=True,
+            complete_style=CompleteStyle.MULTI_COLUMN,
         )
-        if not "".join(real_prompt.strip().split("\n")):
-            continue
-        if real_prompt.find("/help") >= 0:
-            show_help(console)
-            continue
-        if real_prompt.find("/exit") >= 0:
-            console.print("👋👋!")
-            return
-        if real_prompt.find("/clear") >= 0:
-            clear()
-            continue
-        if real_prompt.find("/cc") >= 0:
-            # handle copy
-            for number in parse_numbers(real_prompt):
-                num = int(number)
-                if num < len(values):
-                    clipboard.copy(values[num])
-                    console.print(f"👍 /cc{number} has been copied to clipboard!")
-                    break
-                else:
-                    console.print(f"❌ /cc{number} was not found!")
-            continue
-        # try to upload first⌛⏳❌
-        real_prompt = upload_file(real_prompt, console, history, sdk, values)
-        run_chat(
-            real_prompt,
-            sdk,
-            session,
-            console,
-            values,
-            filedir=filedir,
-        )
+        index = 0
+        show_welcome(console)
+        while True:
+            index = index + 1
+            real_prompt = session.prompt(
+                "[%s]%s>" % (index, "🎧"),
+                multiline=True,
+                prompt_continuation=prompt_continuation,
+            )
+            if not "".join(real_prompt.strip().split("\n")):
+                continue
+            if real_prompt.find("/help") >= 0:
+                show_help(console)
+                continue
+            if real_prompt.find("/exit") >= 0:
+                console.print("👋👋!")
+                return
+            if real_prompt.find("/clear") >= 0:
+                clear()
+                continue
+            if real_prompt.find("/cc") >= 0:
+                # handle copy
+                for number in parse_numbers(real_prompt):
+                    num = int(number)
+                    if num < len(values):
+                        clipboard.copy(values[num])
+                        console.print(f"👍 /cc{number} has been copied to clipboard!")
+                        break
+                    else:
+                        console.print(f"❌ /cc{number} was not found!")
+                continue
+            # try to upload first⌛⏳❌
+            real_prompt = upload_file(real_prompt, console, history, sdk, values)
+            run_chat(
+                real_prompt,
+                agent_session,
+                console,
+                values,
+                filedir=filedir,
+            )

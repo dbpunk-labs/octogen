@@ -146,8 +146,8 @@ class AgentRpcServer(AgentServerServicer):
         sdk = self.agents[metadata["api_key"]]["sdk"]
         queue = asyncio.Queue()
 
-        async def worker(task, agent, queue, context, task_opt):
-            return await agent.arun(task, queue, context, task_opt)
+        async def worker(request, agent, queue, context, task_opt):
+            return await agent.arun(request, queue, context, task_opt)
 
         options = (
             request.options
@@ -166,8 +166,9 @@ class AgentRpcServer(AgentServerServicer):
                 timeout=10,
             )
         )
+
         logger.debug("create the agent task")
-        task = asyncio.create_task(worker(request.task, agent, queue, context, options))
+        task = asyncio.create_task(worker(request, agent, queue, context, options))
         while True:
             logger.debug("start wait the queue message")
             # TODO add timeout

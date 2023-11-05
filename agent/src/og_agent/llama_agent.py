@@ -13,8 +13,9 @@ import time
 from .llama_client import LlamaClient
 from og_proto.agent_server_pb2 import OnStepActionStart, TaskResponse, OnStepActionEnd, FinalAnswer, TypingContent
 from .base_agent import BaseAgent, TypingState, TaskContext
+from og_memory.memory import AgentMemoryOption
+from .prompt import FUNCTION_DIRECT_MESSAGE, FUNCTION_EXECUTE
 from .tokenizer import tokenize
-from .prompt import OCTOGEN_CODELLAMA_SYSTEM
 import tiktoken
 
 logger = logging.getLogger(__name__)
@@ -26,11 +27,15 @@ class LlamaAgent(BaseAgent):
     def __init__(self, client, kernel_sdk):
         super().__init__(kernel_sdk)
         self.client = client
+        self.memory_option = AgentMemoryOption(
+            show_function_instruction=True, disable_output_format=False
+        )
 
     def _output_exception(self):
         return (
             "Sorry, the LLM did return nothing, You can use a better performance model"
         )
+
 
     def _format_output(self, json_response):
         """
@@ -94,7 +99,7 @@ class LlamaAgent(BaseAgent):
                 state=task_context.to_context_state_proto(),
                 response_type=TaskResponse.OnStepActionStart,
                 on_step_action_start=OnStepActionStart(
-                    input=tool_input, tool="execute_bash_code"
+                    input=tool_input, tool="execute"
                 ),
             )
         )
@@ -108,7 +113,7 @@ class LlamaAgent(BaseAgent):
                 await queue.put(respond)
         return function_result
 
-    async def handle_function(
+    async def handle_python_function(
         self, json_response, queue, context, task_context, task_opt
     ):
         code = json_response["code"]
@@ -125,7 +130,7 @@ class LlamaAgent(BaseAgent):
                 state=task_context.to_context_state_proto(),
                 response_type=TaskResponse.OnStepActionStart,
                 on_step_action_start=OnStepActionStart(
-                    input=tool_input, tool=json_response["action"]
+                    input=tool_input, tool='execute'
                 ),
             )
         )
@@ -139,18 +144,19 @@ class LlamaAgent(BaseAgent):
                 await queue.put(respond)
         return function_result
 
-    async def call_llama(self, messages, queue, context, task_context, task_opt):
+    async def call_llama(self, agent_memory, queue, context, task_context, task_opt):
         """
         call llama api
         """
         input_token_count = 0
+        messages = agent_memory.to_messages()
         for message in messages:
             if not message["content"]:
                 continue
             input_token_count += len(encoding.encode(message["content"]))
         task_context.input_token_count += input_token_count
         start_time = time.time()
-        response = self.client.chat(messages, "codellama", max_tokens=2048)
+        response = self.client.chat(messages, "llama", max_tokens=2048)
         message = await self.extract_message(
             response,
             queue,
@@ -162,19 +168,39 @@ class LlamaAgent(BaseAgent):
         )
         return message
 
-    async def arun(self, question, queue, context, task_opt):
+    async def arun(self, request, queue, context, task_opt):
         """
         run the agent
         """
-        messages = [
-            {"role": "system", "content": OCTOGEN_CODELLAMA_SYSTEM},
+        question = request.task
+        context_id = (
+            request.context_id
+            if request.context_id
+            else self.create_new_memory_with_default_prompt("", "", actions=[FUNCTION_EXECUTE,
+                                                                             FUNCTION_DIRECT_MESSAGE])
+        )
+
+        if context_id not in self.agent_memories:
+            await queue.put(
+                TaskResponse(
+                    state=task_context.to_context_state_proto(),
+                    response_type=TaskResponse.OnSystemError,
+                    error_msg="invalid context id",
+                    context_id=context_id,
+                )
+            )
+            return
+
+        agent_memory = self.agent_memories[context_id]
+        agent_memory.update_options(self.memory_option)
+        agent_memory.append_chat_message(
             {"role": "user", "content": question},
-        ]
+        )
         task_context = TaskContext(
             start_time=time.time(),
             output_token_count=0,
             input_token_count=0,
-            llm_name="codellama",
+            llm_name="llama",
             llm_respond_duration=0,
         )
         try:
@@ -198,7 +224,7 @@ class LlamaAgent(BaseAgent):
                     )
                     break
                 message = await self.call_llama(
-                    messages,
+                    agent_memory,
                     queue,
                     context,
                     task_context,
@@ -225,21 +251,20 @@ class LlamaAgent(BaseAgent):
                         )
                     )
                     break
-
                 logger.debug(f" llama response {json_response}")
                 if (
-                    json_response["action"]
-                    in ["execute_python_code", "execute_bash_code"]
-                    and json_response["code"]
+                    'function_call'in json_response and json_response["function_call"] == "execute"
                 ):
-                    messages.append(message)
+                    agent_memory.append_chat_message(message)
                     tools_mapping = {
-                        "execute_python_code": self.handle_function,
-                        "execute_bash_code": self.handle_bash_code,
+                        "python": self.handle_python_function,
+                        "bash": self.handle_bash_code,
                     }
-                    function_result = await tools_mapping[json_response["action"]](
-                        json_response, queue, context, task_context, task_opt
+
+                    function_result = await tools_mapping[json_response["arguments"]['language']](
+                        json_response['arguments'], queue, context, task_context, task_opt
                     )
+
                     logger.debug(f"the function result {function_result}")
                     await queue.put(
                         TaskResponse(
@@ -255,52 +280,36 @@ class LlamaAgent(BaseAgent):
                             ),
                         )
                     )
-
-                    action_output = "the output of %s:" % json_response["action"]
+                    action_output = "the output of %s:" % json_response["function_call"]
                     current_question = "Give me the final answer summary if the above output of action  meets the goal Otherwise try a new step"
                     if function_result.has_result:
-                        messages.append({
+                        agent_memory.append_chat_message({
                             "role": "user",
                             "content": f"{action_output} \n {function_result.console_stdout}",
                         })
-                        messages.append({"role": "user", "content": current_question})
+                        agent_memory.append_chat_message({"role": "user", "content": current_question})
                     elif function_result.has_error:
-                        messages.append({
+                        agent_memory.append_chat_message({
                             "role": "user",
                             "content": f"{action_output} \n {function_result.console_stderr}",
                         })
                         current_question = f"Generate a new step to fix the above error"
-                        messages.append({"role": "user", "content": current_question})
+                        agent_memory.append_chat_message({"role": "user", "content": current_question})
                     else:
-                        messages.append({
+                        agent_memory.append_chat_message({
                             "role": "user",
                             "content": f"{action_output} \n {function_result.console_stdout}",
                         })
-                        messages.append({"role": "user", "content": current_question})
-                elif (
-                    json_response["action"] == "show_sample_code"
-                    and json_response["code"]
-                ):
-                    await self.handle_show_sample_code(
-                        json_response, queue, context, task_context
-                    )
-                    result = self._format_output(json_response)
-                    await queue.put(
-                        TaskResponse(
-                            state=task_context.to_context_state_proto(),
-                            response_type=TaskResponse.OnFinalAnswer,
-                            final_answer=FinalAnswer(answer=result),
-                        )
-                    )
-                    break
-                else:
-                    result = self._format_output(json_response)
+                        agent_memory.append_chat_message({
+                            "role": "user", "content": current_question})
+                elif 'function_call' in json_response and json_response["function_call"] == "direct_message":
+                    message = json_response['arguments']['message']
                     await queue.put(
                         TaskResponse(
                             state=task_context.to_context_state_proto(),
                             response_type=TaskResponse.OnFinalAnswer,
                             final_answer=FinalAnswer(
-                                answer=result if not task_opt.streaming else ""
+                                answer=message if not task_opt.streaming else ""
                             ),
                         )
                     )

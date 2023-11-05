@@ -16,6 +16,50 @@ from .utils import generate_chunk, generate_async_chunk
 logger = logging.getLogger(__name__)
 
 
+class AgentSyncSession:
+
+    def __init__(self, agent_sdk):
+        self.context_id = None
+        self.agent_sdk = agent_sdk
+
+    def prompt(self, prompt, files=[]):
+        """
+        ask the ai with prompt and  uploaded files
+        """
+        for respond in self.agent_sdk.prompt(prompt, files, self.context_id):
+            if respond.context_id:
+                self.context_id = respond.context_id
+            yield respond
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.context_id = None
+
+
+class AgentAsyncSession:
+
+    def __init__(self, agent_sdk):
+        self.context_id = None
+        self.agent_sdk = agent_sdk
+
+    async def prompt(self, prompt, files=[]):
+        """
+        ask the ai with prompt and  uploaded files
+        """
+        async for respond in self.agent_sdk.prompt(prompt, files, self.context_id):
+            if respond.context_id:
+                self.context_id = respond.context_id
+            yield respond
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.context_id = None
+
+
 class AgentBaseSDK:
 
     def __init__(self, endpoint):
@@ -65,6 +109,12 @@ class AgentSyncSDK(AgentBaseSDK):
     def connect(self):
         self.connect_sync()
 
+    def create_session(self):
+        """
+        create a session for the agent
+        """
+        return AgentSyncSession(self)
+
     def add_kernel(self, key, endpoint):
         """
         add kernel instance to the agent and only admin can call this method
@@ -96,11 +146,13 @@ class AgentSyncSDK(AgentBaseSDK):
             generate_chunk(filepath, filename), metadata=self.metadata
         )
 
-    def prompt(self, prompt, files=[]):
+    def prompt(self, prompt, files=[], context_id=None):
         """
         ask the ai with prompt and  uploaded files
         """
-        request = agent_server_pb2.ProcessTaskRequest(task=prompt, input_files=files)
+        request = agent_server_pb2.ProcessTaskRequest(
+            task=prompt, input_files=files, context_id=context_id
+        )
         for respond in self.stub.process_task(request, metadata=self.metadata):
             yield respond
 
@@ -130,11 +182,11 @@ class AgentProxySDK(AgentBaseSDK):
         response = await self.stub.add_kernel(request, metadata=metadata)
         return response
 
-    async def prompt(self, prompt, api_key, files=[]):
+    async def prompt(self, prompt, api_key, files=[], context_id=None):
         metadata = aio.Metadata(
             ("api_key", api_key),
         )
-        request = agent_server_pb2.ProcessTaskRequest(task=prompt, input_files=files)
+        request = agent_server_pb2.ProcessTaskRequest(task=prompt, input_files=files, context_id=context_id)
         async for respond in self.stub.process_task(request, metadata=metadata):
             yield respond
 
@@ -168,11 +220,19 @@ class AgentSDK(AgentBaseSDK):
         response = await self.stub.add_kernel(request, metadata=self.metadata)
         return response
 
-    async def prompt(self, prompt, files=[]):
+    def create_session(self):
+        """
+        create a session for the agent
+        """
+        return AgentAsyncSession(self)
+
+    async def prompt(self, prompt, files=[], context_id=None):
         """
         ask the ai with prompt and  uploaded files
         """
-        request = agent_server_pb2.ProcessTaskRequest(task=prompt, input_files=files)
+        request = agent_server_pb2.ProcessTaskRequest(
+            task=prompt, input_files=files, context_id=context_id
+        )
         async for respond in self.stub.process_task(request, metadata=self.metadata):
             yield respond
 
