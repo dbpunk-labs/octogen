@@ -5,7 +5,6 @@
 
 """ """
 import json
-from .prompt import OCTOGEN_FUNCTION_SYSTEM, OCTOGEN_CODELLAMA_SYSTEM
 from .llama_agent import LlamaAgent
 from .openai_agent import OpenaiAgent
 from .llama_client import LlamaClient

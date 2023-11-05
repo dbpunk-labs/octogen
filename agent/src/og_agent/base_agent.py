@@ -61,7 +61,7 @@ class TypingState:
     CODE = 2
     LANGUAGE = 3
     MESSAGE = 4
-
+    OTHER = 5
 
 class BaseAgent:
 
@@ -70,7 +70,7 @@ class BaseAgent:
         self.model_name = ""
         self.agent_memories = {}
 
-    def create_new_memory_with_default_prompt(self, user_name, user_id):
+    def create_new_memory_with_default_prompt(self, user_name, user_id, actions = ACTIONS):
         """
         create a new memory for the user
         """
@@ -79,7 +79,7 @@ class BaseAgent:
         agent_prompt = AgentPrompt(
             role=ROLE,
             rules=RULES,
-            actions=ACTIONS,
+            actions=actions,
             output_format=OUTPUT_FORMAT,
         )
         agent_memory = MemoryAgentMemory(memory_id, user_name, user_id)
@@ -127,7 +127,7 @@ class BaseAgent:
         parse the partial key with string value from json
         """
         if is_code:
-            return TypingState.CODE, "", arguments, "python"
+            return TypingState.CODE, "", arguments, "python", ""
         state = TypingState.START
         explanation_str = ""
         code_str = ""
@@ -142,6 +142,15 @@ class BaseAgent:
                 if state == TypingState.CODE and token[0] == 1:
                     code_str = token[1]
                     state = TypingState.START
+                if state == TypingState.LANGUAGE and token[0] == 1:
+                    language_str = token[1]
+                    state = TypingState.START
+                if state == TypingState.MESSAGE and token[0] == 1:
+                    message_str = token[1]
+                    state = TypingState.START
+                if state == TypingState.OTHER and token[0] == 1:
+                    state = TypingState.START
+
                 if token[1] == "explanation":
                     state = TypingState.EXPLANATION
                 if token[1] == "code":
@@ -150,6 +159,8 @@ class BaseAgent:
                     state = TypingState.LANGUAGE
                 if token[1] == "message":
                     state = TypingState.MESSAGE
+                if token[1] == "saved_filenames":
+                    state = TypingState.OTHER
             else:
                 # String
                 if token_state == 9 and state == TypingState.EXPLANATION:
@@ -210,10 +221,8 @@ class BaseAgent:
         task_context,
         task_opt,
     ):
-        arguments = message.get("content", "")
-        typing_language = "text"
         return await self._send_typing_message(
-            arguments,
+            message.get("content", ""),
             queue,
             old_text_content,
             old_code_content,
@@ -229,8 +238,8 @@ class BaseAgent:
         queue,
         old_text_content,
         old_code_content,
-        old_language_str,
         old_message_str,
+        old_language_str,
         task_context,
         task_opt,
         is_code=False,
@@ -247,8 +256,9 @@ class BaseAgent:
         ) = self._parse_arguments(arguments, is_code)
 
         logger.debug(
-            f"argument explanation:{explanation_str} code:{code_str} language_str:{language_str} text_content:{old_text_content}"
+            f"argument explanation:{explanation_str} code:{code_str} language_str:{language_str} text_content:{old_text_content} old_message_str:{old_message_str}"
         )
+
         if explanation_str and old_text_content != explanation_str:
             typed_chars = explanation_str[len(old_text_content) :]
             new_text_content = explanation_str
@@ -301,6 +311,7 @@ class BaseAgent:
                         context_id=task_context.context_id,
                     )
                 )
+
             return old_text_content, old_code_content, old_language_str, message_str
         return old_text_content, old_code_content, old_language_str, old_message_str
 
@@ -375,6 +386,7 @@ class BaseAgent:
                         response_token_count + context_output_token_count
                     )
                     if is_json_format:
+
                         (
                             new_text_content,
                             new_code_content,

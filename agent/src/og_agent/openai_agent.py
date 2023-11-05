@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2023 imotai <jackwang@octogen.dev>
+# SPDX-FileCopyrightText: 2023 ghf5t565698```\\\\\\\\\-=[-[9oi86y53e12motai <jackwang@octogen.dev>
 # SPDX-FileContributor: imotai
 #
 # SPDX-License-Identifier: Elastic-2.0
@@ -29,7 +29,7 @@ class OpenaiAgent(BaseAgent):
         self.is_azure = is_azure
         self.model_name = model if not is_azure else ""
         self.memory_option = AgentMemoryOption(
-            show_function_instruction=False, disable_output_forat=True
+            show_function_instruction=False, disable_output_format=True
         )
 
     async def call_openai(self, agent_memory, queue, context, task_context, task_opt):

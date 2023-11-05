@@ -37,6 +37,7 @@ class LlamaClient(BaseStreamClient):
                 continue
             try:
                 content = line[6:]
+                logger.debug(f"llama response content: {content}")
                 message = json.loads(content)
                 yield message
             except Exception as e:
