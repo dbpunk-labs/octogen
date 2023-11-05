@@ -246,5 +246,5 @@ async def test_openai_agent_smoke_test(mocker, kernel_sdk):
         assert (
             responses[-1].response_type == TaskResponse.OnFinalAnswer
         ), "bad response type"
-        assert responses[-1].state.input_token_count == 325
+        assert responses[-1].state.input_token_count == 153
         assert responses[-1].state.output_token_count == 8

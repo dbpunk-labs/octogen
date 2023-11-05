@@ -64,7 +64,7 @@ class MockAgent(BaseAgent):
                 state=task_context.to_context_state_proto(),
                 response_type=TaskResponse.OnStepActionStart,
                 on_step_action_start=OnStepActionStart(
-                    input=tool_input, tool="execute_python_code"
+                    input=tool_input, tool="execute"
                 ),
             )
         )
@@ -75,10 +75,12 @@ class MockAgent(BaseAgent):
                 await queue.put(respond)
         return function_result
 
-    async def arun(self, task, queue, context, task_opt):
+    async def arun(self, request, queue, context, task_opt):
         """
         run the agent
+
         """
+        task = request.task
         task_context = TaskContext(
             start_time=time.time(),
             output_token_count=10,
