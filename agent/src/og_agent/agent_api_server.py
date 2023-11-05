@@ -178,10 +178,9 @@ class TaskRequest(BaseModel):
 
 
 async def run_task(task: TaskRequest, key):
-    async for respond in agent_sdk.prompt(task.prompt, key, files=task.input_files):
+    async for respond in agent_sdk.prompt(task.prompt, key, files=task.input_files, context_id=task.context_id):
         response = StepResponse.new_from(respond).model_dump(exclude_none=True)
         yield "data: %s\n" % json.dumps(response)
-
 
 @app.post("/process")
 async def process_task(
