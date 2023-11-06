@@ -3,7 +3,7 @@ jupyter_client==8.5.0
 pytest==7.4.2
 python-dotenv==1.0.0
 setuptools==68.2.2
-grpcio-tools==1.59.0
+grpcio-tools==1.59.2
 pytest-asyncio==0.21.1
 grpc-google-iam-v1==0.12.6
 matplotlib

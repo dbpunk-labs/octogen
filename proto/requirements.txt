@@ -3,5 +3,5 @@
 #
 # SPDX-License-Identifier: Elastic-2.0
 
-grpcio-tools==1.59.0
+grpcio-tools==1.59.2
 grpc-google-iam-v1==0.12.6
