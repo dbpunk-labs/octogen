@@ -36,51 +36,6 @@ class LlamaAgent(BaseAgent):
             "Sorry, the LLM did return nothing, You can use a better performance model"
         )
 
-
-    def _format_output(self, json_response):
-        """
-        format the response and send it to the user
-        """
-        answer = json_response["explanation"]
-        if json_response["action"] == "no_action":
-            return answer
-        elif json_response["action"] == "show_sample_code":
-            return ""
-        else:
-            code = json_response.get("code", None)
-            answer_code = """%s
-```%s
-%s
-```
-""" % (
-                answer,
-                json_response.get("language", "python"),
-                code if code else "",
-            )
-            return answer_code
-
-    async def handle_show_sample_code(
-        self, json_response, queue, context, task_context
-    ):
-        code = json_response["code"]
-        explanation = json_response["explanation"]
-        saved_filenames = json_response.get("saved_filenames", [])
-        tool_input = json.dumps({
-            "code": code,
-            "explanation": explanation,
-            "saved_filenames": saved_filenames,
-            "language": json_response.get("language", "text"),
-        })
-        await queue.put(
-            TaskResponse(
-                state=task_context.to_context_state_proto(),
-                response_type=TaskResponse.OnStepActionStart,
-                on_step_action_start=OnStepActionStart(
-                    input=tool_input, tool="show_sample_code"
-                ),
-            )
-        )
-
     async def handle_bash_code(
         self, json_response, queue, context, task_context, task_opt
     ):

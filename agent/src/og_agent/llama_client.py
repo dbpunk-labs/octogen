@@ -20,7 +20,7 @@ class LlamaClient(BaseStreamClient):
         super().__init__(endpoint + "/v1/chat/completions", key)
         self.grammar = grammar
 
-    async def chat(self, messages, model, temperature=0, max_tokens=1024, stop=[]):
+    async def chat(self, messages, model, temperature=0, max_tokens=1024, stop=['\n']):
         data = {
             "messages": messages,
             "temperature": temperature,
