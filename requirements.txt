@@ -14,7 +14,7 @@ prompt_toolkit==3.0.40
 aiofiles==23.2.1
 click==8.1.7
 discord.py==2.3.2
-openai==0.28.1
+openai==1.3.5
 build==1.0.3
 python-dotenv==1.0.0
 tiktoken
