@@ -63,6 +63,7 @@ class TypingState:
     MESSAGE = 4
     OTHER = 5
 
+
 class BaseAgent:
 
     def __init__(self, sdk):
@@ -70,7 +71,9 @@ class BaseAgent:
         self.model_name = ""
         self.agent_memories = {}
 
-    def create_new_memory_with_default_prompt(self, user_name, user_id, actions = ACTIONS):
+    def create_new_memory_with_default_prompt(
+        self, user_name, user_id, actions=ACTIONS
+    ):
         """
         create a new memory for the user
         """
@@ -386,7 +389,6 @@ class BaseAgent:
                         response_token_count + context_output_token_count
                     )
                     if is_json_format:
-
                         (
                             new_text_content,
                             new_code_content,

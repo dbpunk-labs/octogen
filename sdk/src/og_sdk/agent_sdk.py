@@ -186,7 +186,9 @@ class AgentProxySDK(AgentBaseSDK):
         metadata = aio.Metadata(
             ("api_key", api_key),
         )
-        request = agent_server_pb2.ProcessTaskRequest(task=prompt, input_files=files, context_id=context_id)
+        request = agent_server_pb2.ProcessTaskRequest(
+            task=prompt, input_files=files, context_id=context_id
+        )
         async for respond in self.stub.process_task(request, metadata=metadata):
             yield respond
 

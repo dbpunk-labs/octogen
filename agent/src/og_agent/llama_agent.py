@@ -36,51 +36,6 @@ class LlamaAgent(BaseAgent):
             "Sorry, the LLM did return nothing, You can use a better performance model"
         )
 
-
-    def _format_output(self, json_response):
-        """
-        format the response and send it to the user
-        """
-        answer = json_response["explanation"]
-        if json_response["action"] == "no_action":
-            return answer
-        elif json_response["action"] == "show_sample_code":
-            return ""
-        else:
-            code = json_response.get("code", None)
-            answer_code = """%s
-```%s
-%s
-```
-""" % (
-                answer,
-                json_response.get("language", "python"),
-                code if code else "",
-            )
-            return answer_code
-
-    async def handle_show_sample_code(
-        self, json_response, queue, context, task_context
-    ):
-        code = json_response["code"]
-        explanation = json_response["explanation"]
-        saved_filenames = json_response.get("saved_filenames", [])
-        tool_input = json.dumps({
-            "code": code,
-            "explanation": explanation,
-            "saved_filenames": saved_filenames,
-            "language": json_response.get("language", "text"),
-        })
-        await queue.put(
-            TaskResponse(
-                state=task_context.to_context_state_proto(),
-                response_type=TaskResponse.OnStepActionStart,
-                on_step_action_start=OnStepActionStart(
-                    input=tool_input, tool="show_sample_code"
-                ),
-            )
-        )
-
     async def handle_bash_code(
         self, json_response, queue, context, task_context, task_opt
     ):
@@ -130,7 +85,7 @@ class LlamaAgent(BaseAgent):
                 state=task_context.to_context_state_proto(),
                 response_type=TaskResponse.OnStepActionStart,
                 on_step_action_start=OnStepActionStart(
-                    input=tool_input, tool='execute'
+                    input=tool_input, tool="execute"
                 ),
             )
         )
@@ -176,10 +131,10 @@ class LlamaAgent(BaseAgent):
         context_id = (
             request.context_id
             if request.context_id
-            else self.create_new_memory_with_default_prompt("", "", actions=[FUNCTION_EXECUTE,
-                                                                             FUNCTION_DIRECT_MESSAGE])
+            else self.create_new_memory_with_default_prompt(
+                "", "", actions=[FUNCTION_EXECUTE, FUNCTION_DIRECT_MESSAGE]
+            )
         )
-
         if context_id not in self.agent_memories:
             await queue.put(
                 TaskResponse(
@@ -190,7 +145,6 @@ class LlamaAgent(BaseAgent):
                 )
             )
             return
-
         agent_memory = self.agent_memories[context_id]
         agent_memory.update_options(self.memory_option)
         agent_memory.append_chat_message(
@@ -253,7 +207,8 @@ class LlamaAgent(BaseAgent):
                     break
                 logger.debug(f" llama response {json_response}")
                 if (
-                    'function_call'in json_response and json_response["function_call"] == "execute"
+                    "function_call" in json_response
+                    and json_response["function_call"] == "execute"
                 ):
                     agent_memory.append_chat_message(message)
                     tools_mapping = {
@@ -261,8 +216,14 @@ class LlamaAgent(BaseAgent):
                         "bash": self.handle_bash_code,
                     }
 
-                    function_result = await tools_mapping[json_response["arguments"]['language']](
-                        json_response['arguments'], queue, context, task_context, task_opt
+                    function_result = await tools_mapping[
+                        json_response["arguments"]["language"]
+                    ](
+                        json_response["arguments"],
+                        queue,
+                        context,
+                        task_context,
+                        task_opt,
                     )
 
                     logger.debug(f"the function result {function_result}")
@@ -287,23 +248,31 @@ class LlamaAgent(BaseAgent):
                             "role": "user",
                             "content": f"{action_output} \n {function_result.console_stdout}",
                         })
-                        agent_memory.append_chat_message({"role": "user", "content": current_question})
+                        agent_memory.append_chat_message(
+                            {"role": "user", "content": current_question}
+                        )
                     elif function_result.has_error:
                         agent_memory.append_chat_message({
                             "role": "user",
                             "content": f"{action_output} \n {function_result.console_stderr}",
                         })
                         current_question = f"Generate a new step to fix the above error"
-                        agent_memory.append_chat_message({"role": "user", "content": current_question})
+                        agent_memory.append_chat_message(
+                            {"role": "user", "content": current_question}
+                        )
                     else:
                         agent_memory.append_chat_message({
                             "role": "user",
                             "content": f"{action_output} \n {function_result.console_stdout}",
                         })
-                        agent_memory.append_chat_message({
-                            "role": "user", "content": current_question})
-                elif 'function_call' in json_response and json_response["function_call"] == "direct_message":
-                    message = json_response['arguments']['message']
+                        agent_memory.append_chat_message(
+                            {"role": "user", "content": current_question}
+                        )
+                elif (
+                    "function_call" in json_response
+                    and json_response["function_call"] == "direct_message"
+                ):
+                    message = json_response["arguments"]["message"]
                     await queue.put(
                         TaskResponse(
                             state=task_context.to_context_state_proto(),
