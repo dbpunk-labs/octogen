@@ -4,7 +4,7 @@ pytest==7.4.2
 python-dotenv==1.0.0
 setuptools==69.0.2
 grpcio-tools==1.60.0
-pytest-asyncio==0.21.1
+pytest-asyncio==0.23.2
 grpc-google-iam-v1==0.13.0
 matplotlib
 pydantic==2.5.2
