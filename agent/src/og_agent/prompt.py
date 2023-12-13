@@ -17,52 +17,50 @@ RULES = [
     "Use `execute` action to execute any code and `direct_message` action to send message to user",
 ]
 
-FUNCTION_EXECUTE= ActionDesc(
-        name="execute",
-        desc="This action executes code in your programming environment and returns the output",
-        parameters=json.dumps({
-            "type": "object",
-            "properties": {
-                "explanation": {
-                    "type": "string",
-                    "description": "the explanation about the code parameters",
-                },
-                "code": {
-                    "type": "string",
-                    "description": "the bash code to be executed",
-                },
-                "language": {
-                    "type": "string",
-                    "description": "the language of the code, only python and bash are supported",
-                },
-                "saved_filenames": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "A list of filenames that were created by the code",
-                },
+FUNCTION_EXECUTE = ActionDesc(
+    name="execute",
+    desc="This action executes code in your programming environment and returns the output",
+    parameters=json.dumps({
+        "type": "object",
+        "properties": {
+            "explanation": {
+                "type": "string",
+                "description": "the explanation about the code parameters",
             },
-            "required": ["explanation", "code", "language"],
-        }),
-    )
-
-FUNCTION_DIRECT_MESSAGE= ActionDesc(
-        name="direct_message",
-        desc="This action sends a direct message to user.",
-        parameters=json.dumps({
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string",
-                    "description": "the message will be sent to user",
-                },
+            "code": {
+                "type": "string",
+                "description": "the bash code to be executed",
             },
-            "required": ["message"],
-        }),
+            "language": {
+                "type": "string",
+                "description": "the language of the code, only python and bash are supported",
+            },
+            "saved_filenames": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "A list of filenames that were created by the code",
+            },
+        },
+        "required": ["explanation", "code", "language"],
+    }),
 )
 
-ACTIONS = [
-    FUNCTION_EXECUTE
-]
+FUNCTION_DIRECT_MESSAGE = ActionDesc(
+    name="direct_message",
+    desc="This action sends a direct message to user.",
+    parameters=json.dumps({
+        "type": "object",
+        "properties": {
+            "message": {
+                "type": "string",
+                "description": "the message will be sent to user",
+            },
+        },
+        "required": ["message"],
+    }),
+)
+
+ACTIONS = [FUNCTION_EXECUTE]
 
 OUTPUT_FORMAT = """The output format must be a JSON format with the following fields:
 * function_call: The name of the action

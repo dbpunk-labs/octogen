@@ -158,7 +158,6 @@ async def test_openai_agent_call_execute_bash_code(mocker, kernel_sdk):
         assert console_output[0].console_stdout == "hello world\n", "bad console output"
 
 
-
 @pytest.mark.asyncio
 async def test_openai_agent_call_execute_python_code(mocker, kernel_sdk):
     kernel_sdk.connect()
