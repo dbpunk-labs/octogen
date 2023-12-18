@@ -10,7 +10,7 @@ matplotlib
 pydantic==2.5.2
 aiosqlite==0.19.0
 rich==13.7.0
-prompt_toolkit==3.0.40
+prompt_toolkit==3.0.43
 aiofiles==23.2.1
 click==8.1.7
 discord.py==2.3.2
