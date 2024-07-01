@@ -1,4 +1,4 @@
-ipykernel==6.29.3
+ipykernel==6.29.5
 jupyter_client==8.6.0
 pytest==7.4.2
 python-dotenv==1.0.0
